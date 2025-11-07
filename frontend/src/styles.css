@@ -1,0 +1,7 @@
+body{font-family:Inter, system-ui, Arial, sans-serif;margin:0;padding:20px;background:#f7f8fa}
+.container{max-width:1000px;margin:0 auto}
+.columns{display:flex;gap:20px}
+.col{flex:1;background:#fff;padding:16px;border-radius:8px}
+button{padding:6px 10px;border:1px solid #ddd;background:#fff;border-radius:6px}
+pre{white-space:pre-wrap;word-break:break-word}
+

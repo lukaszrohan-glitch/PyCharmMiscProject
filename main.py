@@ -1,0 +1,264 @@
+import os
+from typing import List, Optional, Dict
+
+from fastapi import FastAPI, HTTPException, Header, Depends
+from fastapi.middleware.cors import CORSMiddleware
+
+from db import fetch_all, fetch_one, execute
+from schemas import (
+    Order, Finance,
+    OrderCreate, OrderLineCreate, TimesheetCreate, InventoryCreate
+)
+from queries import (
+    SQL_ORDERS, SQL_FINANCE_ONE, SQL_SHORTAGES, SQL_PLANNED_ONE,
+    SQL_INSERT_ORDER, SQL_INSERT_ORDER_LINE, SQL_INSERT_TIMESHEET, SQL_INSERT_INVENTORY,
+    SQL_PRODUCTS, SQL_CUSTOMERS
+)
+import auth
+from auth import log_api_key_event, mark_last_used
+
+app = FastAPI(title="SMB Tool API", version="1.0")
+
+# ---- CORS ----
+origins_env = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000")
+origins = [o.strip() for o in origins_env.split(",") if o.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins or ["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ---- API key auth ----
+API_KEYS = [k.strip() for k in os.getenv("API_KEYS", "").split(",") if k.strip()]
+
+
+# modify check_api_key to log usage
+def check_api_key(x_api_key: Optional[str] = Header(None), api_key: Optional[str] = None):
+    key = x_api_key or api_key
+    if not key:
+        raise HTTPException(status_code=401, detail="Invalid or missing API key")
+
+    # First, check static env-configured keys
+    if API_KEYS and key in API_KEYS:
+        return True
+
+    # Next, check DB-backed api_keys
+    try:
+        row = auth.get_api_key(key)
+        if row:
+            # mark last used and log audit
+            try:
+                if row.get('id'):
+                    mark_last_used(row.get('id'))
+                    log_api_key_event(row.get('id'), 'used', 'api')
+            except Exception:
+                pass
+            return True
+    except Exception:
+        # if DB unreachable, fall back to env-only behavior
+        pass
+
+    raise HTTPException(status_code=401, detail="Invalid or missing API key")
+
+
+ADMIN_KEY = os.getenv("ADMIN_KEY")
+
+
+def check_admin_key(x_admin_key: Optional[str] = Header(None)):
+    if not ADMIN_KEY:
+        # admin key not configured; deny access to admin endpoints in production unless set
+        raise HTTPException(status_code=401, detail="Admin key not configured")
+    if x_admin_key != ADMIN_KEY:
+        raise HTTPException(status_code=401, detail="Invalid admin key")
+    return True
+
+
+# Admin: ensure api_keys table exists on startup
+try:
+    auth.ensure_table()
+except Exception:
+    # ignore if DB not ready; will be created during DB init
+    pass
+
+
+# ---- HEALTH ----
+@app.get("/healthz")
+def health():
+    return {"ok": True}
+
+
+# ---- READ ENDPOINTS ----
+@app.get("/api/orders", response_model=List[Order])
+def orders_list():
+    try:
+        return fetch_all(SQL_ORDERS)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.get("/api/finance/{order_id}", response_model=Optional[Finance])
+def finance_one(order_id: str):
+    try:
+        return fetch_one(SQL_FINANCE_ONE, (order_id,))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.get("/api/shortages")
+def shortages():
+    try:
+        return fetch_all(SQL_SHORTAGES)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.get("/api/planned-time/{order_id}")
+def planned_time(order_id: str):
+    try:
+        row = fetch_one(SQL_PLANNED_ONE, (order_id,))
+        if not row:
+            raise HTTPException(status_code=404, detail="Order not found in v_planned_time")
+        return row
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.get("/api/products")
+def products_list():
+    try:
+        return fetch_all(SQL_PRODUCTS)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.get("/api/customers")
+def customers_list():
+    try:
+        return fetch_all(SQL_CUSTOMERS)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+# ---- WRITE ENDPOINTS (protected by API key) ----
+@app.post("/api/orders", response_model=Order, status_code=201)
+def create_order(payload: OrderCreate, _ok: bool = Depends(check_api_key)):
+    try:
+        rows = execute(
+            SQL_INSERT_ORDER,
+            (payload.order_id, payload.customer_id, payload.status.value if hasattr(payload.status, 'value') else payload.status, payload.due_date),
+            returning=True
+        )
+        if not rows:
+            # already exists
+            raise HTTPException(status_code=409, detail="Order already exists")
+        return rows[0]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.post("/api/order-lines", status_code=201)
+def create_order_line(payload: OrderLineCreate, _ok: bool = Depends(check_api_key)):
+    try:
+        rows = execute(
+            SQL_INSERT_ORDER_LINE,
+            (payload.order_id, payload.line_no, payload.product_id,
+             payload.qty, payload.unit_price, payload.discount_pct, payload.graphic_id),
+            returning=True
+        )
+        if not rows:
+            raise HTTPException(status_code=409, detail="Order line already exists")
+        return rows[0]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.post("/api/timesheets", status_code=201)
+def create_timesheet(payload: TimesheetCreate, _ok: bool = Depends(check_api_key)):
+    try:
+        rows = execute(
+            SQL_INSERT_TIMESHEET,
+            (payload.emp_id, payload.ts_date, payload.order_id,
+             payload.operation_no, payload.hours, payload.notes),
+            returning=True
+        )
+        if not rows:
+            raise HTTPException(status_code=500, detail="Failed to create timesheet")
+        return rows[0]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.post("/api/inventory", status_code=201)
+def create_inventory_txn(payload: InventoryCreate, _ok: bool = Depends(check_api_key)):
+    try:
+        rows = execute(
+            SQL_INSERT_INVENTORY,
+            (payload.txn_id, payload.txn_date, payload.product_id,
+             payload.qty_change, payload.reason.value if hasattr(payload.reason, 'value') else payload.reason, payload.lot, payload.location),
+            returning=True
+        )
+        if not rows:
+            raise HTTPException(status_code=500, detail="Failed to create inventory transaction")
+        return rows[0]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.get("/admin/api-keys")
+def admin_list_keys(_ok: bool = Depends(check_admin_key)):
+    try:
+        return auth.list_api_keys()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.post("/admin/api-keys")
+def admin_create_key(payload: Dict[str, str], _ok: bool = Depends(check_admin_key)):
+    # payload: {"label": "dev key"}
+    label = payload.get("label") if isinstance(payload, dict) else None
+    row = auth.create_api_key(label)
+    if not row:
+        raise HTTPException(status_code=500, detail="Failed to create API key")
+    # row includes 'api_key' plaintext to show once
+    return row
+
+
+@app.delete("/admin/api-keys/{key_id}")
+def admin_delete_key(key_id: int, _ok: bool = Depends(check_admin_key)):
+    row = auth.delete_api_key_by_id(key_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Key not found")
+    return {"deleted": row}
+
+
+# Admin endpoints for rotation and audit
+@app.post("/admin/api-keys/{key_id}/rotate")
+def admin_rotate_key(key_id: int, _ok: bool = Depends(check_admin_key)):
+    try:
+        new = auth.rotate_api_key(key_id, by='admin')
+        if not new:
+            raise HTTPException(status_code=500, detail='Failed to rotate key')
+        return new
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.get('/admin/api-key-audit')
+def admin_api_key_audit(_ok: bool = Depends(check_admin_key)):
+    try:
+        rows = fetch_all('SELECT * FROM api_key_audit ORDER BY event_time DESC LIMIT 100')
+        return rows
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))

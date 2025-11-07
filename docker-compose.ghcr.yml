@@ -1,0 +1,34 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: smbtool
+      POSTGRES_USER: smb_user
+      POSTGRES_PASSWORD: smb_password
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  web:
+    image: ghcr.io/<OWNER>/<REPO>/smbtool-backend:latest
+    environment:
+      DATABASE_URL: postgres://smb_user:smb_password@db:5432/smbtool
+      CORS_ORIGINS: http://localhost,https://your-frontend-domain
+      API_KEYS: changeme123
+      ADMIN_KEY: test-admin-key
+    depends_on:
+      - db
+    expose:
+      - '8000'
+
+  static_frontend:
+    image: ghcr.io/<OWNER>/<REPO>/smbtool-frontend:latest
+    ports:
+      - '80:80'
+    depends_on:
+      - web
+
+volumes:
+  db_data:
+

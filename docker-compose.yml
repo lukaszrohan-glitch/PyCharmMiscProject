@@ -1,0 +1,45 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: smbtool
+      POSTGRES_USER: smb_user
+      POSTGRES_PASSWORD: smb_password
+    ports:
+      - '5432:5432'
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  web:
+    build: .
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgres://smb_user:smb_password@db:5432/smbtool
+      CORS_ORIGINS: http://localhost:5173,http://localhost:3000
+      API_KEYS: changeme123
+      ADMIN_KEY: test-admin-key
+    ports:
+      - '8000:8000'
+    volumes:
+      - ./:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  # optional frontend service (serve built static files)
+  frontend:
+    image: node:18-alpine
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    ports:
+      - '5173:5173'
+    environment:
+      - VITE_API_BASE=http://localhost:8000/api
+    depends_on:
+      - web
+
+volumes:
+  db_data:

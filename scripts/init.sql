@@ -1,0 +1,121 @@
+-- Minimal init SQL to create tables and seed data for development
+-- Run by docker-entrypoint-initdb.d on Postgres container startup
+
+CREATE TABLE IF NOT EXISTS customers (
+  customer_id text PRIMARY KEY,
+  name text NOT NULL,
+  nip text,
+  address text,
+  email text,
+  payment_terms_days integer NOT NULL DEFAULT 14,
+  active boolean NOT NULL DEFAULT true
+);
+
+CREATE TABLE IF NOT EXISTS products (
+  product_id text PRIMARY KEY,
+  name text NOT NULL,
+  unit text NOT NULL DEFAULT 'pcs',
+  std_cost numeric(18,4) NOT NULL DEFAULT 0,
+  price numeric(18,4) NOT NULL DEFAULT 0,
+  vat_rate numeric(5,2) NOT NULL DEFAULT 23,
+  make_or_buy text NOT NULL DEFAULT 'Make'
+);
+
+CREATE TABLE IF NOT EXISTS bom (
+  parent_product_id text REFERENCES products(product_id) ON DELETE CASCADE,
+  component_id text REFERENCES products(product_id) ON DELETE RESTRICT,
+  qty_per numeric(18,6) NOT NULL,
+  scrap_pct numeric(6,4) NOT NULL DEFAULT 0,
+  PRIMARY KEY (parent_product_id, component_id)
+);
+
+CREATE TABLE IF NOT EXISTS routings (
+  product_id text REFERENCES products(product_id) ON DELETE CASCADE,
+  operation_no integer NOT NULL,
+  work_center text NOT NULL,
+  std_setup_min numeric(18,2) NOT NULL DEFAULT 0,
+  std_run_min_per_unit numeric(18,4) NOT NULL DEFAULT 0,
+  PRIMARY KEY (product_id, operation_no)
+);
+
+CREATE TABLE IF NOT EXISTS orders (
+  order_id text PRIMARY KEY,
+  order_date date NOT NULL DEFAULT CURRENT_DATE,
+  customer_id text NOT NULL REFERENCES customers(customer_id),
+  status text NOT NULL DEFAULT 'Planned',
+  due_date date
+);
+
+CREATE TABLE IF NOT EXISTS order_lines (
+  order_id text REFERENCES orders(order_id) ON DELETE CASCADE,
+  line_no integer NOT NULL,
+  product_id text NOT NULL REFERENCES products(product_id),
+  qty numeric(18,4) NOT NULL,
+  unit_price numeric(18,4) NOT NULL,
+  discount_pct numeric(6,4) NOT NULL DEFAULT 0,
+  graphic_id text,
+  PRIMARY KEY (order_id, line_no)
+);
+
+CREATE TABLE IF NOT EXISTS inventory (
+  txn_id text PRIMARY KEY,
+  txn_date date NOT NULL DEFAULT CURRENT_DATE,
+  product_id text NOT NULL REFERENCES products(product_id),
+  qty_change numeric(18,4) NOT NULL,
+  reason text NOT NULL,
+  lot text,
+  location text
+);
+
+CREATE TABLE IF NOT EXISTS employees (
+  emp_id text PRIMARY KEY,
+  name text NOT NULL,
+  role text,
+  hourly_rate numeric(18,4) NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS timesheets (
+  ts_id bigserial PRIMARY KEY,
+  emp_id text NOT NULL REFERENCES employees(emp_id),
+  ts_date date NOT NULL DEFAULT CURRENT_DATE,
+  order_id text REFERENCES orders(order_id) ON DELETE SET NULL,
+  operation_no integer,
+  hours numeric(10,2) NOT NULL,
+  notes text
+);
+
+-- API keys table (for admin-managed API keys)
+CREATE TABLE IF NOT EXISTS api_keys (
+  id bigserial PRIMARY KEY,
+  key_text text,
+  key_hash text,
+  salt text,
+  label text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  active boolean NOT NULL DEFAULT true,
+  last_used timestamptz
+);
+
+-- audit log for api key events
+CREATE TABLE IF NOT EXISTS api_key_audit (
+  audit_id bigserial PRIMARY KEY,
+  api_key_id bigint REFERENCES api_keys(id) ON DELETE SET NULL,
+  event_type text NOT NULL, -- created, rotated, used, deleted
+  event_by text, -- admin user or system
+  event_time timestamptz NOT NULL DEFAULT now(),
+  details jsonb
+);
+
+-- minimal seed
+INSERT INTO customers(customer_id, name, nip, address, email) VALUES ('CUST-ALFA', 'Alfa Sp. z o.o.', '1234567890', 'Warszawa', 'biuro@alfa.pl') ON CONFLICT DO NOTHING;
+INSERT INTO products(product_id, name, std_cost, price) VALUES ('P-100', 'Gadzet A', 10, 30), ('P-101', 'Komponent X', 2, 5) ON CONFLICT DO NOTHING;
+INSERT INTO bom(parent_product_id, component_id, qty_per, scrap_pct) VALUES ('P-100','P-101',2,0.05) ON CONFLICT DO NOTHING;
+INSERT INTO routings(product_id, operation_no, work_center, std_setup_min, std_run_min_per_unit) VALUES ('P-100', 10, 'Monta\u017c', 15, 2.5) ON CONFLICT DO NOTHING;
+INSERT INTO employees(emp_id, name, role, hourly_rate) VALUES ('E-01', 'Jan Kowalski', 'Operator', 45.00) ON CONFLICT DO NOTHING;
+INSERT INTO orders(order_id, order_date, customer_id, status, due_date) VALUES ('ORD-0001', CURRENT_DATE, 'CUST-ALFA', 'Planned', CURRENT_DATE + 7) ON CONFLICT DO NOTHING;
+INSERT INTO order_lines(order_id, line_no, product_id, qty, unit_price, discount_pct) VALUES ('ORD-0001', 1, 'P-100', 50, 30, 0.05) ON CONFLICT DO NOTHING;
+INSERT INTO inventory(txn_id, txn_date, product_id, qty_change, reason) VALUES ('TXN-PO-1', CURRENT_DATE, 'P-101', 500, 'PO') ON CONFLICT DO NOTHING;
+INSERT INTO inventory(txn_id, txn_date, product_id, qty_change, reason) VALUES ('TXN-WO-ISS-1', CURRENT_DATE, 'P-101', -100, 'WO') ON CONFLICT DO NOTHING;
+INSERT INTO inventory(txn_id, txn_date, product_id, qty_change, reason) VALUES ('TXN-WO-RCPT-1', CURRENT_DATE, 'P-100', 50, 'WO') ON CONFLICT DO NOTHING;
+INSERT INTO timesheets(emp_id, ts_date, order_id, operation_no, hours, notes) VALUES ('E-01', CURRENT_DATE, 'ORD-0001', 10, 6.5, 'Seria 50 szt.') ON CONFLICT DO NOTHING;
+INSERT INTO api_keys (key_text, label, created_at, active) VALUES ('changeme123', 'default-dev-key', now(), true) ON CONFLICT DO NOTHING;

@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+.venv/
+.venv1/
+.env
+.env.*
+
+# PyTest
+.pytest_cache/
+
+# IDEs
+.vscode/
+.idea/
+
+# SQLite DB
+*.sqlite
+_dev_db.sqlite
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Node
+node_modules/
+frontend/node_modules/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
