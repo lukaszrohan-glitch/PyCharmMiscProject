@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { getOrders, getFinance, createOrder, createTimesheet, createInventory, createOrderLine, setApiKey, setAdminKey, getProducts, getCustomers } from './services/api'
 import AdminPage from './AdminPage'
 import OrderLinesEditor from './OrderLinesEditor'
+import Autocomplete from './components/Autocomplete'
+import { useToast } from './components/Toast'
 
 function FormField({children}){
   return <div style={{marginBottom:8}}>{children}</div>
@@ -47,6 +49,7 @@ export default function App(){
   const [olProduct, setOlProduct] = useState('')
   const [olQty, setOlQty] = useState('')
   const [olPrice, setOlPrice] = useState('')
+  const toast = useToast()
 
   useEffect(()=>{ loadAll() },[])
 
@@ -63,12 +66,12 @@ export default function App(){
 
   async function applyApiKey(){
     setApiKey(apiKeyInput)
-    setMsg('API key set (in-memory)')
+    toast.show('API key set')
   }
 
   async function applyAdminKey(){
     setAdminKey(adminKeyInput)
-    setMsg('Admin key set (in-memory)')
+    toast.show('Admin key set')
     await refreshApiKeys()
   }
 
@@ -127,7 +130,7 @@ export default function App(){
     if(!newOrderId || !newCustomer){ setErr('Order ID and Customer are required'); return }
     try{
       await createOrder({ order_id:newOrderId, customer_id:newCustomer })
-      setMsg('Order created')
+      toast.show('Order created')
       setNewOrderId(''); setNewCustomer('')
       await loadAll()
     }catch(e){ setErr(String(e)) }
@@ -138,7 +141,7 @@ export default function App(){
     if(!tsEmp || !tsHours){ setErr('Employee and hours are required'); return }
     try{
       await createTimesheet({ emp_id: tsEmp, order_id: tsOrder || null, hours: Number(tsHours) })
-      setMsg('Timesheet logged')
+      toast.show('Timesheet logged')
       setTsEmp(''); setTsOrder(''); setTsHours('')
       await loadOrders()
     }catch(e){ setErr(String(e)) }
@@ -149,7 +152,7 @@ export default function App(){
     if(!invTxn || !invProd || !invQty){ setErr('Txn ID, Product and Qty required'); return }
     try{
       await createInventory({ txn_id: invTxn, product_id: invProd, qty_change: Number(invQty), reason: invReason })
-      setMsg('Inventory transaction created')
+      toast.show('Inventory txn created')
       setInvTxn(''); setInvProd(''); setInvQty('')
       await loadAll()
     }catch(e){ setErr(String(e)) }
@@ -181,24 +184,29 @@ export default function App(){
           </ul>
 
           <h3>Create Order</h3>
-          <form onSubmit={submitOrder}>
+          <form onSubmit={submitOrder} data-testid="create-order-form">
             <FormField>
-              <input placeholder="Order ID" value={newOrderId} onChange={e=>setNewOrderId(e.target.value)} />
+              <input placeholder="Order ID" value={newOrderId} onChange={e=>setNewOrderId(e.target.value)} data-testid="order-id-input" />
             </FormField>
             <FormField>
-              <select value={newCustomer} onChange={e=>setNewCustomer(e.target.value)}>
-                <option value="">-- select customer --</option>
-                {customers.map(c=> <option key={c.customer_id} value={c.customer_id}>{c.customer_id} — {c.name}</option>)}
-              </select>
+              <Autocomplete
+                items={customers}
+                getLabel={c=> `${c.customer_id} — ${c.name}`}
+                inputValue={newCustomer}
+                onInputChange={setNewCustomer}
+                onSelect={c=> setNewCustomer(c.customer_id)}
+                placeholder="Customer (type to filter)"
+                testId="ac-customer"
+              />
             </FormField>
-            <button type="submit">Create Order</button>
+            <button type="submit" data-testid="order-submit" onClick={()=>{ if(!confirm('Create order?')) return }}>Create Order</button>
           </form>
 
           <h3>Add Order Line</h3>
-          <OrderLinesEditor products={products} onAdd={async (payload)=>{ try{ await createOrderLine(payload); setMsg('Order line created'); await loadAll() }catch(e){ setErr(String(e)) } }} />
+          <OrderLinesEditor products={products} orders={orders} toast={toast} onAdd={async (payload)=>{ try{ await createOrderLine(payload); await loadAll() }catch(e){ setErr(String(e)); toast.show('Order line failed','error') } }} />
 
           <h3>Log Timesheet</h3>
-          <form onSubmit={submitTimesheet}>
+          <form onSubmit={submitTimesheet} data-testid="timesheet-form">
             <FormField>
               <input placeholder="Employee ID" value={tsEmp} onChange={e=>setTsEmp(e.target.value)} />
             </FormField>
@@ -215,7 +223,7 @@ export default function App(){
           </form>
 
           <h3>Inventory Txn</h3>
-          <form onSubmit={submitInventory}>
+          <form onSubmit={submitInventory} data-testid="inventory-form">
             <FormField>
               <input placeholder="Txn ID" value={invTxn} onChange={e=>setInvTxn(e.target.value)} />
             </FormField>
