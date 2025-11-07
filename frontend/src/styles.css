@@ -1,7 +1,12 @@
 body{font-family:Inter, system-ui, Arial, sans-serif;margin:0;padding:20px;background:#f7f8fa}
 .container{max-width:1000px;margin:0 auto}
-.columns{display:flex;gap:20px}
-.col{flex:1;background:#fff;padding:16px;border-radius:8px}
-button{padding:6px 10px;border:1px solid #ddd;background:#fff;border-radius:6px}
-pre{white-space:pre-wrap;word-break:break-word}
-
+.columns{display:flex;gap:20px;align-items:flex-start}
+.col{flex:1;background:#fff;padding:16px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
+button{padding:6px 12px;border:1px solid #d0d7de;background:#fff;border-radius:6px;cursor:pointer;transition:background .15s}
+button:hover{background:#f0f2f4}
+button:active{background:#e2e4e7}
+input,select{padding:6px 8px;border:1px solid #d0d7de;border-radius:6px;width:100%;box-sizing:border-box;font-family:inherit}
+input:focus,select:focus{outline:2px solid #4dabf7}
+ul{margin:0 0 12px 0;padding:0;list-style:none}
+ul li{margin:4px 0}
+pre{white-space:pre-wrap;word-break:break-word;background:#fafbfc;padding:12px;border-radius:6px;border:1px solid #e1e4e8}

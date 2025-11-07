@@ -18,6 +18,10 @@ test('UI flow: create order, add line, timesheet, inventory', async ({ page }) =
   page.once('dialog', d => d.accept())
   await page.getByTestId('order-submit').click()
   await expect(page.getByText('Order created')).toBeVisible()
+  // Verify order appears in list and finance panel loads
+  await expect(page.getByText(orderId)).toBeVisible()
+  await page.getByText(orderId).click()
+  await expect(page.getByText('Finance: ' + orderId)).toBeVisible()
 
   // Add order line
   await page.getByTestId('ac-order').click()
@@ -47,4 +51,3 @@ test('UI flow: create order, add line, timesheet, inventory', async ({ page }) =
   await page.getByText('Create Txn').click()
   await expect(page.getByText('Inventory txn created')).toBeVisible()
 })
-

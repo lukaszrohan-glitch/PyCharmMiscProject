@@ -228,10 +228,15 @@ export default function App(){
               <input placeholder="Txn ID" value={invTxn} onChange={e=>setInvTxn(e.target.value)} />
             </FormField>
             <FormField>
-              <select value={invProd} onChange={e=>setInvProd(e.target.value)}>
-                <option value="">-- select product --</option>
-                {products.map(p=> <option key={p.product_id} value={p.product_id}>{p.product_id} — {p.name}</option>)}
-              </select>
+              <Autocomplete
+                items={products}
+                getLabel={p=> `${p.product_id} — ${p.name}`}
+                inputValue={invProd}
+                onInputChange={setInvProd}
+                onSelect={p=> setInvProd(p.product_id)}
+                placeholder="Inventory Product"
+                testId="ac-inv-product"
+              />
             </FormField>
             <FormField>
               <input placeholder="Qty change (e.g. 100 or -50)" value={invQty} onChange={e=>setInvQty(e.target.value)} />
@@ -244,7 +249,7 @@ export default function App(){
                 <option>Adjust</option>
               </select>
             </FormField>
-            <button type="submit">Create Txn</button>
+            <button type="submit" onClick={()=>{ if(!confirm('Create inventory transaction?')) { event.preventDefault(); return; } }}>Create Txn</button>
           </form>
 
         </div>
