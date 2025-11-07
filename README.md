@@ -1,3 +1,39 @@
+# SMB Tool — Production Management System
+
+🇬🇧 **English** | [🇵🇱 Polski](README_PL.md)
+
+---
+
+## 📚 Documentation
+
+- **English:**
+  - [Quick Start Guide](QUICKSTART.md)
+  - [Network Access Guide](NETWORK_ACCESS_GUIDE.md)
+  - [Docker Troubleshooting](DOCKER_TROUBLESHOOTING.md)
+  
+- **Polski:**
+  - [Szybki Start](QUICKSTART_PL.md)
+  - [Przewodnik Dostępu Sieciowego](NETWORK_ACCESS_GUIDE_PL.md)
+  - [Rozwiązywanie Problemów z Dockerem](DOCKER_TROUBLESHOOTING_PL.md)
+
+---
+
+## ⚡ Quick Start
+
+```bash
+# Start the application
+docker compose up -d
+
+# Open in browser
+http://localhost:5173
+```
+
+**Full documentation:** See [QUICKSTART.md](QUICKSTART.md) or [QUICKSTART_PL.md](QUICKSTART_PL.md)
+
+---
+
+## 🎯 Overview
+
 SMB Tool — backend + PowerQuery integration
 
 Quickstart (local, development)
