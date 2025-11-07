@@ -71,7 +71,8 @@ jobs:
         env:
           API_BASE: http://localhost:8000
         run: |
-          npx playwright test --project=chromium --reporter=list
+          # Run Playwright and point it to the repo-level tests/playwright config
+          npx playwright test --config ../tests/e2e/playwright.config.js --project=chromium --reporter=list
       - name: Tear down
         if: always()
         run: docker-compose down -v

@@ -196,7 +196,9 @@ def fetch_all(sql: str, params: Optional[Tuple] = None) -> List[dict]:
         # sqlite path
         with get_conn() as conn:
             cur = conn.cursor()
-            cur.execute(sql, params or ())
+            # translate %s placeholders (Postgres style) to ? for sqlite
+            sql_exec = sql.replace('%s', '?') if params else sql
+            cur.execute(sql_exec, params or ())
             rows = cur.fetchall()
             # convert sqlite3.Row to dict
             return [dict(r) for r in rows]
@@ -211,7 +213,8 @@ def fetch_one(sql: str, params: Optional[Tuple] = None) -> Optional[dict]:
     if pool is None:
         with get_conn() as conn:
             cur = conn.cursor()
-            cur.execute(sql, params or ())
+            sql_exec = sql.replace('%s', '?') if params else sql
+            cur.execute(sql_exec, params or ())
             row = cur.fetchone()
             return dict(row) if row is not None else None
     else:
@@ -225,7 +228,8 @@ def execute(sql: str, params: Optional[Tuple] = None, returning: bool = False):
     if pool is None:
         with get_conn() as conn:
             cur = conn.cursor()
-            cur.execute(sql, params or ())
+            sql_exec = sql.replace('%s', '?') if params else sql
+            cur.execute(sql_exec, params or ())
             if returning:
                 rows = cur.fetchall()
                 conn.commit()

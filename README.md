@@ -69,3 +69,60 @@ Next steps
 - Improve auth (rotateable API keys or JWT + user management)
 - Add Alembic migrations (migrate from scripts/init.sql)
 - Add more E2E coverage and CI gating for deployment
+
+## Run & Test (concise)
+
+- Create and activate virtualenv (Windows PowerShell):
+
+```powershell
+py -3 -m venv .venv
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements-dev.txt
+```
+
+- Run backend (sqlite fallback) for development:
+
+```powershell
+# development server (sqlite fallback)
+python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
+```
+
+- Run frontend (from `frontend/`):
+
+```powershell
+cd frontend
+npm ci
+npm run dev
+```
+
+- Run tests (unit + auth tests):
+
+```powershell
+pytest -q
+```
+
+## Migrations (Alembic)
+
+- To run alembic migrations locally you can use the provided helper scripts:
+
+PowerShell:
+
+```powershell
+# set DATABASE_URL if you want to run against Postgres
+$env:DATABASE_URL = 'postgresql://user:pass@localhost:5432/smbtool'
+./scripts/run_migrations.ps1
+```
+
+Bash / WSL:
+
+```bash
+DATABASE_URL=postgresql://user:pass@localhost:5432/smbtool ./scripts/run_migrations.sh
+```
+
+Note: Development SQLite fallback uses the minimal schema defined in `db._init_sqlite_schema` for convenience. Alembic migrations are present in `alembic/versions` for Postgres deployments.
+
+## Admin UI
+
+- The frontend includes a simple Admin section (in the app main page) to list/create/delete API keys. Protect it by setting `ADMIN_KEY` in your environment (backend) and `VITE_ADMIN_KEY` in the frontend `.env` if used.

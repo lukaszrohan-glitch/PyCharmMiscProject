@@ -21,10 +21,26 @@ CREATE TABLE IF NOT EXISTS api_keys (
 );
 """
 
+SQL_CREATE_API_KEY_AUDIT_TABLE = """
+CREATE TABLE IF NOT EXISTS api_key_audit (
+  audit_id bigserial PRIMARY KEY,
+  api_key_id bigint,
+  event_type text NOT NULL,
+  event_by text,
+  event_time timestamptz NOT NULL DEFAULT now(),
+  details text
+);
+"""
+
 SQL_INSERT_API_KEY = """
 INSERT INTO api_keys (key_text, key_hash, salt, label, created_at, active)
 VALUES (%s, %s, %s, %s, COALESCE(%s, now()), COALESCE(%s, true))
 RETURNING id, key_text, label, created_at, active;
+"""
+
+# For audit inserts do not rely on RETURNING to keep sqlite compatible
+SQL_INSERT_AUDIT = """
+INSERT INTO api_key_audit (api_key_id, event_type, event_by, details) VALUES (%s, %s, %s, %s);
 """
 
 SQL_LIST_API_KEYS = """
@@ -51,10 +67,6 @@ SQL_ROTATE_API_KEY = """
 UPDATE api_keys SET active = false WHERE id = %s RETURNING id;
 """
 
-SQL_INSERT_AUDIT = """
-INSERT INTO api_key_audit (api_key_id, event_type, event_by, details) VALUES (%s, %s, %s, %s) RETURNING audit_id;
-"""
-
 SQL_UPDATE_LAST_USED = """
 UPDATE api_keys SET last_used = now() WHERE id = %s RETURNING id;
 """
@@ -68,7 +80,16 @@ KEY_BYTES = 32
 
 
 def ensure_table():
-    execute(SQL_CREATE_API_KEYS_TABLE)
+    """Ensure the required API keys and audit tables exist in the database (Postgres path).
+    For sqlite fallback the tables are created by the sqlite init in `db._init_sqlite_schema`.
+    """
+    try:
+        # Create both tables if not present (Postgres)
+        execute(SQL_CREATE_API_KEYS_TABLE)
+        execute(SQL_CREATE_API_KEY_AUDIT_TABLE)
+    except Exception:
+        # If DB is not available or SQL dialect mismatch, ignore and rely on sqlite init
+        pass
 
 
 def _hash_key(plaintext: str, salt: Optional[bytes] = None) -> Tuple[str, str]:
@@ -88,10 +109,33 @@ def create_api_key(label: Optional[str] = None, created_at: Optional[datetime] =
     """Create a new API key. Returns a dict with id, label, created_at, active and plaintext 'api_key' (only here).
     The plaintext is shown only once and is not stored in plaintext long-term (key_text is stored but can be nullified later).
     """
+    import db as _db
+
     plaintext = secrets.token_urlsafe(32)
     key_hash, salt = _hash_key(plaintext)
-    rows = execute(SQL_INSERT_API_KEY, (None, key_hash, salt, label, created_at, active), returning=True)
-    row = rows[0] if rows else None
+
+    # If using sqlite fallback (no pool), insert using sqlite-compatible placeholders and functions
+    if getattr(_db, '_get_pool')() is None:
+        # sqlite: use ? placeholders and datetime('now') instead of now()
+        sql = """
+        INSERT INTO api_keys (key_text, key_hash, salt, label, created_at, active)
+        VALUES (?, ?, ?, ?, COALESCE(?, datetime('now')), COALESCE(?, 1));
+        """
+        try:
+            execute(sql, (None, key_hash, salt, label, created_at, 1), returning=False)
+        except Exception:
+            # best-effort insert; continue
+            pass
+        # fetch the inserted row by hash+salt
+        try:
+            row = fetch_one("SELECT id, key_text, label, created_at, active FROM api_keys WHERE key_hash = ? AND salt = ? LIMIT 1", (key_hash, salt))
+        except Exception:
+            row = None
+    else:
+        # Postgres path: use parametrized SQL with RETURNING
+        rows = execute(SQL_INSERT_API_KEY, (None, key_hash, salt, label, created_at, active), returning=True)
+        row = rows[0] if rows else None
+
     if row:
         # include plaintext only in the returned payload
         row['api_key'] = plaintext
