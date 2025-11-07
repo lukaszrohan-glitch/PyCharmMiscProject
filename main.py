@@ -20,11 +20,17 @@ from auth import log_api_key_event, mark_last_used
 app = FastAPI(title="SMB Tool API", version="1.0")
 
 # ---- CORS ----
-origins_env = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000")
-origins = [o.strip() for o in origins_env.split(",") if o.strip()]
+# Allow configured origins, or use regex pattern to allow any host on common dev ports
+origins_env = os.getenv("CORS_ORIGINS", "")
+if origins_env:
+    origins = [o.strip() for o in origins_env.split(",") if o.strip()]
+else:
+    # If no specific origins set, allow all (for development/internal network use)
+    origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins or ["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

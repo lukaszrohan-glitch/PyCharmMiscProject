@@ -1,8 +1,32 @@
-const rawBase = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
-// normalize: remove trailing slashes
-let API_BASE = rawBase.replace(/\/+$/, '')
-// ensure ends with /api
-if (!API_BASE.endsWith('/api')) API_BASE = API_BASE + '/api'
+// Dynamic API base URL detection
+// If VITE_API_BASE is set, use it. Otherwise, detect based on current location
+function getApiBase() {
+  const envBase = import.meta.env.VITE_API_BASE
+
+  if (envBase) {
+    // Environment variable is set, use it
+    let base = envBase.replace(/\/+$/, '')
+    if (!base.endsWith('/api')) base = base + '/api'
+    return base
+  }
+
+  // Auto-detect based on window.location
+  // If accessing via localhost:5173, use localhost:8000
+  // If accessing via network IP or domain, use same host with port 8000
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname
+    const protocol = window.location.protocol
+
+    // Construct API URL with same hostname but port 8000
+    return `${protocol}//${hostname}:8000/api`
+  }
+
+  // Fallback for SSR or build time
+  return 'http://localhost:8000/api'
+}
+
+const API_BASE = getApiBase()
+console.log('API Base URL:', API_BASE)
 
 let API_KEY = import.meta.env.VITE_API_KEY || null
 let ADMIN_KEY = import.meta.env.VITE_ADMIN_KEY || null
