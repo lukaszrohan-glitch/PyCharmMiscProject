@@ -1,12 +1,373 @@
-body{font-family:Inter, system-ui, Arial, sans-serif;margin:0;padding:20px;background:#f7f8fa}
-.container{max-width:1000px;margin:0 auto}
-.columns{display:flex;gap:20px;align-items:flex-start}
-.col{flex:1;background:#fff;padding:16px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
-button{padding:6px 12px;border:1px solid #d0d7de;background:#fff;border-radius:6px;cursor:pointer;transition:background .15s}
-button:hover{background:#f0f2f4}
-button:active{background:#e2e4e7}
-input,select{padding:6px 8px;border:1px solid #d0d7de;border-radius:6px;width:100%;box-sizing:border-box;font-family:inherit}
-input:focus,select:focus{outline:2px solid #4dabf7}
-ul{margin:0 0 12px 0;padding:0;list-style:none}
-ul li{margin:4px 0}
-pre{white-space:pre-wrap;word-break:break-word;background:#fafbfc;padding:12px;border-radius:6px;border:1px solid #e1e4e8}
+/* Color scheme inspired by modern scheduling interface */
+:root {
+  --primary-dark: #1e3a5f;
+  --primary-blue: #2c5282;
+  --accent-green: #48bb78;
+  --accent-orange: #ed8936;
+  --accent-yellow: #ecc94b;
+  --accent-cyan: #4299e1;
+  --accent-purple: #9f7aea;
+  --bg-light: #f7fafc;
+  --bg-white: #ffffff;
+  --text-dark: #2d3748;
+  --text-muted: #718096;
+  --border-light: #e2e8f0;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: var(--bg-light);
+  color: var(--text-dark);
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+h1 {
+  color: var(--primary-dark);
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 24px 0;
+  letter-spacing: -0.5px;
+}
+
+h2 {
+  color: var(--primary-blue);
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  border-bottom: 2px solid var(--accent-cyan);
+  padding-bottom: 8px;
+}
+
+h3 {
+  color: var(--primary-blue);
+  font-size: 16px;
+  font-weight: 600;
+  margin: 16px 0 12px 0;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.col {
+  background: var(--bg-white);
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
+  transition: box-shadow 0.2s ease;
+}
+
+.col:hover {
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.12);
+}
+
+button {
+  padding: 10px 20px;
+  border: 1px solid var(--primary-blue);
+  background: var(--primary-blue);
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+button:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+button:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+button[type="submit"] {
+  background: var(--accent-green);
+  border-color: var(--accent-green);
+}
+
+button[type="submit"]:hover {
+  background: #38a169;
+  border-color: #38a169;
+}
+
+input, select {
+  padding: 10px 14px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  width: 100%;
+  font-family: inherit;
+  font-size: 14px;
+  background: var(--bg-white);
+  color: var(--text-dark);
+  transition: all 0.2s ease;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+}
+
+input::placeholder {
+  color: var(--text-muted);
+}
+
+ul {
+  margin: 0 0 16px 0;
+  padding: 0;
+  list-style: none;
+}
+
+ul li {
+  margin: 8px 0;
+}
+
+ul li button {
+  width: 100%;
+  text-align: left;
+  background: var(--bg-light);
+  border: 1px solid var(--border-light);
+  color: var(--text-dark);
+  padding: 12px 16px;
+  font-weight: 500;
+}
+
+ul li button:hover {
+  background: var(--accent-cyan);
+  color: white;
+  border-color: var(--accent-cyan);
+}
+
+pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--primary-dark);
+  color: var(--accent-cyan);
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--primary-blue);
+  font-size: 13px;
+  font-family: 'Courier New', monospace;
+  box-shadow: var(--shadow-sm);
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--bg-light);
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 12px;
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-new {
+  background: var(--accent-cyan);
+  color: white;
+}
+
+.status-planned {
+  background: var(--accent-yellow);
+  color: var(--primary-dark);
+}
+
+.status-inprod {
+  background: var(--accent-orange);
+  color: white;
+}
+
+.status-done {
+  background: var(--accent-green);
+  color: white;
+}
+
+.status-invoiced {
+  background: var(--accent-purple);
+  color: white;
+}
+
+/* Error and success messages */
+div[style*="color:crimson"],
+div[style*="color: crimson"] {
+  background: #fed7d7;
+  border: 1px solid #fc8181;
+  color: #c53030;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+
+div[style*="color:green"],
+div[style*="color: green"] {
+  background: #c6f6d5;
+  border: 1px solid var(--accent-green);
+  color: #22543d;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+
+/* Header bar styling */
+.app-header {
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-blue) 100%);
+  padding: 16px 24px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.app-header h1 {
+  color: white;
+  margin: 0;
+  flex: 1;
+  min-width: 200px;
+}
+
+.app-header input {
+  max-width: 280px;
+}
+
+.app-header button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  backdrop-filter: blur(10px);
+}
+
+.app-header button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.lang-toggle {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+  font-weight: 500;
+}
+
+.lang-toggle button {
+  padding: 6px 10px;
+  font-size: 18px;
+  min-width: auto;
+}
+
+/* Loading spinner */
+.loading {
+  text-align: center;
+  padding: 20px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Improved form styling */
+form {
+  background: var(--bg-light);
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 12px;
+}
+
+/* Card hover effect for order list */
+ul li button {
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+ul li button::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 4px;
+  background: var(--accent-cyan);
+  transform: translateX(-4px);
+  transition: transform 0.2s ease;
+}
+
+ul li button:hover::before {
+  transform: translateX(0);
+}
+
+/* Finance panel styling */
+.finance-panel {
+  position: sticky;
+  top: 24px;
+}
+
+.finance-panel pre {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .app-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .app-header h1 {
+    text-align: center;
+  }
+
+  .lang-toggle {
+    margin-left: 0;
+    justify-content: center;
+  }
+
+  .app-header input,
+  .app-header button {
+    width: 100%;
+    max-width: none;
+  }
+}

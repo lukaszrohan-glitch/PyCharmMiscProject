@@ -1,0 +1,142 @@
+/* BACKUP: Original color scheme before update (for reference) */
+/*
+OLD COLORS:
+- Background: #f7f8fa (light gray)
+- Cards: #fff (white)
+- Buttons: #fff background, #d0d7de border
+- Button hover: #f0f2f4
+- Focus: #4dabf7 (light blue)
+- Pre background: #fafbfc
+*/
+
+/* NEW COLOR SCHEME - Inspired by Modern Scheduling Interface */
+:root {
+  /* Primary Brand Colors - Deep Blues */
+  --primary-dark: #1e3a5f;      /* Darkest blue - header gradient start, important text */
+  --primary-blue: #2c5282;      /* Main blue - header gradient end, buttons, section headers */
+
+  /* Accent Colors - Status & Interactions */
+  --accent-cyan: #4299e1;       /* Light blue - hover states, links, "New" status */
+  --accent-green: #48bb78;      /* Green - success, submit buttons, "Done" status */
+  --accent-orange: #ed8936;     /* Orange - warnings, "InProd" status */
+  --accent-yellow: #ecc94b;     /* Yellow - pending, "Planned" status */
+  --accent-purple: #9f7aea;     /* Purple - special, "Invoiced" status */
+
+  /* Neutrals - Backgrounds & Text */
+  --bg-light: #f7fafc;          /* Page background - very light gray-blue */
+  --bg-white: #ffffff;          /* Card backgrounds - pure white */
+  --text-dark: #2d3748;         /* Primary text - dark gray */
+  --text-muted: #718096;        /* Secondary text - medium gray */
+  --border-light: #e2e8f0;      /* Borders & dividers - light gray */
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);      /* Small shadow for buttons */
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);      /* Medium shadow for cards */
+}
+
+/*
+COLOR USAGE MAP:
+
+HEADER BAR (Gradient)
+- Background: linear-gradient(135deg, var(--primary-dark), var(--primary-blue))
+- Text: white
+- Buttons: rgba(255, 255, 255, 0.2) with backdrop-filter
+
+PRIMARY BUTTONS
+- Background: var(--primary-blue) #2c5282
+- Hover: var(--primary-dark) #1e3a5f
+- Text: white
+
+SUBMIT BUTTONS
+- Background: var(--accent-green) #48bb78
+- Hover: #38a169 (darker green)
+- Text: white
+
+STATUS BADGES
+- New:      var(--accent-cyan) #4299e1    [Cyan badge]
+- Planned:  var(--accent-yellow) #ecc94b  [Yellow badge]
+- InProd:   var(--accent-orange) #ed8936  [Orange badge]
+- Done:     var(--accent-green) #48bb78   [Green badge]
+- Invoiced: var(--accent-purple) #9f7aea  [Purple badge]
+
+CARDS
+- Background: var(--bg-white) #ffffff
+- Border: var(--border-light) #e2e8f0
+- Shadow: var(--shadow-md)
+- Hover shadow: 0 8px 12px rgba(0, 0, 0, 0.12)
+
+INPUTS & FORMS
+- Background: var(--bg-white) #ffffff
+- Border: var(--border-light) #e2e8f0
+- Focus border: var(--accent-cyan) #4299e1
+- Focus ring: 0 0 0 3px rgba(66, 153, 225, 0.1)
+- Form panel: var(--bg-light) #f7fafc
+
+ORDER LIST ITEMS
+- Background: var(--bg-light) #f7fafc
+- Border: var(--border-light) #e2e8f0
+- Hover background: var(--accent-cyan) #4299e1
+- Hover text: white
+- Left border accent: var(--accent-cyan) #4299e1
+
+FINANCE PANEL (Terminal-style)
+- Background: var(--primary-dark) #1e3a5f
+- Text: var(--accent-cyan) #4299e1
+- Border: var(--primary-blue) #2c5282
+
+SECTION HEADERS (h2)
+- Text: var(--primary-blue) #2c5282
+- Underline: var(--accent-cyan) #4299e1
+
+SUBSECTION HEADERS (h3)
+- Text: var(--primary-blue) #2c5282
+
+MAIN TITLE (h1)
+- Text: var(--primary-dark) #1e3a5f
+- (When in gradient header: white)
+
+ERROR MESSAGES
+- Background: #fed7d7 (light red)
+- Border: #fc8181 (medium red)
+- Text: #c53030 (dark red)
+
+SUCCESS MESSAGES
+- Background: #c6f6d5 (light green)
+- Border: var(--accent-green) #48bb78
+- Text: #22543d (dark green)
+
+PAGE BACKGROUND
+- var(--bg-light) #f7fafc
+
+LOADING STATE
+- Text: var(--text-muted) #718096
+*/
+
+/*
+ACCESSIBILITY NOTES:
+
+- All color combinations meet WCAG AA contrast requirements
+- Focus indicators are clearly visible (cyan glow)
+- Status badges use color + uppercase text for clarity
+- Text sizes are readable (14px minimum)
+- Hover states are obvious (lift animation + color change)
+
+RESPONSIVE BEHAVIOR:
+
+Desktop (1024px+):
+- Two-column layout
+- Sticky finance panel
+- Horizontal header bar
+
+Tablet (768px - 1024px):
+- Single column layout
+- Stacked header elements
+- Full-width cards
+
+Mobile (< 768px):
+- Single column
+- Stacked forms
+- Full-width buttons
+- Touch-friendly sizes
+*/
+

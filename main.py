@@ -67,10 +67,11 @@ ADMIN_KEY = os.getenv("ADMIN_KEY")
 
 
 def check_admin_key(x_admin_key: Optional[str] = Header(None)):
-    if not ADMIN_KEY:
+    admin_key = os.getenv("ADMIN_KEY")
+    if not admin_key:
         # admin key not configured; deny access to admin endpoints in production unless set
         raise HTTPException(status_code=401, detail="Admin key not configured")
-    if x_admin_key != ADMIN_KEY:
+    if x_admin_key != admin_key:
         raise HTTPException(status_code=401, detail="Invalid admin key")
     return True
 
@@ -260,5 +261,21 @@ def admin_api_key_audit(_ok: bool = Depends(check_admin_key)):
     try:
         rows = fetch_all('SELECT * FROM api_key_audit ORDER BY event_time DESC LIMIT 100')
         return rows
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.delete('/admin/api-key-audit')
+def admin_purge_audit(days: int = 30, _ok: bool = Depends(check_admin_key)):
+    try:
+        import db as _db
+        pool = getattr(_db, '_get_pool')()
+        if pool is None:
+            # sqlite: delete older than or equal to N days and any rows missing event_time
+            execute("DELETE FROM api_key_audit WHERE event_time IS NULL OR event_time = '' OR event_time <= datetime('now', ?)", ("-" + str(days) + " days",))
+        else:
+            # Postgres: delete older than or equal to N days and rows missing event_time
+            execute("DELETE FROM api_key_audit WHERE event_time IS NULL OR event_time <= now() - interval '1 day' * %s", (days,))
+        return {"purged": True}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))

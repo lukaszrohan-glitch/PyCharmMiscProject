@@ -1,7 +1,6 @@
-version: '3.8'
 services:
   db:
-    image: postgres:13
+    image: postgres:15
     environment:
       POSTGRES_DB: smbtool
       POSTGRES_USER: smb_user
@@ -11,35 +10,48 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
       - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smb_user -d smbtool"]
+      interval: 5s
+      timeout: 3s
+      retries: 40
 
-  web:
+  backend:
     build: .
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    env_file: .env
     environment:
-      DATABASE_URL: postgres://smb_user:smb_password@db:5432/smbtool
-      CORS_ORIGINS: http://localhost:5173,http://localhost:3000
-      API_KEYS: changeme123
-      ADMIN_KEY: test-admin-key
+      DATABASE_URL: ${DATABASE_URL:-postgresql://smb_user:smb_password@db:5432/smbtool}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
+      API_KEYS: ${API_KEYS:-changeme123}
+      ADMIN_KEY: ${ADMIN_KEY:-test-admin-key}
     ports:
       - '8000:8000'
     volumes:
       - ./:/app
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 40
 
-  # optional frontend service (serve built static files)
   frontend:
-    image: node:18-alpine
-    working_dir: /app
-    volumes:
-      - ./frontend:/app
-    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
     ports:
       - '5173:5173'
     environment:
-      - VITE_API_BASE=http://localhost:8000/api
+      VITE_API_BASE: ${VITE_API_BASE:-http://localhost:8000/api}
     depends_on:
-      - web
+      backend:
+        condition: service_healthy
+    volumes:
+      - ./frontend/src:/app/src:rw
+      - ./frontend/vite.config.js:/app/vite.config.js:ro
+      - ./frontend/index.html:/app/index.html:ro
 
 volumes:
   db_data:

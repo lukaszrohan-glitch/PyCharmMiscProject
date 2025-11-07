@@ -32,6 +32,12 @@ SQLITE_INIT_DONE = False
 SQLITE_DB_PATH = os.path.join(os.getcwd(), "_dev_db.sqlite")
 
 
+def reset_sqlite_init():
+    """Reset the sqlite init flag, used for testing."""
+    global SQLITE_INIT_DONE
+    SQLITE_INIT_DONE = False
+
+
 def _append_sslmode_to_url(dsn: str, sslmode: str) -> str:
     if not sslmode:
         return dsn
@@ -187,6 +193,51 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
     cur.execute("INSERT OR IGNORE INTO orders(order_id, order_date, customer_id, status, due_date) VALUES (?,?,?,?,?)", ('ORD-0001', None, 'CUST-ALFA', 'Planned', None))
     cur.execute("INSERT OR IGNORE INTO order_lines(order_id, line_no, product_id, qty, unit_price, discount_pct) VALUES (?,?,?,?,?,?)", ('ORD-0001', 1, 'P-100', 50, 30, 0.05))
     cur.execute("INSERT OR IGNORE INTO inventory(txn_id, txn_date, product_id, qty_change, reason) VALUES (?,?,?,?,?)", ('TXN-PO-1', None, 'P-101', 500, 'PO'))
+    conn.commit()
+
+    # Development views (simplified) so API queries don't fail under sqlite.
+    # v_order_finance: aggregate basic revenue & costs.
+    cur.executescript("""
+    CREATE VIEW IF NOT EXISTS v_order_finance AS
+    SELECT
+      o.order_id,
+      COALESCE(SUM(ol.qty * ol.unit_price * (1 - ol.discount_pct)), 0) AS revenue,
+      COALESCE(SUM(ol.qty * p.std_cost), 0) AS material_cost,
+      COALESCE((SELECT SUM(t.hours * e.hourly_rate) FROM timesheets t JOIN employees e ON t.emp_id = e.emp_id WHERE t.order_id = o.order_id), 0) AS labor_cost,
+      COALESCE(SUM(ol.qty * ol.unit_price * (1 - ol.discount_pct)), 0) - COALESCE(SUM(ol.qty * p.std_cost), 0) - COALESCE((SELECT SUM(t.hours * e.hourly_rate) FROM timesheets t JOIN employees e ON t.emp_id = e.emp_id WHERE t.order_id = o.order_id), 0) AS gross_margin
+    FROM orders o
+    LEFT JOIN order_lines ol ON o.order_id = ol.order_id
+    LEFT JOIN products p ON ol.product_id = p.product_id
+    GROUP BY o.order_id;
+    """)
+    cur.executescript("""
+    CREATE VIEW IF NOT EXISTS v_shortages AS
+    SELECT
+      ol.order_id,
+      ol.product_id AS component_id,
+      ol.qty AS required_qty,
+      COALESCE((SELECT SUM(i.qty_change) FROM inventory i WHERE i.product_id = ol.product_id), 0) AS qty_on_hand,
+      CASE WHEN COALESCE((SELECT SUM(i.qty_change) FROM inventory i WHERE i.product_id = ol.product_id), 0) < ol.qty
+           THEN ol.qty - COALESCE((SELECT SUM(i.qty_change) FROM inventory i WHERE i.product_id = ol.product_id), 0)
+           ELSE 0 END AS shortage_qty
+    FROM order_lines ol;
+    """)
+    cur.executescript("""
+    CREATE VIEW IF NOT EXISTS v_planned_time AS
+    SELECT
+      o.order_id,
+      COALESCE(SUM(ol.qty) * 0.1, 0) AS planned_hours
+    FROM orders o
+    LEFT JOIN order_lines ol ON o.order_id = ol.order_id
+    GROUP BY o.order_id;
+    """)
+    # Insert minimal seed data for development views
+    cur.execute("INSERT OR IGNORE INTO orders(order_id, order_date, customer_id, status, due_date) VALUES (?,?,?,?,?)", ('ORD-0002', None, 'CUST-ALFA', 'Planned', None))
+    cur.execute("INSERT OR IGNORE INTO order_lines(order_id, line_no, product_id, qty, unit_price, discount_pct) VALUES (?,?,?,?,?,?)", ('ORD-0002', 1, 'P-100', 20, 30, 0.05))
+    cur.execute("INSERT OR IGNORE INTO order_lines(order_id, line_no, product_id, qty, unit_price, discount_pct) VALUES (?,?,?,?,?,?)", ('ORD-0002', 2, 'P-101', 10, 5, 0))
+    cur.execute("INSERT OR IGNORE INTO timesheets(emp_id, ts_date, order_id, operation_no, hours) VALUES (?,?,?,?,?)", ('E-01', None, 'ORD-0002', 1, 2))
+    cur.execute("INSERT OR IGNORE INTO inventory(txn_id, txn_date, product_id, qty_change, reason) VALUES (?,?,?,?,?)", ('TXN-PO-2', None, 'P-100', 200, 'PO'))
+    cur.execute("INSERT OR IGNORE INTO inventory(txn_id, txn_date, product_id, qty_change, reason) VALUES (?,?,?,?,?)", ('TXN-PO-3', None, 'P-101', 50, 'PO'))
     conn.commit()
 
 

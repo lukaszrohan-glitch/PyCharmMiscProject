@@ -1,7 +1,9 @@
 import auth
+import db
+import os
 
 
-def test_create_and_verify_api_key():
+def test_create_and_verify_api_key(app_client):
     # Ensure tables exist (sqlite fallback will create schema)
     auth.ensure_table()
 
@@ -20,4 +22,3 @@ def test_create_and_verify_api_key():
     # delete may return None depending on DB path; if present check id
     if deleted:
         assert 'id' in deleted
-

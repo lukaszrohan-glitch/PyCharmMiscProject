@@ -119,3 +119,35 @@ INSERT INTO inventory(txn_id, txn_date, product_id, qty_change, reason) VALUES (
 INSERT INTO inventory(txn_id, txn_date, product_id, qty_change, reason) VALUES ('TXN-WO-RCPT-1', CURRENT_DATE, 'P-100', 50, 'WO') ON CONFLICT DO NOTHING;
 INSERT INTO timesheets(emp_id, ts_date, order_id, operation_no, hours, notes) VALUES ('E-01', CURRENT_DATE, 'ORD-0001', 10, 6.5, 'Seria 50 szt.') ON CONFLICT DO NOTHING;
 INSERT INTO api_keys (key_text, label, created_at, active) VALUES ('changeme123', 'default-dev-key', now(), true) ON CONFLICT DO NOTHING;
+
+-- --------------------------------------------------------------------
+-- Views required by API endpoints (finance, shortages, planned time)
+-- --------------------------------------------------------------------
+CREATE OR REPLACE VIEW v_order_finance AS
+SELECT o.order_id,
+       COALESCE(SUM(ol.qty*ol.unit_price*(1 - ol.discount_pct)),0) AS revenue,
+       COALESCE(SUM(ol.qty*p.std_cost),0) AS material_cost,
+       COALESCE((SELECT SUM(t.hours * e.hourly_rate) FROM timesheets t JOIN employees e ON t.emp_id = e.emp_id WHERE t.order_id = o.order_id),0) AS labor_cost,
+       COALESCE(SUM(ol.qty*ol.unit_price*(1 - ol.discount_pct)),0) - COALESCE(SUM(ol.qty*p.std_cost),0) - COALESCE((SELECT SUM(t.hours * e.hourly_rate) FROM timesheets t JOIN employees e ON t.emp_id = e.emp_id WHERE t.order_id = o.order_id),0) AS gross_margin
+FROM orders o
+LEFT JOIN order_lines ol ON o.order_id = ol.order_id
+LEFT JOIN products p ON ol.product_id = p.product_id
+GROUP BY o.order_id;
+
+CREATE OR REPLACE VIEW v_shortages AS
+SELECT
+  ol.order_id,
+  ol.product_id AS component_id,
+  ol.qty AS required_qty,
+  COALESCE((SELECT SUM(i.qty_change) FROM inventory i WHERE i.product_id = ol.product_id),0) AS qty_on_hand,
+  CASE WHEN COALESCE((SELECT SUM(i.qty_change) FROM inventory i WHERE i.product_id = ol.product_id),0) < ol.qty
+       THEN ol.qty - COALESCE((SELECT SUM(i.qty_change) FROM inventory i WHERE i.product_id = ol.product_id),0)
+       ELSE 0 END AS shortage_qty
+FROM order_lines ol;
+
+CREATE OR REPLACE VIEW v_planned_time AS
+SELECT o.order_id,
+       COALESCE(SUM(ol.qty) * 0.1, 0) AS planned_hours
+FROM orders o
+LEFT JOIN order_lines ol ON o.order_id = ol.order_id
+GROUP BY o.order_id;

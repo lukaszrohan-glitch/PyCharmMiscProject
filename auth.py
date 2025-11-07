@@ -188,10 +188,10 @@ def rotate_api_key(key_id: int, by: Optional[str] = None) -> Dict[str, Any]:
         pass
     # Create new key
     new_key_row = create_api_key(label=f'rotated-from-{key_id}')
-    # Log audit
+    # Log audit (use helper to ensure sqlite gets event_time)
     try:
         details = { 'rotated_from': key_id, 'new_id': new_key_row.get('id') if new_key_row else None }
-        execute(SQL_INSERT_AUDIT, (new_key_row.get('id') if new_key_row else None, 'rotated', by, json.dumps(details)))
+        log_api_key_event(new_key_row.get('id') if new_key_row else None, 'rotated', by, details)
     except Exception:
         pass
     return new_key_row
@@ -199,7 +199,16 @@ def rotate_api_key(key_id: int, by: Optional[str] = None) -> Dict[str, Any]:
 
 def log_api_key_event(api_key_id: Optional[int], event_type: str, event_by: Optional[str] = None, details: Optional[dict] = None):
     try:
-        execute(SQL_INSERT_AUDIT, (api_key_id, event_type, event_by, json.dumps(details) if details else None), returning=True)
+        import db as _db
+        payload = (api_key_id, event_type, event_by, json.dumps(details) if details else None)
+        pool = getattr(_db, '_get_pool')()
+        if pool is None:
+            # sqlite: include event_time using datetime('now')
+            sql = "INSERT INTO api_key_audit (api_key_id, event_type, event_by, event_time, details) VALUES (?, ?, ?, datetime('now'), ?)"
+            execute(sql, payload, returning=False)
+        else:
+            # Postgres path
+            execute(SQL_INSERT_AUDIT, payload, returning=True)
     except Exception:
         pass
 

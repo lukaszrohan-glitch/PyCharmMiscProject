@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
-import { getOrders, getFinance, createOrder, createTimesheet, createInventory, createOrderLine, setApiKey, setAdminKey, getProducts, getCustomers } from './services/api'
+import React, { useEffect, useState } from 'react'
+import { getOrders, getFinance, createOrder, createTimesheet, createInventory, createOrderLine, setApiKey, setAdminKey, getProducts, getCustomers, adminListKeys, adminCreateKey, adminDeleteKey, adminRotateKey } from './services/api'
 import AdminPage from './AdminPage'
 import OrderLinesEditor from './OrderLinesEditor'
 import Autocomplete from './components/Autocomplete'
 import { useToast } from './components/Toast'
+import { useI18n, translateStatus } from './i18n.jsx'
+import StatusBadge from './components/StatusBadge'
 
 function FormField({children}){
   return <div style={{marginBottom:8}}>{children}</div>
@@ -50,6 +52,7 @@ export default function App(){
   const [olQty, setOlQty] = useState('')
   const [olPrice, setOlPrice] = useState('')
   const toast = useToast()
+  const { t, lang, setLang } = useI18n()
 
   useEffect(()=>{ loadAll() },[])
 
@@ -66,12 +69,12 @@ export default function App(){
 
   async function applyApiKey(){
     setApiKey(apiKeyInput)
-    toast.show('API key set')
+    toast.show(t('api_key_set'))
   }
 
   async function applyAdminKey(){
     setAdminKey(adminKeyInput)
-    toast.show('Admin key set')
+    toast.show(t('admin_key_set'))
     await refreshApiKeys()
   }
 
@@ -127,10 +130,10 @@ export default function App(){
 
   async function submitOrder(e){
     e.preventDefault(); setMsg(null); setErr(null)
-    if(!newOrderId || !newCustomer){ setErr('Order ID and Customer are required'); return }
+    if(!newOrderId || !newCustomer){ setErr(t('api_key_and_customer_required')); return }
     try{
       await createOrder({ order_id:newOrderId, customer_id:newCustomer })
-      toast.show('Order created')
+      toast.show(t('order_created'))
       setNewOrderId(''); setNewCustomer('')
       await loadAll()
     }catch(e){ setErr(String(e)) }
@@ -138,10 +141,10 @@ export default function App(){
 
   async function submitTimesheet(e){
     e.preventDefault(); setMsg(null); setErr(null)
-    if(!tsEmp || !tsHours){ setErr('Employee and hours are required'); return }
+    if(!tsEmp || !tsHours){ setErr(t('employee_and_hours_required')); return }
     try{
       await createTimesheet({ emp_id: tsEmp, order_id: tsOrder || null, hours: Number(tsHours) })
-      toast.show('Timesheet logged')
+      toast.show(t('timesheet_logged'))
       setTsEmp(''); setTsOrder(''); setTsHours('')
       await loadOrders()
     }catch(e){ setErr(String(e)) }
@@ -149,10 +152,10 @@ export default function App(){
 
   async function submitInventory(e){
     e.preventDefault(); setMsg(null); setErr(null)
-    if(!invTxn || !invProd || !invQty){ setErr('Txn ID, Product and Qty required'); return }
+    if(!invTxn || !invProd || !invQty){ setErr(t('txn_product_qty_required')); return }
     try{
       await createInventory({ txn_id: invTxn, product_id: invProd, qty_change: Number(invQty), reason: invReason })
-      toast.show('Inventory txn created')
+      toast.show(t('inventory_created'))
       setInvTxn(''); setInvProd(''); setInvQty('')
       await loadAll()
     }catch(e){ setErr(String(e)) }
@@ -160,33 +163,43 @@ export default function App(){
 
   return (
     <div className="container">
-      <h1>SMB Tool</h1>
-
-      <div style={{display:'flex',gap:8,alignItems:'center',marginBottom:12}}>
-        <input placeholder="API key (for write ops)" value={apiKeyInput} onChange={e=>setApiKeyInput(e.target.value)} />
+      <div className="app-header">
+        <h1>{t('app_title')}</h1>
+        <input placeholder={t('write_api_key_placeholder')} value={apiKeyInput} onChange={e=>setApiKeyInput(e.target.value)} />
         <button onClick={applyApiKey}>Set API key</button>
-        <button onClick={()=>setShowAdmin(s=>!s)} style={{marginLeft:8}}>Toggle Admin</button>
+        <button onClick={()=>setShowAdmin(s=>!s)}>{t('toggle_admin')}</button>
+        <div className="lang-toggle">
+          <span>{t('language')}:</span>
+          <button onClick={()=>setLang('pl')} title="Polski" aria-label="Polski">🇵🇱</button>
+          <button onClick={()=>setLang('en')} title="English" aria-label="English">🇬🇧</button>
+        </div>
       </div>
+
       {showAdmin ? <AdminPage onClose={()=>setShowAdmin(false)} /> : null}
 
-      {loading && <div>Loading...</div>}
+      {loading && <div className="loading">{t('loading')}</div>}
       {msg && <div style={{color:'green'}}>{msg}</div>}
       {err && <div style={{color:'crimson'}}>{err}</div>}
       <div className="columns">
         <div className="col">
-          <h2>Orders</h2>
+          <h2>{t('orders')}</h2>
           <ul>
             {orders.map(o => (
               <li key={o.order_id}>
-                <button onClick={()=>loadFinance(o.order_id)}>{o.order_id} — {o.status}</button>
+                <button onClick={()=>loadFinance(o.order_id)}>
+                  <span style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px'}}>
+                    <span>{o.order_id}</span>
+                    <StatusBadge status={translateStatus(lang, o.status)} />
+                  </span>
+                </button>
               </li>
             ))}
           </ul>
 
-          <h3>Create Order</h3>
+          <h3>{t('create_order')}</h3>
           <form onSubmit={submitOrder} data-testid="create-order-form">
             <FormField>
-              <input placeholder="Order ID" value={newOrderId} onChange={e=>setNewOrderId(e.target.value)} data-testid="order-id-input" />
+              <input placeholder={t('order_id')} value={newOrderId} onChange={e=>setNewOrderId(e.target.value)} data-testid="order-id-input" />
             </FormField>
             <FormField>
               <Autocomplete
@@ -195,20 +208,20 @@ export default function App(){
                 inputValue={newCustomer}
                 onInputChange={setNewCustomer}
                 onSelect={c=> setNewCustomer(c.customer_id)}
-                placeholder="Customer (type to filter)"
+                placeholder={t('customer')}
                 testId="ac-customer"
               />
             </FormField>
-            <button type="submit" data-testid="order-submit" onClick={()=>{ if(!confirm('Create order?')) return }}>Create Order</button>
+            <button type="submit" data-testid="order-submit" onClick={(e)=>{ if(!confirm(t('create_order_confirm'))) { e.preventDefault(); } }}>{t('create_order')}</button>
           </form>
 
-          <h3>Add Order Line</h3>
+          <h3>{t('add_order_line')}</h3>
           <OrderLinesEditor products={products} orders={orders} toast={toast} onAdd={async (payload)=>{ try{ await createOrderLine(payload); await loadAll() }catch(e){ setErr(String(e)); toast.show('Order line failed','error') } }} />
 
-          <h3>Log Timesheet</h3>
+          <h3>{t('log_timesheet')}</h3>
           <form onSubmit={submitTimesheet} data-testid="timesheet-form">
             <FormField>
-              <input placeholder="Employee ID" value={tsEmp} onChange={e=>setTsEmp(e.target.value)} />
+              <input placeholder={t('employee_id')} value={tsEmp} onChange={e=>setTsEmp(e.target.value)} />
             </FormField>
             <FormField>
               <select value={tsOrder} onChange={e=>setTsOrder(e.target.value)}>
@@ -217,15 +230,15 @@ export default function App(){
               </select>
             </FormField>
             <FormField>
-              <input placeholder="Hours" value={tsHours} onChange={e=>setTsHours(e.target.value)} />
+              <input placeholder={t('hours')} value={tsHours} onChange={e=>setTsHours(e.target.value)} />
             </FormField>
-            <button type="submit">Add Timesheet</button>
+            <button type="submit">{t('add_timesheet')}</button>
           </form>
 
-          <h3>Inventory Txn</h3>
+          <h3>{t('inventory_txn')}</h3>
           <form onSubmit={submitInventory} data-testid="inventory-form">
             <FormField>
-              <input placeholder="Txn ID" value={invTxn} onChange={e=>setInvTxn(e.target.value)} />
+              <input placeholder={t('txn_id')} value={invTxn} onChange={e=>setInvTxn(e.target.value)} />
             </FormField>
             <FormField>
               <Autocomplete
@@ -234,12 +247,12 @@ export default function App(){
                 inputValue={invProd}
                 onInputChange={setInvProd}
                 onSelect={p=> setInvProd(p.product_id)}
-                placeholder="Inventory Product"
+                placeholder={t('inventory_product')}
                 testId="ac-inv-product"
               />
             </FormField>
             <FormField>
-              <input placeholder="Qty change (e.g. 100 or -50)" value={invQty} onChange={e=>setInvQty(e.target.value)} />
+              <input placeholder={t('qty_change')} value={invQty} onChange={e=>setInvQty(e.target.value)} />
             </FormField>
             <FormField>
               <select value={invReason} onChange={e=>setInvReason(e.target.value)}>
@@ -249,14 +262,14 @@ export default function App(){
                 <option>Adjust</option>
               </select>
             </FormField>
-            <button type="submit" onClick={()=>{ if(!confirm('Create inventory transaction?')) { event.preventDefault(); return; } }}>Create Txn</button>
+            <button type="submit" onClick={(e)=>{ if(!confirm(t('create_txn'))) { e.preventDefault(); } }}>{t('create_txn')}</button>
           </form>
 
         </div>
-        <div className="col">
+        <div className="col finance-panel">
           {selected && (
             <>
-              <h2>Finance: {selected}</h2>
+              <h2>{t('finance')}: {selected}</h2>
               <pre>{finance ? JSON.stringify(finance, null, 2) : '—'}</pre>
             </>
           )}
