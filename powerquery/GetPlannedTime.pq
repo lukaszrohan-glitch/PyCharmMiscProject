@@ -2,8 +2,8 @@
 let
     GetPlannedTime = (optional apiBase as nullable text, optional apiKey as nullable text, orderId as text) as table =>
         let
-            // default to local backend (port 8001) used by dev server
-            base = if apiBase = null or Text.Trim(apiBase) = "" then "http://localhost:8001" else apiBase,
+            // default to local backend (port 8000) used by dev server
+            base = if apiBase = null or Text.Trim(apiBase) = "" then "http://localhost:8000" else apiBase,
             url = Text.TrimEnd(base, "/") & "/api/planned-time/" & orderId,
             headers = if apiKey = null or Text.Trim(apiKey) = "" then [Accept = "application/json"] else [#"x-api-key" = apiKey, Accept = "application/json"],
             // fetch with a 60s timeout; on error return null
@@ -23,4 +23,3 @@ let
             resultTable
 in
     GetPlannedTime
-

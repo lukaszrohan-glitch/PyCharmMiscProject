@@ -23,7 +23,7 @@ python -m pip install -r requirements-dev.txt
 
 ```powershell
 # from project root
-python -m uvicorn main:app --reload --host 127.0.0.1 --port 8001
+python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 4) Run frontend (Terminal B)

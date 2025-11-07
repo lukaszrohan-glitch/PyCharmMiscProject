@@ -16,7 +16,6 @@ if (Test-Path ".venv\Scripts\python.exe") {
 
 Write-Host "Netstat (common ports)..."
 netstat -ano | findstr ":8000" > "$logsDir\netstat_8000.txt" 2>&1
-netstat -ano | findstr ":8001" > "$logsDir\netstat_8001.txt" 2>&1
 netstat -ano | findstr ":5173" > "$logsDir\netstat_5173.txt" 2>&1
 
 Write-Host "Capture docker-compose logs (if present)..."
@@ -26,4 +25,3 @@ if (Test-Path "docker-compose.yml") {
 }
 
 Write-Host "Done. Please check the 'logs' folder for collected artifacts."
-

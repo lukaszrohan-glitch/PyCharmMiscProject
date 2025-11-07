@@ -126,3 +126,35 @@ Note: Development SQLite fallback uses the minimal schema defined in `db._init_s
 ## Admin UI
 
 - The frontend includes a simple Admin section (in the app main page) to list/create/delete API keys. Protect it by setting `ADMIN_KEY` in your environment (backend) and `VITE_ADMIN_KEY` in the frontend `.env` if used.
+
+## Troubleshooting & terminal logs
+
+If you saw memory errors in GitHub Desktop or during git operations ("Not enough memory resources are available to process this command"), common fixes:
+
+- Free memory: close large apps (Chrome, IDEs), or reboot. Use Task Manager (Ctrl+Shift+Esc).
+- Run git maintenance to shrink the repo and reduce memory pressure:
+
+```powershell
+git gc --aggressive --prune=now
+```
+
+- Use the Git CLI (`git` and `gh`) instead of GitHub Desktop when the UI fails.
+- If you need to stop the development backend (uvicorn) started earlier, find and kill its process:
+
+PowerShell:
+
+```powershell
+# find uvicorn/python processes
+Get-Process python | Where-Object { $_.Path -like '*python*' } | Format-Table Id,ProcessName,WS
+# kill by PID
+Stop-Process -Id <PID>
+```
+
+CMD:
+
+```cmd
+tasklist /FI "IMAGENAME eq python.exe"
+taskkill /PID <PID> /F
+```
+
+- If `gh auth login` prompts you to complete authentication in the browser, complete that flow. Do not paste passwords into chat; use the browser or a personal access token.
