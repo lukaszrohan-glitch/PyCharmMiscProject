@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { getOrders, getFinance, createOrder, createTimesheet, createInventory, createOrderLine, setApiKey, setAdminKey, getProducts, getCustomers, adminListKeys, adminCreateKey, adminDeleteKey } from './services/api'
+import { getOrders, getFinance, createOrder, createTimesheet, createInventory, createOrderLine, setApiKey, setAdminKey, getProducts, getCustomers } from './services/api'
+import AdminPage from './AdminPage'
+import OrderLinesEditor from './OrderLinesEditor'
 
 function FormField({children}){
   return <div style={{marginBottom:8}}>{children}</div>
@@ -21,6 +23,7 @@ export default function App(){
   const [apiKeysList, setApiKeysList] = useState([])
   const [newKeyLabel, setNewKeyLabel] = useState('')
   const [lastCreatedKey, setLastCreatedKey] = useState(null)
+  const [showAdmin, setShowAdmin] = useState(false)
 
   // lookups
   const [products, setProducts] = useState([])
@@ -130,17 +133,6 @@ export default function App(){
     }catch(e){ setErr(String(e)) }
   }
 
-  async function submitOrderLine(e){
-    e.preventDefault(); setMsg(null); setErr(null)
-    if(!olOrderId || !olProduct || !olQty){ setErr('Order ID, product and qty required'); return }
-    try{
-      await createOrderLine({ order_id: olOrderId, line_no: 1, product_id: olProduct, qty: Number(olQty), unit_price: olPrice ? Number(olPrice) : 0 })
-      setMsg('Order line created')
-      setOlOrderId(''); setOlProduct(''); setOlQty(''); setOlPrice('')
-      await loadAll()
-    }catch(e){ setErr(String(e)) }
-  }
-
   async function submitTimesheet(e){
     e.preventDefault(); setMsg(null); setErr(null)
     if(!tsEmp || !tsHours){ setErr('Employee and hours are required'); return }
@@ -170,40 +162,9 @@ export default function App(){
       <div style={{display:'flex',gap:8,alignItems:'center',marginBottom:12}}>
         <input placeholder="API key (for write ops)" value={apiKeyInput} onChange={e=>setApiKeyInput(e.target.value)} />
         <button onClick={applyApiKey}>Set API key</button>
+        <button onClick={()=>setShowAdmin(s=>!s)} style={{marginLeft:8}}>Toggle Admin</button>
       </div>
-
-      <div style={{border:'1px solid #ddd',padding:8,borderRadius:6,marginBottom:12}}>
-        <h3>Admin</h3>
-        <div style={{display:'flex',gap:8,alignItems:'center'}}>
-          <input placeholder="Admin key" value={adminKeyInput} onChange={e=>setAdminKeyInput(e.target.value)} />
-          <button onClick={applyAdminKey}>Set Admin key</button>
-          <button onClick={refreshApiKeys}>Refresh keys</button>
-        </div>
-        <div style={{marginTop:8}}>
-          <form onSubmit={createNewApiKey}>
-            <input placeholder="New key label" value={newKeyLabel} onChange={e=>setNewKeyLabel(e.target.value)} />
-            <button type="submit">Create API Key</button>
-          </form>
-          {lastCreatedKey && (
-            <div style={{marginTop:8, padding:8, border:'1px dashed #666'}}>
-              <strong>New API Key (save it now, shown once):</strong>
-              <div style={{marginTop:6}}><code>{lastCreatedKey}</code></div>
-              <div style={{marginTop:6}}><button onClick={copyLastKey}>Copy</button></div>
-            </div>
-          )}
-          <div style={{marginTop:8}}>
-            <strong>Existing keys</strong>
-            <ul>
-              {apiKeysList.map(k=> (
-                <li key={k.id}>ID {k.id} — {k.label} — {k.active ? 'active' : 'inactive'}
-                  {k.key_text ? (<span> — legacy: ****{String(k.key_text).slice(-4)}</span>) : null}
-                  <button onClick={()=>deleteApiKey(k.id)} style={{marginLeft:8}}>Delete</button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </div>
+      {showAdmin ? <AdminPage onClose={()=>setShowAdmin(false)} /> : null}
 
       {loading && <div>Loading...</div>}
       {msg && <div style={{color:'green'}}>{msg}</div>}
@@ -234,27 +195,7 @@ export default function App(){
           </form>
 
           <h3>Add Order Line</h3>
-          <form onSubmit={submitOrderLine}>
-            <FormField>
-              <select value={olOrderId} onChange={e=>setOlOrderId(e.target.value)}>
-                <option value="">-- select order --</option>
-                {orders.map(o=> <option key={o.order_id} value={o.order_id}>{o.order_id}</option>)}
-              </select>
-            </FormField>
-            <FormField>
-              <select value={olProduct} onChange={e=>setOlProduct(e.target.value)}>
-                <option value="">-- select product --</option>
-                {products.map(p=> <option key={p.product_id} value={p.product_id}>{p.product_id} — {p.name}</option>)}
-              </select>
-            </FormField>
-            <FormField>
-              <input placeholder="Qty" value={olQty} onChange={e=>setOlQty(e.target.value)} />
-            </FormField>
-            <FormField>
-              <input placeholder="Unit price (optional)" value={olPrice} onChange={e=>setOlPrice(e.target.value)} />
-            </FormField>
-            <button type="submit">Add Line</button>
-          </form>
+          <OrderLinesEditor products={products} onAdd={async (payload)=>{ try{ await createOrderLine(payload); setMsg('Order line created'); await loadAll() }catch(e){ setErr(String(e)) } }} />
 
           <h3>Log Timesheet</h3>
           <form onSubmit={submitTimesheet}>
