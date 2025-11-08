@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { getOrders, getFinance, createOrder, createTimesheet, createInventory, createOrderLine, setApiKey, setAdminKey, getProducts, getCustomers, adminListKeys, adminCreateKey, adminDeleteKey, adminRotateKey } from './services/api'
+import { getOrders, getFinance, createOrder, createTimesheet, createInventory, createOrderLine, setApiKey, setAdminKey, getProducts, getCustomers, adminListKeys, adminCreateKey, adminDeleteKey, adminRotateKey, login as apiLogin, getProfile, adminListUsers } from './services/api'
 import AdminPage from './AdminPage'
 import OrderLinesEditor from './OrderLinesEditor'
 import Autocomplete from './components/Autocomplete'
@@ -8,6 +8,7 @@ import UserGuide from './components/UserGuide'
 import { useToast } from './components/Toast'
 import { useI18n, translateStatus } from './i18n.jsx'
 import StatusBadge from './components/StatusBadge'
+import Login from './components/Login'
 
 function FormField({children}){ return <div style={{marginBottom:8}}>{children}</div> }
 
@@ -37,6 +38,8 @@ export default function App(){
   const [invProd, setInvProd] = useState('')
   const [invQty, setInvQty] = useState('')
   const [invReason, setInvReason] = useState('PO')
+  const [auth, setAuth] = useState(()=>{ try{ return JSON.parse(localStorage.getItem('auth')) }catch{return null} })
+  const [profile, setProfile] = useState(null)
   const toast = useToast()
   const { t, lang, setLang } = useI18n()
 
@@ -64,10 +67,20 @@ export default function App(){
   async function submitTimesheet(e){ e.preventDefault(); if(!tsEmp || !tsHours){ setErr(t('employee_and_hours_required')); return } try{ await createTimesheet({ emp_id:tsEmp, order_id: tsOrder||null, hours:Number(tsHours) }); toast.show(t('timesheet_logged')); setTsEmp(''); setTsOrder(''); setTsHours(''); await loadOrders() }catch(e){ setErr(String(e)) } }
   async function submitInventory(e){ e.preventDefault(); if(!invTxn||!invProd||!invQty){ setErr(t('txn_product_qty_required')); return } try{ await createInventory({ txn_id:invTxn, product_id:invProd, qty_change:Number(invQty), reason:invReason }); toast.show(t('inventory_created')); setInvTxn(''); setInvProd(''); setInvQty(''); await loadAll() }catch(e){ setErr(String(e)) } }
 
+  async function onLogin(data){
+    setAuth(data)
+    try { localStorage.setItem('auth', JSON.stringify(data)) } catch {}
+    setCurrentView('main')
+  }
+
+  useEffect(()=>{ (async()=>{ if(auth){ try{ setProfile(await getProfile()) }catch{} } })() }, [auth])
+
   return (
     <>
       <Header lang={lang} setLang={setLang} currentView={currentView} setCurrentView={setCurrentView} />
-      <div className="container">
+      {!auth && <Login onLogin={onLogin} lang={lang} />}
+      {auth && (
+      <div className="container" id="main-content">
         {currentView === 'guide' ? (
           <UserGuide />
         ) : (
@@ -165,7 +178,7 @@ export default function App(){
             </div>
           </>
         )}
-      </div>
+      </div>) }
     </>
   )
 }

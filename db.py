@@ -184,6 +184,23 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
       event_time TEXT,
       details TEXT
     );
+    CREATE TABLE IF NOT EXISTS users (
+      user_id TEXT PRIMARY KEY,
+      email TEXT NOT NULL UNIQUE,
+      company_id TEXT,
+      password_hash TEXT NOT NULL,
+      is_admin BOOLEAN NOT NULL DEFAULT 0,
+      active BOOLEAN NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      subscription_plan TEXT DEFAULT 'free'
+    );
+    CREATE TABLE IF NOT EXISTS subscription_plans (
+      plan_id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      max_orders INTEGER,
+      max_users INTEGER,
+      features TEXT
+    );
     """)
     # Insert minimal seed data if missing
     cur.execute("INSERT OR IGNORE INTO customers(customer_id, name, nip, address, email) VALUES (?,?,?,?,?)", ('CUST-ALFA', 'Alfa Sp. z o.o.', '1234567890', 'Warszawa', 'biuro@alfa.pl'))

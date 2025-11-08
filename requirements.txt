@@ -1,8 +1,9 @@
 fastapi==0.115.0
 uvicorn[standard]==0.30.0
-psycopg2-binary==2.9.9
-# psycopg2-binary is optional; install manually if you use Postgres
+# Postgres driver is optional; use requirements-postgres.txt if needed
 python-dotenv==1.0.1
 pytest==7.4.0
 alembic==1.11.1
 sqlalchemy==2.0.22
+passlib[bcrypt]==1.7.4
+python-jose==3.3.0

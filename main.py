@@ -16,6 +16,7 @@ from queries import (
 )
 import auth
 from auth import log_api_key_event, mark_last_used
+from user_mgmt import ensure_user_tables, login_user, create_user, list_users, change_password, create_plan, list_plans, get_current_user, require_admin
 
 app = FastAPI(title="SMB Tool API", version="1.0")
 
@@ -100,6 +101,12 @@ try:
     auth.ensure_table()
 except Exception:
     # ignore if DB not ready; will be created during DB init
+    pass
+
+# Ensure user tables
+try:
+    ensure_user_tables()
+except Exception:
     pass
 
 
@@ -236,7 +243,61 @@ def create_inventory_txn(payload: InventoryCreate, _ok: bool = Depends(check_api
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@app.get("/admin/api-keys")
+@app.post('/auth/login')
+def auth_login(payload: "UserLogin"):
+    from schemas import UserLogin
+    if not isinstance(payload, UserLogin):
+        payload = UserLogin(**payload.model_dump())
+    return login_user(payload.email, payload.password)
+
+
+@app.get('/user/profile')
+def user_profile(user=Depends(get_current_user)):
+    return {k: user[k] for k in ['user_id','email','company_id','is_admin','subscription_plan']}
+
+
+@app.post('/auth/change-password')
+def auth_change_password(payload: "PasswordChange", user=Depends(get_current_user)):
+    from schemas import PasswordChange
+    if not isinstance(payload, PasswordChange):
+        payload = PasswordChange(**payload.model_dump())
+    return change_password(user['user_id'], payload.old_password, payload.new_password)
+
+
+@app.post('/admin/users')
+def admin_create_user(payload: "UserCreateAdmin", _admin=Depends(require_admin)):
+    from schemas import UserCreateAdmin
+    if not isinstance(payload, UserCreateAdmin):
+        payload = UserCreateAdmin(**payload.model_dump())
+    try:
+        row = create_user(payload.email, payload.company_id, payload.is_admin, payload.subscription_plan)
+        return row
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.get('/admin/users')
+def admin_list_users(_admin=Depends(require_admin)):
+    return list_users()
+
+
+@app.post('/admin/subscription-plans')
+def admin_create_plan(payload: "SubscriptionPlanCreate", _admin=Depends(require_admin)):
+    from schemas import SubscriptionPlanCreate
+    if not isinstance(payload, SubscriptionPlanCreate):
+        payload = SubscriptionPlanCreate(**payload.model_dump())
+    row = create_plan(payload.plan_id, payload.name, payload.max_orders, payload.max_users, payload.features)
+    if not row:
+        raise HTTPException(status_code=500, detail='Failed to create plan')
+    return row
+
+
+@app.get('/admin/subscription-plans')
+def admin_list_plans(_admin=Depends(require_admin)):
+    return list_plans()
+
+
+@app.get('/admin/api-keys')
 def admin_list_keys(_ok: bool = Depends(check_admin_key)):
     try:
         return auth.list_api_keys()
@@ -244,7 +305,7 @@ def admin_list_keys(_ok: bool = Depends(check_admin_key)):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@app.post("/admin/api-keys")
+@app.post('/admin/api-keys')
 def admin_create_key(payload: Dict[str, str], _ok: bool = Depends(check_admin_key)):
     # payload: {"label": "dev key"}
     label = payload.get("label") if isinstance(payload, dict) else None
@@ -255,7 +316,7 @@ def admin_create_key(payload: Dict[str, str], _ok: bool = Depends(check_admin_ke
     return row
 
 
-@app.delete("/admin/api-keys/{key_id}")
+@app.delete('/admin/api-keys/{key_id}')
 def admin_delete_key(key_id: int, _ok: bool = Depends(check_admin_key)):
     row = auth.delete_api_key_by_id(key_id)
     if not row:
@@ -264,7 +325,7 @@ def admin_delete_key(key_id: int, _ok: bool = Depends(check_admin_key)):
 
 
 # Admin endpoints for rotation and audit
-@app.post("/admin/api-keys/{key_id}/rotate")
+@app.post('/admin/api-keys/{key_id}/rotate')
 def admin_rotate_key(key_id: int, _ok: bool = Depends(check_admin_key)):
     try:
         new = auth.rotate_api_key(key_id, by='admin')

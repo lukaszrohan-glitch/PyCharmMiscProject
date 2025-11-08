@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, condecimal, field_validator, ConfigDict
-from typing import Optional
+from typing import Optional, List
 from datetime import date
 from decimal import Decimal
 from enum import Enum
@@ -88,3 +88,46 @@ class InventoryCreate(BaseModel):
     reason: InventoryReason
     lot: Optional[str] = None
     location: Optional[str] = None
+
+
+class UserPublic(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    user_id: str
+    email: str
+    company_id: Optional[str] = None
+    is_admin: bool = False
+    active: bool = True
+    subscription_plan: Optional[str] = None
+
+
+class UserCreateAdmin(BaseModel):
+    email: str = Field(..., min_length=5)
+    company_id: Optional[str] = None
+    is_admin: bool = False
+    subscription_plan: Optional[str] = 'free'
+
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+
+class PasswordChange(BaseModel):
+    old_password: str
+    new_password: str = Field(..., min_length=8)
+
+
+class SubscriptionPlanCreate(BaseModel):
+    plan_id: str
+    name: str
+    max_orders: Optional[int] = None
+    max_users: Optional[int] = None
+    features: Optional[List[str]] = None
+
+
+class SubscriptionPlan(BaseModel):
+    plan_id: str
+    name: str
+    max_orders: Optional[int] = None
+    max_users: Optional[int] = None
+    features: Optional[List[str]] = None

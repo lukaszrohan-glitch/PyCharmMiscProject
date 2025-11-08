@@ -655,3 +655,66 @@ ul li button:hover::before {
 .badge { min-width:22px; height:22px; border-radius:999px; background:#ef4444; color:#fff; display:grid; place-items:center; font-size:.7rem; padding:0 .3rem; }
 @media (max-width: 900px) { .brand-sub { display:none; } .cp-actions { display:none; } }
 
+/* Login Card Styles */
+.login-card {
+  max-width: 360px;
+  margin: 40px auto;
+  background: #fff;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.login-card h2 {
+  margin: 0 0 8px;
+}
+
+.login-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.login-card input {
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.login-card .error {
+  background: #fecaca;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: .85rem;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #111827;
+    color: #f1f5f9;
+  }
+
+  .login-card {
+    background: #1f2937;
+    color: #f1f5f9;
+  }
+
+  .login-card input {
+    background: #111827;
+    color: #f1f5f9;
+    border-color: #374151;
+  }
+
+  .login-card button {
+    background: #2563eb;
+  }
+
+  .col {
+    background: #1f2937;
+  }
+}

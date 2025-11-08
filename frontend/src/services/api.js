@@ -34,6 +34,7 @@ console.log('API Base URL:', API_BASE)
 
 let API_KEY = import.meta.env.VITE_API_KEY || null
 let ADMIN_KEY = import.meta.env.VITE_ADMIN_KEY || null
+let TOKEN = null
 
 export function setApiKey(key){
   API_KEY = key
@@ -41,6 +42,7 @@ export function setApiKey(key){
 export function setAdminKey(key){
   ADMIN_KEY = key
 }
+export function setToken(t){ TOKEN = t }
 
 async function req(path){
   const res = await fetch(`${API_BASE}${path}`)
@@ -51,6 +53,14 @@ async function req(path){
 async function reqAdmin(path){
   const headers = {}
   if(ADMIN_KEY) headers['x-admin-key'] = ADMIN_KEY
+  const res = await fetch(`${API_BASE}${path}`, { headers })
+  if(!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+  return res.json()
+}
+
+async function reqAuth(path){
+  const headers = {}
+  if(TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN
   const res = await fetch(`${API_BASE}${path}`, { headers })
   if(!res.ok) throw new Error(`${res.status} ${res.statusText}`)
   return res.json()
@@ -90,6 +100,15 @@ async function postAdmin(path, body){
   try{ return JSON.parse(txt) }catch{ return txt }
 }
 
+async function postAuth(path, body){
+  const headers = { 'Content-Type': 'application/json' }
+  if(TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN
+  const res = await fetch(`${API_BASE}${path}`, { method:'POST', headers, body: JSON.stringify(body) })
+  const txt = await res.text()
+  if(!res.ok) throw new Error(txt)
+  try{return JSON.parse(txt)}catch{return txt}
+}
+
 async function delAdmin(path){
   const headers = {}
   if(ADMIN_KEY) headers['x-admin-key'] = ADMIN_KEY
@@ -103,6 +122,15 @@ async function delAdmin(path){
   try{ return JSON.parse(txt) }catch{ return txt }
 }
 
+export async function login(email, password){
+  return postAuth('/auth/login', { email, password })
+}
+export const getProfile = () => reqAuth('/user/profile')
+export const changePassword = (old_password, new_password) => postAuth('/auth/change-password', { old_password, new_password })
+export const adminCreateUser = (payload) => postAuth('/admin/users', payload)
+export const adminListUsers = () => reqAuth('/admin/users')
+export const adminCreatePlan = (payload) => postAuth('/admin/subscription-plans', payload)
+export const adminListPlans = () => reqAuth('/admin/subscription-plans')
 export const getOrders = ()=> req('/orders')
 export const getFinance = (orderId)=> req(`/finance/${encodeURIComponent(orderId)}`)
 export const getShortages = ()=> req('/shortages')
