@@ -123,7 +123,19 @@ async function delAdmin(path){
 }
 
 export async function login(email, password){
-  return postAuth('/auth/login', { email, password })
+  const headers = { 'Content-Type': 'application/json' }
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ email, password })
+  })
+  const txt = await res.text()
+  if(!res.ok){
+    let msg = txt
+    try{ msg = JSON.parse(txt) }catch{}
+    throw new Error((msg && msg.detail) ? msg.detail : `${res.status} ${res.statusText} - ${txt}`)
+  }
+  try{ return JSON.parse(txt) }catch{ return txt }
 }
 export const getProfile = () => reqAuth('/user/profile')
 export const changePassword = (old_password, new_password) => postAuth('/auth/change-password', { old_password, new_password })
