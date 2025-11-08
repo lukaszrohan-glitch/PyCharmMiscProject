@@ -8,5 +8,11 @@ export default defineConfig({
     port: 5173,
     strictPort: false,
     cors: true,
+    allowedHosts: [
+      'localhost',
+      'arkuszowniasmb.pl',
+      'www.arkuszowniasmb.pl',
+      '.arkuszowniasmb.pl'
+    ],
   },
 })
