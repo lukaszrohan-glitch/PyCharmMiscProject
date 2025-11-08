@@ -27,8 +27,9 @@ Twoja strona jest teraz **LIVE** i dostępna publicznie!
 - ✅ **Database** - Działa (healthy)
 
 ### Cloudflare Tunnel:
-- ✅ **Połączony** - 2 aktywne połączenia
-- ✅ **Tunel ID:** 9320212e-f379-4261-8777-f9623823beee
+- ✅ **Połączony** - Aktywne połączenia
+- ✅ **Tunel:** arkuszownia-prod
+- ✅ **Tunel ID:** c4d13e7c-07a4-49be-b7c9-938de3a75ec8
 - ✅ **Edge Locations:** Prague (PRG), Warsaw (WAW)
 
 ### DNS:

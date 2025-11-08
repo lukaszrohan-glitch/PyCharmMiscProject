@@ -30,7 +30,7 @@ export default function Header({ lang, setLang }) {
               onClick={() => setLang('en')}
               title="English"
             >
-              🇬🇧
+              EN
             </button>
           </div>
         </div>

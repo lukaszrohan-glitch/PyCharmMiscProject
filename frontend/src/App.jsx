@@ -4,6 +4,7 @@ import AdminPage from './AdminPage'
 import OrderLinesEditor from './OrderLinesEditor'
 import Autocomplete from './components/Autocomplete'
 import Header from './components/Header'
+import UserGuide from './components/UserGuide'
 import { useToast } from './components/Toast'
 import { useI18n, translateStatus } from './i18n.jsx'
 import StatusBadge from './components/StatusBadge'
@@ -13,6 +14,7 @@ function FormField({children}){
 }
 
 export default function App(){
+  const [currentView, setCurrentView] = useState('main') // 'main' or 'guide'
   const [orders, setOrders] = useState([])
   const [selected, setSelected] = useState(null)
   const [finance, setFinance] = useState(null)
@@ -168,6 +170,45 @@ export default function App(){
       <Header lang={lang} setLang={setLang} />
 
       <div className="container">
+        {/* Navigation Tabs */}
+        <div className="nav-tabs" style={{marginBottom: '24px', display: 'flex', gap: '12px', borderBottom: '2px solid #e2e8f0', paddingBottom: '12px'}}>
+          <button
+            onClick={() => setCurrentView('main')}
+            style={{
+              background: currentView === 'main' ? '#2c5282' : '#f7fafc',
+              color: currentView === 'main' ? 'white' : '#2c5282',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '8px 8px 0 0',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            {t('main_app') || (lang === 'pl' ? '🏠 Aplikacja' : '🏠 Main App')}
+          </button>
+          <button
+            onClick={() => setCurrentView('guide')}
+            style={{
+              background: currentView === 'guide' ? '#2c5282' : '#f7fafc',
+              color: currentView === 'guide' ? 'white' : '#2c5282',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '8px 8px 0 0',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            {t('user_guide') || (lang === 'pl' ? '📖 Przewodnik' : '📖 User Guide')}
+          </button>
+        </div>
+
+        {/* Conditional Content */}
+        {currentView === 'guide' ? (
+          <UserGuide />
+        ) : (
+          <>
         <div className="api-key-section">
           {showApiKeyInput && (
             <div style={{display:'flex', gap:'8px', alignItems:'center', marginBottom:'16px'}}>
@@ -286,7 +327,9 @@ export default function App(){
             </>
           )}
         </div>
-      </div>
+        </div>
+        </>
+        )}
       </div>
     </>
   )
