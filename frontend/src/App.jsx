@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react'
-import { getOrders, getFinance, createOrder, createTimesheet, createInventory, createOrderLine, setApiKey, setAdminKey, getProducts, getCustomers, adminListKeys, adminCreateKey, adminDeleteKey, adminRotateKey, login as apiLogin, getProfile, adminListUsers } from './services/api'
+import { getOrders, getFinance, createOrder, createTimesheet, createInventory, createOrderLine, setApiKey, setAdminKey, getProducts, getCustomers, adminListKeys, adminCreateKey, adminDeleteKey, adminRotateKey, login as apiLogin, getProfile, adminListUsers, setToken } from './services/api'
 import AdminPage from './AdminPage'
 import OrderLinesEditor from './OrderLinesEditor'
 import Autocomplete from './components/Autocomplete'
 import Header from './components/Header'
 import UserGuide from './components/UserGuide'
+import Settings from './components/Settings'
+import FinancePanel from './components/FinancePanel'
 import { useToast } from './components/Toast'
 import { useI18n, translateStatus } from './i18n.jsx'
 import StatusBadge from './components/StatusBadge'
@@ -27,6 +29,7 @@ export default function App(){
   const [newKeyLabel, setNewKeyLabel] = useState('')
   const [lastCreatedKey, setLastCreatedKey] = useState(null)
   const [showAdmin, setShowAdmin] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const [products, setProducts] = useState([])
   const [customers, setCustomers] = useState([])
   const [newOrderId, setNewOrderId] = useState('')
@@ -62,22 +65,51 @@ export default function App(){
   function copyLastKey(){ if(!lastCreatedKey) return; navigator.clipboard.writeText(lastCreatedKey); setMsg('Copied API key') }
   async function deleteApiKey(key){ try{ await adminDeleteKey(key); setMsg('Deleted API key'); await refreshApiKeys() }catch(e){ setErr(String(e)) } }
 
-  async function loadFinance(id){ setSelected(id); setFinance(null); try{ setFinance(await getFinance(id)) }catch(e){ setErr(String(e)) } }
+  async function loadFinance(id){
+    setSelected(id);
+    setFinance(null);
+    try{
+      setFinance(await getFinance(id))
+    }catch(e){
+      setErr(String(e))
+    }
+  }
+
   async function submitOrder(e){ e.preventDefault(); if(!newOrderId || !newCustomer){ setErr(t('api_key_and_customer_required')); return } try{ await createOrder({ order_id:newOrderId, customer_id:newCustomer }); toast.show(t('order_created')); setNewOrderId(''); setNewCustomer(''); await loadAll() }catch(e){ setErr(String(e)) } }
-  async function submitTimesheet(e){ e.preventDefault(); if(!tsEmp || !tsHours){ setErr(t('employee_and_hours_required')); return } try{ await createTimesheet({ emp_id:tsEmp, order_id: tsOrder||null, hours:Number(tsHours) }); toast.show(t('timesheet_logged')); setTsEmp(''); setTsOrder(''); setTsHours(''); await loadOrders() }catch(e){ setErr(String(e)) } }
+  async function submitTimesheet(e){ e.preventDefault(); if(!tsEmp || !tsHours){ setErr(t('employee_and_hours_required')); return } try{ await createTimesheet({ emp_id:tsEmp, order_id: tsOrder||null, hours:Number(tsHours) }); toast.show(t('timesheet_logged')); setTsEmp(''); setTsOrder(''); setTsHours(''); await loadAll() }catch(e){ setErr(String(e)) } }
   async function submitInventory(e){ e.preventDefault(); if(!invTxn||!invProd||!invQty){ setErr(t('txn_product_qty_required')); return } try{ await createInventory({ txn_id:invTxn, product_id:invProd, qty_change:Number(invQty), reason:invReason }); toast.show(t('inventory_created')); setInvTxn(''); setInvProd(''); setInvQty(''); await loadAll() }catch(e){ setErr(String(e)) } }
 
   async function onLogin(data){
     setAuth(data)
+    setToken(data.token)
     try { localStorage.setItem('auth', JSON.stringify(data)) } catch {}
     setCurrentView('main')
+  }
+
+  function handleLogout(){
+    if(confirm(lang === 'pl' ? 'Czy na pewno chcesz się wylogować?' : 'Are you sure you want to logout?')){
+      setAuth(null)
+      setProfile(null)
+      setToken(null)
+      try { localStorage.removeItem('auth') } catch {}
+      toast.show(lang === 'pl' ? 'Wylogowano' : 'Logged out')
+    }
   }
 
   useEffect(()=>{ (async()=>{ if(auth){ try{ setProfile(await getProfile()) }catch{} } })() }, [auth])
 
   return (
     <>
-      <Header lang={lang} setLang={setLang} currentView={currentView} setCurrentView={setCurrentView} />
+      <Header
+        lang={lang}
+        setLang={setLang}
+        currentView={currentView}
+        setCurrentView={setCurrentView}
+        profile={profile}
+        onSettings={() => setShowSettings(true)}
+        onLogout={handleLogout}
+        orders={orders}
+      />
       {!auth && <Login onLogin={onLogin} lang={lang} />}
       {auth && (
       <div className="container" id="main-content">
@@ -97,10 +129,12 @@ export default function App(){
                 {!showApiKeyInput && (
                   <button onClick={()=>setShowApiKeyInput(true)} style={{background:'#6c757d', fontSize:'0.9em'}}>🔑 {t('api_key_optional')}</button>
                 )}
-                <button onClick={()=>setShowAdmin(s=>!s)}>{t('toggle_admin')}</button>
+                {profile?.is_admin && (
+                  <button onClick={()=>setShowAdmin(s=>!s)}>{t('toggle_admin')}</button>
+                )}
               </div>
             </div>
-            {showAdmin && <AdminPage onClose={()=>setShowAdmin(false)} />}
+            {showAdmin && profile?.is_admin && <AdminPage onClose={()=>setShowAdmin(false)} />}
             {loading && <div className="loading">{t('loading')}</div>}
             {msg && <div style={{color:'green'}}>{msg}</div>}
             {err && <div style={{color:'crimson'}}>{err}</div>}
@@ -110,7 +144,7 @@ export default function App(){
                 <ul>
                   {orders.map(o => (
                     <li key={o.order_id}>
-                      <button onClick={()=>loadFinance(o.order_id)}>
+                      <button onClick={()=>loadFinance(o.order_id)} data-order-id={o.order_id}>
                         <span style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px'}}>
                           <span>{o.order_id}</span>
                           <StatusBadge status={translateStatus(lang, o.status)} />
@@ -173,12 +207,13 @@ export default function App(){
                 </form>
               </div>
               <div className="col finance-panel">
-                {selected && (<><h2>{t('finance')}: {selected}</h2><pre>{finance ? JSON.stringify(finance, null, 2) : '—'}</pre></>)}
+                <FinancePanel orderId={selected} finance={finance} lang={lang} />
               </div>
             </div>
           </>
         )}
       </div>) }
+      {showSettings && <Settings profile={profile} onClose={() => setShowSettings(false)} lang={lang} />}
     </>
   )
 }
