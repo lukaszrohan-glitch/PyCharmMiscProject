@@ -1,6 +1,17 @@
-import React from 'react'
+import React, { useState } from 'react'
 
-export default function Header({ lang, setLang }) {
+export default function Header({ lang, setLang, currentView, setCurrentView }) {
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  const labels = lang === 'pl'
+    ? { app: 'Aplikacja SMB', guide: 'Poradnik Użytkownika', menu: 'Menu' }
+    : { app: 'SMB Application', guide: 'User Guide', menu: 'Menu' }
+
+  const handleSelect = (view) => {
+    setCurrentView(view)
+    setMenuOpen(false)
+  }
+
   return (
     <header className="app-header">
       <div className="header-content">
@@ -17,13 +28,39 @@ export default function Header({ lang, setLang }) {
         </div>
 
         <div className="header-actions">
+          {/* Simple dropdown menu */}
+          <div className="menu-wrapper">
+            <button className="menu-btn" onClick={() => setMenuOpen(o => !o)} aria-haspopup="true" aria-expanded={menuOpen}>
+              ☰ {labels.menu}
+            </button>
+            {menuOpen && (
+              <div className="menu-dropdown" role="menu">
+                <button
+                  role="menuitem"
+                  className={`menu-item ${currentView === 'main' ? 'active' : ''}`}
+                  onClick={() => handleSelect('main')}
+                >
+                  {labels.app}
+                </button>
+                <button
+                  role="menuitem"
+                  className={`menu-item ${currentView === 'guide' ? 'active' : ''}`}
+                  onClick={() => handleSelect('guide')}
+                >
+                  {labels.guide}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Language switcher - text PL/EN same size */}
           <div className="lang-switcher">
             <button
               className={`lang-btn ${lang === 'pl' ? 'active' : ''}`}
               onClick={() => setLang('pl')}
               title="Polski"
             >
-              🇵🇱
+              PL
             </button>
             <button
               className={`lang-btn ${lang === 'en' ? 'active' : ''}`}
@@ -38,4 +75,3 @@ export default function Header({ lang, setLang }) {
     </header>
   )
 }
-
