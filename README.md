@@ -1,84 +1,49 @@
-# Welcome to ArkuszowniaSMB
+Arkuszownia SMB — local dev & quick start (PowerShell-friendly)
 
-## Quick Start
+Prereqs:
+- Docker & Docker Compose
+- Node (for local frontend building) or use the included Docker build
 
-1. Double-click `start-app.cmd` to start the application
-2. Wait for all services to initialize (about 30 seconds)
-3. Open your browser to:
-   - Local access: http://localhost
-   - Network access: https://arkuszowniasmb.pl
+PowerShell commands (run in project root):
 
-## Default Admin Account
+# 1) Build backend image (installs python deps and psycopg2)
+# Use separate commands in PowerShell; do not chain with &&
+docker-compose build backend
 
-- Email: ciopqj@gmail.com
-- Password: SMB#Admin2025!
+# 2) Start full stack
+docker-compose up -d
 
-## Features
+# 3) Tail logs (backend / nginx)
+docker-compose logs -f backend nginx
 
-- Create and manage orders
-- Track inventory
-- Log employee time
-- Generate financial reports
-- Dark/Light theme support
-- Full Polish/English language support
+# 4) Rebuild frontend (if you change UI) using Docker
+cd frontend
+# build will produce ./frontend/dist which nginx serves
+docker build -t arkuszowniasmb-frontend:local .
+# then restart nginx service in compose so it picks up ./frontend/dist
+cd ..
+# Use helper to restart nginx safely from PowerShell
+.
+# from project root run:
+# powershell -File ./scripts/ps_docker_restart_nginx.ps1
 
-## Components
+# Quick checks
+# From PowerShell (use separate commands - do not use shell operators like && or || inline):
+# Example: run each command separately
+docker-compose exec nginx sh -c "curl -sS -i -H 'Host: arkuszowniasmb.pl' http://127.0.0.1/api/healthz"
 
-The application consists of several services:
+# If you prefer WSL/Git Bash for convenience (recommended):
+# bash -lc "bash ./scripts/check_endpoints.sh"
 
-- Frontend (React)
-- Backend API (FastAPI)
-- Database (PostgreSQL)
-- Reverse Proxy (Nginx)
-- Tunnel (Cloudflare)
+PowerShell helper scripts (recommended)
+- `scripts/ps_commit.ps1` - stage files and commit using PowerShell (avoid chaining)
+  Usage example:
+  powershell -File ./scripts/ps_commit.ps1 -Files @("nginx.conf","README.md") -Message "nginx: changes"
 
-## Security
+- `scripts/ps_docker_restart_nginx.ps1` - restart nginx via docker-compose
+  Usage:
+  powershell -File ./scripts/ps_docker_restart_nginx.ps1
 
-- All traffic is encrypted (HTTPS)
-- Password requirements enforced
-- API key rotation supported
-- Rate limiting enabled
-- Audit logging active
-
-## Network Access
-
-The application is accessible via:
-
-1. Local network:
-   - http://localhost (development)
-   - https://arkuszowniasmb.pl (production)
-
-2. External access:
-   - https://arkuszowniasmb.pl
-   - https://www.arkuszowniasmb.pl
-
-## Troubleshooting
-
-If you experience issues:
-
-1. Check Docker status:
-   ```
-   docker-compose ps
-   ```
-
-2. View logs:
-   ```
-   docker-compose logs
-   ```
-
-3. Restart services:
-   ```
-   docker-compose restart
-   ```
-
-4. Full reset:
-   ```
-   docker-compose down
-   docker-compose up -d
-   ```
-
-## Support
-
-For technical support:
-- Email: admin@arkuszowniasmb.pl
-- Documentation: https://arkuszowniasmb.pl/docs
+Notes:
+- The nginx in compose is configured to serve files from `./frontend/dist`.
+- For production, build the frontend (`npm ci && npm run build`) and make sure `dist` is present before starting the stack.
