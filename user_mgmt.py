@@ -4,14 +4,17 @@ from typing import Optional, List, Dict
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException, Depends, Header
-from jose import jwt
+from jose import jwt, JWTError
 from passlib.hash import pbkdf2_sha256 as hasher
 
 from db import fetch_one, fetch_all, execute
 
-JWT_SECRET = os.getenv('JWT_SECRET', 'dev-insecure-secret-change-me')
+# Use a strong secret key in production
+JWT_SECRET = os.getenv('JWT_SECRET', secrets.token_urlsafe(32))
 JWT_ALG = 'HS256'
 JWT_EXP_MINUTES = int(os.getenv('JWT_EXP_MINUTES', '120'))
+MAX_LOGIN_ATTEMPTS = 5
+LOGIN_LOCKOUT_MINUTES = 15
 
 # --- Table creation (Postgres path) ---
 SQL_CREATE_USERS = """
@@ -23,7 +26,10 @@ CREATE TABLE IF NOT EXISTS users (
   is_admin BOOLEAN NOT NULL DEFAULT false,
   active BOOLEAN NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT now(),
-  subscription_plan TEXT DEFAULT 'free'
+  subscription_plan TEXT DEFAULT 'free',
+  failed_login_attempts INTEGER DEFAULT 0,
+  last_failed_login timestamptz,
+  password_changed_at timestamptz DEFAULT now()
 );
 """
 
@@ -64,25 +70,64 @@ def ensure_user_tables():
 
 # --- Auth helpers ---
 
-def _make_token(user: Dict) -> str:
+def _make_token(user: Dict) -> Dict[str, str]:
+    # Access token
     exp = datetime.utcnow() + timedelta(minutes=JWT_EXP_MINUTES)
-    payload = {
+    access_payload = {
         'sub': user['user_id'],
         'email': user['email'],
         'is_admin': user['is_admin'],
-        'exp': exp
+        'exp': exp,
+        'type': 'access'
     }
-    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALG)
+
+    # Refresh token
+    refresh_exp = datetime.utcnow() + timedelta(days=JWT_REFRESH_DAYS)
+    refresh_payload = {
+        'sub': user['user_id'],
+        'exp': refresh_exp,
+        'type': 'refresh'
+    }
+
+    return {
+        'access_token': jwt.encode(access_payload, JWT_SECRET, algorithm=JWT_ALG),
+        'refresh_token': jwt.encode(refresh_payload, JWT_SECRET, algorithm=JWT_ALG),
+        'expires_in': JWT_EXP_MINUTES * 60
+    }
 
 
 def login_user(email: str, password: str) -> Dict:
     user = fetch_one(SQL_GET_USER_BY_EMAIL, (email,))
     if not user or not user.get('active'):
         raise HTTPException(status_code=401, detail='Invalid credentials')
+
+    # Check for lockout
+    if user.get('failed_login_attempts', 0) >= MAX_LOGIN_ATTEMPTS:
+        last_failed = user.get('last_failed_login')
+        if last_failed:
+            lockout_time = datetime.fromisoformat(str(last_failed))
+            if datetime.utcnow() - lockout_time < timedelta(minutes=LOGIN_LOCKOUT_MINUTES):
+                raise HTTPException(status_code=429, detail='Account temporarily locked')
+
     if not hasher.verify(password, user['password_hash']):
+        # Update failed attempts
+        execute(
+            "UPDATE users SET failed_login_attempts = COALESCE(failed_login_attempts, 0) + 1, last_failed_login = now() WHERE user_id = %s",
+            (user['user_id'],)
+        )
         raise HTTPException(status_code=401, detail='Invalid credentials')
-    token = _make_token(user)
-    return {'token': token, 'user': {k: user[k] for k in ['user_id','email','company_id','is_admin','subscription_plan']}}
+
+    # Reset failed attempts on successful login
+    execute(
+        "UPDATE users SET failed_login_attempts = 0, last_failed_login = NULL WHERE user_id = %s",
+        (user['user_id'],)
+    )
+
+    tokens = _make_token(user)
+    return {
+        'tokens': tokens,
+        'user': {k: user[k] for k in ['user_id','email','company_id','is_admin','subscription_plan']}
+    }
 
 
 def decode_token(auth_header: Optional[str]) -> Dict:
@@ -91,9 +136,14 @@ def decode_token(auth_header: Optional[str]) -> Dict:
     token = auth_header.split(' ',1)[1]
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+        # Additional validation
+        if 'exp' not in payload:
+            raise HTTPException(status_code=401, detail='Token missing expiration')
         return payload
-    except Exception:
+    except JWTError:
         raise HTTPException(status_code=401, detail='Invalid or expired token')
+    except Exception:
+        raise HTTPException(status_code=401, detail='Token validation failed')
 
 
 def get_current_user(authorization: Optional[str] = Header(None)):

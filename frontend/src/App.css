@@ -1,0 +1,85 @@
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8f9fa;
+}
+
+.main-content {
+  flex: 1;
+  padding: 2rem;
+  background-color: #ffffff;
+}
+
+.welcome-header {
+  color: #2c5282;
+  margin-bottom: 2rem;
+}
+
+/* Light theme adjustments */
+body {
+  background-color: #ffffff;
+  color: #1a202c;
+}
+
+/* Navigation and header adjustments */
+.app-header {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0.5rem 0;
+}
+
+.nav-link {
+  color: #2d3748;
+}
+
+.nav-link:hover {
+  color: #2c5282;
+}
+
+/* Language selector styling */
+.lang-selector {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.lang-btn {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  background: #ffffff;
+  color: #2d3748;
+  cursor: pointer;
+}
+
+.lang-btn.active {
+  background: #2c5282;
+  color: #ffffff;
+  border-color: #2c5282;
+}
+
+/* Menu button styling */
+.menu-btn {
+  margin-left: 1rem;
+  padding: 0.5rem;
+  background: none;
+  border: none;
+  color: #2d3748;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Settings and theme toggle styling */
+.settings-btn, .theme-toggle {
+  padding: 0.5rem;
+  background: none;
+  border: none;
+  color: #2d3748;
+  cursor: pointer;
+}

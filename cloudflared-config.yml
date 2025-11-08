@@ -1,12 +1,9 @@
-tunnel: c4d13e7c-07a4-49be-b7c9-938de3a75ec8
-credentials-file: C:\Users\lukas\.cloudflared\c4d13e7c-07a4-49be-b7c9-938de3a75ec8.json
-originRequest:
-  noTLSVerify: false
+# Config file for cloudflared
+tunnel: 9320212e-f379-4261-8777-f9623823beee
 
 ingress:
   - hostname: arkuszowniasmb.pl
-    service: http://localhost:80
+    service: http://nginx:80
   - hostname: www.arkuszowniasmb.pl
-    service: http://localhost:80
+    service: http://nginx:80
   - service: http_status:404
-

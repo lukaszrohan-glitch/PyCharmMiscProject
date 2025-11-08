@@ -1,222 +1,190 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useI18n } from "../i18n";
+import clsx from 'clsx';
+import { useTheme } from "../hooks/useTheme";
+import styles from "./Header.module.css";
 
 export default function Header({ lang, setLang, currentView, setCurrentView, profile, onSettings, onLogout, orders }) {
-  // i18n dictionary
-  const t = useMemo(() => (lang === 'pl' ? {
-    appName: 'Arkuszownia SMB',
-    tagline: 'System Zarządzania Produkcją',
-    searchPlaceholder: 'Wyszukaj zamówienia...',
-    help: 'Pomoc',
-    docs: 'Dokumentacja',
-    shortcuts: 'Skróty klawiaturowe',
-    settings: 'Ustawienia',
-    logout: 'Wyloguj',
-    tabs: { main: 'Aplikacja SMB', guide: 'Poradnik Użytkownika' },
-    shortcutsList: 'Lista skrótów:\n/ - Szukaj\n? - Ten dialog\nEsc - Zamknij'
-  } : {
-    appName: 'Arkuszownia SMB',
-    tagline: 'Manufacturing Management System',
-    searchPlaceholder: 'Search orders...',
-    help: 'Help',
-    docs: 'Documentation',
-    shortcuts: 'Keyboard Shortcuts',
-    settings: 'Settings',
-    logout: 'Sign out',
-    tabs: { main: 'SMB Application', guide: 'User Guide' },
-    shortcutsList: 'Shortcuts:\n/ - Search\n? - This dialog\nEsc - Close'
-  }), [lang])
+  const menuBtnRef = useRef(null);
+  const menuRef = useRef(null);
+  const { t } = useI18n();
+  const { theme, toggleTheme } = useTheme();
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  // UI state
-  const [userOpen, setUserOpen] = useState(false)
-  const [helpOpen, setHelpOpen] = useState(false)
-  const [shortcutsOpen, setShortcutsOpen] = useState(false)
-  const [query, setQuery] = useState('')
-  const [searchResults, setSearchResults] = useState([])
-  const searchRef = useRef(null)
-  const userBtnRef = useRef(null)
-  const helpBtnRef = useRef(null)
-
-  // persist language
-  useEffect(() => { try { localStorage.setItem('lang', lang) } catch {} }, [lang])
-
-  // global shortcuts
+  // Handle menu clicks outside
   useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === '/' && !e.ctrlKey && !e.metaKey && document.activeElement.tagName !== 'INPUT') {
-        e.preventDefault()
-        searchRef.current?.focus()
-      } else if (e.key === '?' && !e.ctrlKey && !e.metaKey && document.activeElement.tagName !== 'INPUT') {
-        e.preventDefault()
-        setShortcutsOpen(true)
-      } else if (e.key === 'Escape') {
-        setShortcutsOpen(false)
-        setHelpOpen(false)
-        setUserOpen(false)
+    const handleClickOutside = (event) => {
+      if (menuOpen && !menuRef.current?.contains(event.target) && !menuBtnRef.current?.contains(event.target)) {
+        setMenuOpen(false);
       }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpen]);
 
-  // outside click close
+  // Handle keyboard navigation
   useEffect(() => {
-    const onDown = (e) => {
-      const ids = ['user-pop','help-pop']
-      if (!ids.some(id => document.getElementById(id)?.contains(e.target))) {
-        setUserOpen(false)
-        setHelpOpen(false)
+    const handleKeyboard = (event) => {
+      if (event.key === "Escape" && menuOpen) {
+        setMenuOpen(false);
       }
-    }
-    document.addEventListener('mousedown', onDown)
-    return () => document.removeEventListener('mousedown', onDown)
-  }, [])
+      if (event.key === "/" && !event.ctrlKey && !event.metaKey) {
+        event.preventDefault();
+        const searchInput = document.querySelector('[data-search]');
+        searchInput?.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyboard);
+    return () => document.removeEventListener("keydown", handleKeyboard);
+  }, [menuOpen]);
 
-  // Search functionality
-  useEffect(() => {
-    if (!query.trim() || !orders) {
-      setSearchResults([])
-      return
-    }
-    const filtered = orders.filter(o =>
-      o.order_id?.toLowerCase().includes(query.toLowerCase()) ||
-      o.customer_id?.toLowerCase().includes(query.toLowerCase()) ||
-      o.status?.toLowerCase().includes(query.toLowerCase())
-    ).slice(0, 5)
-    setSearchResults(filtered)
-  }, [query, orders])
+  // Calculate stats
+  const pendingOrders = useMemo(() =>
+    orders?.filter(o => o.status === "New").length || 0
+  , [orders]);
 
-  const Tab = ({ id, label }) => (
-    <button className={`odoo-tab ${currentView === id ? 'active' : ''}`} onClick={()=>setCurrentView(id)} role="tab" aria-selected={currentView === id}>{label}</button>
-  )
-
-  const handleSearchSelect = (orderId) => {
-    setQuery('')
-    setSearchResults([])
-    setCurrentView('main')
-    // Trigger order selection
-    setTimeout(() => {
-      const orderBtn = document.querySelector(`[data-order-id="${orderId}"]`)
-      if (orderBtn) orderBtn.click()
-    }, 100)
-  }
-
-  const handleDocsClick = () => {
-    setHelpOpen(false)
-    setCurrentView('guide')
-  }
-
-  const handleShortcutsClick = () => {
-    setHelpOpen(false)
-    setShortcutsOpen(true)
-  }
+  // Navigation items with icons
+  const navItems = [
+    { id: "dashboard", icon: "📊", badge: null },
+    { id: "orders", icon: "📋", badge: pendingOrders },
+    { id: "inventory", icon: "📦", badge: null },
+    { id: "timesheets", icon: "⏱️", badge: null },
+    { id: "reports", icon: "📈", badge: null }
+  ];
 
   return (
-    <header className="odoo-shell">
-      <div className="odoo-topbar">
-        <div className="odoo-left">
-          <div className="brand">
-            <span className="brand-title">{t.appName}</span>
-            <span className="brand-sub">{t.tagline}</span>
-          </div>
-        </div>
+    <header className={styles.appHeader}>
+      <a href="#main-content" className={styles.skipLink}>
+        {t("skip_to_content")}
+      </a>
 
-        <div className="odoo-center">
-          <div className="search-wrapper">
-            <input
-              ref={searchRef}
-              value={query}
-              onChange={(e)=>setQuery(e.target.value)}
-              className="odoo-search"
-              placeholder={t.searchPlaceholder}
-              aria-label={t.searchPlaceholder}
-            />
-            <kbd className="slash">/</kbd>
-            {searchResults.length > 0 && (
-              <div className="search-results">
-                {searchResults.map(o => (
-                  <button
-                    key={o.order_id}
-                    className="search-result-item"
-                    onClick={() => handleSearchSelect(o.order_id)}
-                  >
-                    <span className="result-id">{o.order_id}</span>
-                    <span className="result-customer">{o.customer_id}</span>
-                    <span className="result-status">{o.status}</span>
-                  </button>
-                ))}
+      <div className={styles.headerTop}>
+        <div className={styles.headerContent}>
+          <div className={styles.logoSection}>
+            <svg className={styles.logoIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <path d="M7 8h10M7 12h10M7 16h6" />
+            </svg>
+            <div className={styles.logoText}>
+              <div className={styles.brandName}>
+                Arkuszownia<span className={styles.brandAccent}>SMB</span>
               </div>
+              <p className={styles.brandTagline}>{t("brand_tagline")}</p>
+            </div>
+          </div>
+
+          <div className={styles.headerActions}>
+            <div className={styles.langSwitcher}>
+              <button
+                className={clsx(styles.langBtn, {
+                  [styles.active]: lang === "pl"
+                })}
+                onClick={() => setLang("pl")}
+                aria-pressed={lang === "pl"}
+              >
+                PL
+              </button>
+              <button
+                className={clsx(styles.langBtn, {
+                  [styles.active]: lang === "en"
+                })}
+                onClick={() => setLang("en")}
+                aria-pressed={lang === "en"}
+              >
+                EN
+              </button>
+            </div>
+
+            <button
+              className={styles.themeToggle}
+              onClick={toggleTheme}
+              aria-label={t(theme === "light" ? "switch_to_dark" : "switch_to_light")}
+            >
+              {theme === "light" ? "🌙" : "☀️"}
+            </button>
+
+            {profile && (
+              <>
+                <button
+                  className={styles.iconBtn}
+                  onClick={onSettings}
+                  title={t("settings")}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="20" height="20">
+                    <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+                    <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+                  </svg>
+                  {profile.hasNotifications && (
+                    <span className={styles.notificationDot} />
+                  )}
+                </button>
+
+                <button
+                  className={styles.iconBtn}
+                  onClick={onLogout}
+                  title={t("logout")}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="20" height="20">
+                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
+                  </svg>
+                </button>
+              </>
             )}
           </div>
         </div>
+      </div>
 
-        <div className="odoo-right">
-          <div className="lang-switch">
-            <button className={`pill ${lang==='pl'?'active':''}`} onClick={()=>setLang('pl')} aria-pressed={lang==='pl'}>🇵🇱 PL</button>
-            <button className={`pill ${lang==='en'?'active':''}`} onClick={()=>setLang('en')} aria-pressed={lang==='en'}>🇬🇧 EN</button>
-          </div>
+      <nav className={styles.headerNav} role="navigation">
+        <div className={styles.headerContent}>
+          <div className={styles.menuWrapper}>
+            <button
+              ref={menuBtnRef}
+              className={styles.menuBtn}
+              onClick={() => setMenuOpen(!menuOpen)}
+              aria-expanded={menuOpen}
+              aria-controls="nav-menu"
+            >
+              <span aria-hidden="true">☰</span>
+              <span>{t("menu")}</span>
+              {pendingOrders > 0 && (
+                <span className={styles.badge} title={t("pending_orders")}>
+                  {pendingOrders}
+                </span>
+              )}
+            </button>
 
-          <button
-            ref={helpBtnRef}
-            className="icon-btn"
-            aria-haspopup="menu"
-            aria-expanded={helpOpen}
-            onClick={() => { setHelpOpen(v=>!v); setUserOpen(false) }}
-            title={t.help}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2"/>
-              <path d="M9.5 9a2.5 2.5 0 1 1 4.1 1.9c-.7.5-1.1 1-1.1 2v.3" fill="none" stroke="currentColor" strokeWidth="2"/>
-              <circle cx="12" cy="17" r="1.5" fill="currentColor"/>
-            </svg>
-          </button>
-          {helpOpen && (
-            <div id="help-pop" className="popover menu">
-              <button className="menu-item" onClick={handleDocsClick}>📖 {t.docs}</button>
-              <button className="menu-item" onClick={handleShortcutsClick}>⌨️ {t.shortcuts}</button>
-            </div>
-          )}
-
-          <button
-            ref={userBtnRef}
-            className="user-btn"
-            aria-haspopup="menu"
-            aria-expanded={userOpen}
-            onClick={() => { setUserOpen(v=>!v); setHelpOpen(false) }}
-            title="Account"
-          >
-            <span className="avatar">{profile?.email?.substring(0,2).toUpperCase() || 'U'}</span>
-          </button>
-          {userOpen && (
-            <div id="user-pop" className="popover menu">
-              <div className="menu-user-info">
-                <div className="user-email">{profile?.email}</div>
-                <div className="user-plan">{profile?.subscription_plan || 'free'}</div>
+            <div
+              id="nav-menu"
+              ref={menuRef}
+              className={clsx(styles.menuDropdown, {
+                [styles.open]: menuOpen
+              })}
+              role="menu"
+            >
+              <div className={styles.menuList} role="none">
+                {navItems.map(({ id, icon, badge }) => (
+                  <button
+                    key={id}
+                    className={clsx(styles.menuItem, {
+                      [styles.active]: currentView === id
+                    })}
+                    onClick={() => {
+                      setCurrentView(id);
+                      setMenuOpen(false);
+                    }}
+                    role="menuitem"
+                  >
+                    {t(id)}
+                    {id === "orders" && pendingOrders > 0 && (
+                      <span className={styles.badge}>{pendingOrders}</span>
+                    )}
+                  </button>
+                ))}
               </div>
-              <hr />
-              <button className="menu-item" onClick={() => { setUserOpen(false); onSettings() }}>⚙️ {t.settings}</button>
-              <hr />
-              <button className="menu-item danger" onClick={() => { setUserOpen(false); onLogout() }}>🚪 {t.logout}</button>
             </div>
-          )}
-        </div>
-      </div>
-
-      <div className="odoo-control">
-        <div className="tabs" role="tablist" aria-label="Views">
-          <Tab id="main" label={t.tabs.main} />
-          <Tab id="guide" label={t.tabs.guide} />
-        </div>
-      </div>
-
-      {shortcutsOpen && (
-        <div className="shortcuts-modal" onClick={() => setShortcutsOpen(false)}>
-          <div className="shortcuts-content" onClick={e => e.stopPropagation()}>
-            <h3>{t.shortcuts}</h3>
-            <pre>{t.shortcutsList}</pre>
-            <button onClick={() => setShortcutsOpen(false)}>Close (Esc)</button>
           </div>
         </div>
-      )}
+      </nav>
     </header>
-  )
+  );
 }

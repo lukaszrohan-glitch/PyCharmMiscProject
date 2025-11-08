@@ -1,8 +1,11 @@
 import os
 from typing import List, Optional, Dict
+from datetime import datetime
 
-from fastapi import FastAPI, HTTPException, Header, Depends
+from fastapi import FastAPI, HTTPException, Header, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 
 from db import fetch_all, fetch_one, execute
 from schemas import (
@@ -349,3 +352,38 @@ def admin_purge_audit(days: int = 30, _ok: bool = Depends(check_admin_key)):
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
+
+# --- Error handlers ---
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": "Validation Error",
+            "errors": exc.errors()
+        }
+    )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    if isinstance(exc, HTTPException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail}
+        )
+    # Log unexpected errors
+    print(f"Unexpected error at {datetime.now()}: {str(exc)}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"}
+    )
+
+
+# --- Middleware ---
+@app.middleware("http")
+async def db_session_middleware(request: Request, call_next):
+    try:
+        response = await call_next(request)
+        return response
+    except Exception as e:
+        return await global_exception_handler(request, e)

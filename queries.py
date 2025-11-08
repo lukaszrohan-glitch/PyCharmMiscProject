@@ -9,8 +9,7 @@ ORDER BY order_date DESC, order_id;
 """
 
 SQL_FINANCE_ONE = """
--- TODO: replace '*' with explicit column list from v_order_finance for stability/performance
-SELECT *
+SELECT order_id, revenue, material_cost, labor_cost, gross_margin, last_updated
 FROM v_order_finance
 WHERE order_id = %s;
 """
@@ -22,21 +21,24 @@ ORDER BY order_id, component_id;
 """
 
 SQL_PLANNED_ONE = """
--- TODO: replace '*' with explicit column list from v_planned_time for stability/performance
-SELECT *
+SELECT order_id, total_hours, completed_hours, remaining_hours, efficiency
 FROM v_planned_time
 WHERE order_id = %s;
 """
 
 SQL_PRODUCTS = """
-SELECT product_id, name, unit, std_cost, price, vat_rate FROM products ORDER BY product_id;
+SELECT product_id, name, unit, std_cost, price, vat_rate 
+FROM products 
+ORDER BY product_id;
 """
 
 SQL_CUSTOMERS = """
-SELECT customer_id, name, nip, address, email FROM customers ORDER BY customer_id;
+SELECT customer_id, name, nip, address, email 
+FROM customers 
+ORDER BY customer_id;
 """
 
-# WRITES
+# WRITES with proper constraints
 SQL_INSERT_ORDER = """
 INSERT INTO orders (order_id, order_date, customer_id, status, due_date)
 VALUES (%s, CURRENT_DATE, %s, %s, %s)
@@ -61,4 +63,16 @@ SQL_INSERT_INVENTORY = """
 INSERT INTO inventory (txn_id, txn_date, product_id, qty_change, reason, lot, location)
 VALUES (%s, COALESCE(%s, CURRENT_DATE), %s, %s, %s, %s, %s)
 RETURNING txn_id, txn_date, product_id, qty_change, reason, lot, location;
+"""
+
+# Indexes for performance
+SQL_CREATE_INDEXES = """
+CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_date ON orders(order_date DESC);
+CREATE INDEX IF NOT EXISTS idx_order_lines_product ON order_lines(product_id);
+CREATE INDEX IF NOT EXISTS idx_timesheets_emp ON timesheets(emp_id);
+CREATE INDEX IF NOT EXISTS idx_timesheets_order ON timesheets(order_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_product ON inventory(product_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_date ON inventory(txn_date);
 """

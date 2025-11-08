@@ -1,29 +1,66 @@
 # Dockerfile for SMB Tool backend (FastAPI)
-FROM python:3.11-slim
+# Base image
+FROM python:3.11-slim as builder
 
-WORKDIR /app
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# install system deps
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libpq-dev \
-    curl \
+# Install system dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        gcc \
+        python3-dev \
+        libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# copy requirements and install (prefer postgres requirements for production)
-COPY requirements.txt requirements-dev.txt requirements-postgres.txt* ./
-# Install postgres reqs if available, else fallback
-RUN if [ -f requirements-postgres.txt ]; then pip install --no-cache-dir -r requirements-postgres.txt; else pip install --no-cache-dir -r requirements.txt; fi
+# Create and activate virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
-# copy app
-COPY . .
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install -r requirements.txt requests
 
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
+# Final stage
+FROM python:3.11-slim
 
-# Entrypoint handles wait-for-db, migrations, uvicorn
-RUN chmod +x /app/entrypoint.sh
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
 
+# Set environment variables
+ENV PATH="/opt/venv/bin:$PATH" \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Install runtime dependencies and setup user
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libpq5 curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd -m -s /bin/bash app \
+    && mkdir /app \
+    && chown app:app /app
+
+# Set working directory
+WORKDIR /app
+
+# Switch to non-root user
+USER app
+
+# Copy application code
+COPY --chown=app:app . .
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/logs && chmod 755 /app/logs
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/healthz || exit 1
+
+# Expose port
 EXPOSE 8000
 
-CMD ["/app/entrypoint.sh"]
+# Run the application
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -1,15 +1,66 @@
-<!doctype html>
-<html lang="pl">
+<!DOCTYPE html>
+<html lang="en">
   <head>
-    <meta charset="utf-8" />
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Arkuszownia SMB - Kompleksowe narzędzie do zarządzania produkcją, zamówieniami i czasem pracy" />
-    <meta name="keywords" content="zarządzanie produkcją, SMB, zamówienia, magazyn, timesheet" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>Arkuszownia SMB - Zarządzanie Produkcją</title>
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Arkuszownia SMB - System Zarządzania Produkcją" />
+    <title>Arkuszownia SMB</title>
+    <style>
+      #root-loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        width: 100vw;
+        background: #f0f2f5;
+      }
+      .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .error-message {
+        display: none;
+        color: #721c24;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        padding: 1rem;
+        margin: 1rem;
+        border-radius: 4px;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root">
+      <div id="root-loading">
+        <div class="loading-spinner"></div>
+      </div>
+      <div id="root-error" class="error-message">
+        An error occurred while loading the application. Please refresh the page.
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      window.addEventListener('error', function(e) {
+        console.error('Global error:', e);
+        document.getElementById('root-loading').style.display = 'none';
+        document.getElementById('root-error').style.display = 'block';
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        console.error('Unhandled promise rejection:', e);
+        document.getElementById('root-loading').style.display = 'none';
+        document.getElementById('root-error').style.display = 'block';
+      });
+    </script>
   </body>
 </html>
