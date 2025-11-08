@@ -18,7 +18,7 @@ function getApiBase() {
 
     // If we're on localhost:5173 (dev), use localhost:8000
     if (hostname === 'localhost' && port === '5173') {
-      return `${protocol}//localhost:8000/api`
+      return `${protocol}//localhost:8000`
     }
 
     // For production/tunnel access, use /api on same host (nginx proxies to backend)
@@ -124,7 +124,7 @@ async function delAdmin(path){
 
 export async function login(email, password){
   const headers = { 'Content-Type': 'application/json' }
-  const res = await fetch(`${API_BASE}/auth/login`, {
+  const res = await fetch(`${API_BASE}/api/auth/login`, {
     method: 'POST',
     headers,
     body: JSON.stringify({ email, password })
@@ -137,26 +137,26 @@ export async function login(email, password){
   }
   try{ return JSON.parse(txt) }catch{ return txt }
 }
-export const getProfile = () => reqAuth('/user/profile')
-export const changePassword = (old_password, new_password) => postAuth('/auth/change-password', { old_password, new_password })
-export const adminCreateUser = (payload) => postAuth('/admin/users', payload)
-export const adminListUsers = () => reqAuth('/admin/users')
-export const adminCreatePlan = (payload) => postAuth('/admin/subscription-plans', payload)
-export const adminListPlans = () => reqAuth('/admin/subscription-plans')
-export const getOrders = ()=> req('/orders')
-export const getFinance = (orderId)=> req(`/finance/${encodeURIComponent(orderId)}`)
-export const getShortages = ()=> req('/shortages')
-export const getPlannedTime = (orderId)=> req(`/planned-time/${encodeURIComponent(orderId)}`)
-export const getProducts = ()=> req('/products')
-export const getCustomers = ()=> req('/customers')
+export const getProfile = () => reqAuth('/api/user/profile')
+export const changePassword = (old_password, new_password) => postAuth('/api/auth/change-password', { old_password, new_password })
+export const adminCreateUser = (payload) => postAuth('/api/admin/users', payload)
+export const adminListUsers = () => reqAuth('/api/admin/users')
+export const adminCreatePlan = (payload) => postAuth('/api/admin/subscription-plans', payload)
+export const adminListPlans = () => reqAuth('/api/admin/subscription-plans')
+export const getOrders = ()=> req('/api/orders')
+export const getFinance = (orderId)=> req(`/api/finance/${encodeURIComponent(orderId)}`)
+export const getShortages = ()=> req('/api/shortages')
+export const getPlannedTime = (orderId)=> req(`/api/planned-time/${encodeURIComponent(orderId)}`)
+export const getProducts = ()=> req('/api/products')
+export const getCustomers = ()=> req('/api/customers')
 
-export const createOrder = (payload) => postJson('/orders', payload)
-export const createOrderLine = (payload) => postJson('/order-lines', payload)
-export const createTimesheet = (payload) => postJson('/timesheets', payload)
-export const createInventory = (payload) => postJson('/inventory', payload)
+export const createOrder = (payload) => postJson('/api/orders', payload)
+export const createOrderLine = (payload) => postJson('/api/order-lines', payload)
+export const createTimesheet = (payload) => postJson('/api/timesheets', payload)
+export const createInventory = (payload) => postJson('/api/inventory', payload)
 
 // Admin API: list/create/delete api keys
-export const adminListKeys = () => reqAdmin('/admin/api-keys')
-export const adminCreateKey = (payload) => postAdmin('/admin/api-keys', payload)
-export const adminDeleteKey = (key) => delAdmin(`/admin/api-keys/${encodeURIComponent(key)}`)
-export const adminRotateKey = (keyId) => postAdmin(`/admin/api-keys/${encodeURIComponent(keyId)}/rotate`, {})
+export const adminListKeys = () => reqAdmin('/api/admin/api-keys')
+export const adminCreateKey = (payload) => postAdmin('/api/admin/api-keys', payload)
+export const adminDeleteKey = (key) => delAdmin(`/api/admin/api-keys/${encodeURIComponent(key)}`)
+export const adminRotateKey = (keyId) => postAdmin(`/api/admin/api-keys/${encodeURIComponent(keyId)}/rotate`, {})
