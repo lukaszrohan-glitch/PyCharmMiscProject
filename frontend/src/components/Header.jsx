@@ -1,84 +1,158 @@
-// Accessible, two-row header with dropdown menu and language switcher
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 
 export default function Header({ lang, setLang, currentView, setCurrentView }) {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const menuBtnRef = useRef(null)
-  const menuRef = useRef(null)
+  // i18n dictionary
+  const t = useMemo(() => (lang === 'pl' ? {
+    appName: 'Arkuszownia SMB',
+    tagline: 'System Zarządzania Produkcją',
+    searchPlaceholder: 'Wyszukaj… (/)',
+    help: 'Pomoc',
+    docs: 'Dokumentacja',
+    shortcuts: 'Skróty klawiaturowe (?)',
+    settings: 'Ustawienia',
+    logout: 'Wyloguj',
+    tabs: { main: 'Aplikacja SMB', guide: 'Poradnik Użytkownika' }
+  } : {
+    appName: 'Arkuszownia SMB',
+    tagline: 'Manufacturing Management System',
+    searchPlaceholder: 'Search… (/)',
+    help: 'Help',
+    docs: 'Documentation',
+    shortcuts: 'Keyboard shortcuts (?)',
+    settings: 'Settings',
+    logout: 'Sign out',
+    tabs: { main: 'SMB Application', guide: 'User Guide' }
+  }), [lang])
 
-  const t = lang === 'pl'
-    ? { app: 'Aplikacja SMB', guide: 'Poradnik Użytkownika', menu: 'Menu', openMenu: 'Otwórz menu', closeMenu: 'Zamknij menu', switchLang: 'Przełącz język', brandTag: 'System Zarządzania Produkcją', skip: 'Przejdź do treści' }
-    : { app: 'SMB Application', guide: 'User Guide', menu: 'Menu', openMenu: 'Open menu', closeMenu: 'Close menu', switchLang: 'Switch language', brandTag: 'Manufacturing Management System', skip: 'Skip to content' }
+  // UI state
+  const [userOpen, setUserOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
+  const [appsOpen, setAppsOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const searchRef = useRef(null)
+  const appsBtnRef = useRef(null)
+  const userBtnRef = useRef(null)
+  const helpBtnRef = useRef(null)
 
-  // Persist language selection
-  useEffect(()=>{ try{ localStorage.setItem('lang', lang) }catch{} }, [lang])
+  // persist language
+  useEffect(() => { try { localStorage.setItem('lang', lang) } catch {} }, [lang])
 
-  const handleSelect = (view) => { setCurrentView(view); setMenuOpen(false); menuBtnRef.current?.focus() }
-
+  // global shortcuts
   useEffect(() => {
-    const onClickOutside = (e) => {
-      if (menuOpen && menuRef.current && !menuRef.current.contains(e.target) && !menuBtnRef.current.contains(e.target)) {
-        setMenuOpen(false); menuBtnRef.current?.focus()
-      }
-    }
     const onKey = (e) => {
-      if (!menuOpen) return
-      if (e.key === 'Escape') { e.preventDefault(); setMenuOpen(false); menuBtnRef.current?.focus() }
-      if (['ArrowDown','ArrowUp','Home','End'].includes(e.key)) {
-        e.preventDefault()
-        const items = Array.from(menuRef.current.querySelectorAll('[role="menuitem"]'))
-        const idx = items.indexOf(document.activeElement)
-        const nextIdx = e.key==='ArrowDown'?Math.min(idx+1,items.length-1): e.key==='ArrowUp'?Math.max(idx-1,0): e.key==='Home'?0: items.length-1
-        items[nextIdx]?.focus()
+      if (e.key === '/' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); searchRef.current?.focus() }
+      else if (e.key === '?' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); setHelpOpen(true) }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  // outside click close
+  useEffect(() => {
+    const onDown = (e) => {
+      const ids = ['apps-pop','user-pop','help-pop']
+      if (!ids.some(id => document.getElementById(id)?.contains(e.target))) {
+        setAppsOpen(false); setUserOpen(false); setHelpOpen(false)
       }
     }
-    document.addEventListener('mousedown', onClickOutside)
-    document.addEventListener('keydown', onKey)
-    return () => { document.removeEventListener('mousedown', onClickOutside); document.removeEventListener('keydown', onKey) }
-  }, [menuOpen])
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [])
 
-  useEffect(()=>{ if(menuOpen){ const first = menuRef.current?.querySelector('[role="menuitem"]'); first && first.focus() } }, [menuOpen])
+  const Tab = ({ id, label }) => (
+    <button className={`odoo-tab ${currentView === id ? 'active' : ''}`} onClick={()=>setCurrentView(id)} role="tab" aria-selected={currentView === id}>{label}</button>
+  )
 
   return (
-    <header className="app-header">
-      <a href="#main-content" className="skip-link">{t.skip}</a>
-      <div className="header-top">
-        <div className="header-content">
-          <div className="logo-section" aria-label="brand">
-            <svg className="logo-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <rect x="4" y="4" width="40" height="40" rx="8" />
-              <path d="M14 16h20M14 24h20M14 32h14" strokeWidth="3" strokeLinecap="round" />
-              <circle cx="34" cy="32" r="4" />
+    <header className="odoo-shell">
+      <div className="odoo-topbar">
+        <div className="odoo-left">
+          <button
+            ref={appsBtnRef}
+            className="icon-btn"
+            aria-haspopup="menu"
+            aria-expanded={appsOpen}
+            onClick={() => { setAppsOpen(v=>!v); setUserOpen(false); setHelpOpen(false) }}
+            title="Apps"
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+              {Array.from({length:9}).map((_,i)=>(<rect key={i} x={(i%3)*7+2} y={Math.floor(i/3)*7+2} width="3" height="3" rx="1"/>))}
             </svg>
-            <div className="logo-text">
-              <div className="brand-name">Arkuszownia<span className="brand-accent">SMB</span></div>
-              <p className="brand-tagline">{t.brandTag}</p>
+          </button>
+          {appsOpen && (
+            <div id="apps-pop" className="popover menu apps-pop">
+              <button className="menu-item" onClick={()=>setCurrentView('main')}>{t.tabs.main}</button>
+              <button className="menu-item" onClick={()=>setCurrentView('guide')}>{t.tabs.guide}</button>
             </div>
+          )}
+          <div className="brand">
+            <span className="brand-title">{t.appName}</span>
+            <span className="brand-sub">{t.tagline}</span>
           </div>
-          <div className="header-actions">
-            <div className="lang-switcher" aria-label={t.switchLang}>
-              <button className={`lang-btn ${lang==='pl'?'active':''}`} onClick={()=>setLang('pl')} aria-pressed={lang==='pl'}>PL</button>
-              <span className="v-sep" aria-hidden="true" />
-              <button className={`lang-btn ${lang==='en'?'active':''}`} onClick={()=>setLang('en')} aria-pressed={lang==='en'}>EN</button>
+        </div>
+        <div className="odoo-center">
+          <input
+            ref={searchRef}
+            value={query}
+            onChange={(e)=>setQuery(e.target.value)}
+            className="odoo-search"
+            placeholder={t.searchPlaceholder}
+            aria-label={t.searchPlaceholder}
+          />
+          <kbd className="slash">/</kbd>
+        </div>
+        <div className="odoo-right">
+          <div className="lang-switch">
+            <button className={`pill ${lang==='pl'?'active':''}`} onClick={()=>setLang('pl')} aria-pressed={lang==='pl'}>PL</button>
+            <button className={`pill ${lang==='en'?'active':''}`} onClick={()=>setLang('en')} aria-pressed={lang==='en'}>EN</button>
+          </div>
+          <button
+            ref={helpBtnRef}
+            className="icon-btn"
+            aria-haspopup="menu"
+            aria-expanded={helpOpen}
+            onClick={() => { setHelpOpen(v=>!v); setUserOpen(false); setAppsOpen(false) }}
+            title={t.help}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.5 9a2.5 2.5 0 1 1 4.1 1.9c-.7.5-1.1 1-1.1 2v.3"/><circle cx="12" cy="17" r="1"/></svg>
+          </button>
+          {helpOpen && (
+            <div id="help-pop" className="popover menu">
+              <button className="menu-item">{t.docs}</button>
+              <button className="menu-item">{t.shortcuts}</button>
             </div>
-          </div>
+          )}
+          <button
+            ref={userBtnRef}
+            className="user-btn"
+            aria-haspopup="menu"
+            aria-expanded={userOpen}
+            onClick={() => { setUserOpen(v=>!v); setHelpOpen(false); setAppsOpen(false) }}
+            title="Account"
+          >
+            <span className="avatar">AS</span>
+          </button>
+          {userOpen && (
+            <div id="user-pop" className="popover menu">
+              <button className="menu-item">{t.settings}</button>
+              <hr />
+              <button className="menu-item danger">{t.logout}</button>
+            </div>
+          )}
         </div>
       </div>
-      <nav className="header-nav" aria-label="Primary">
-        <div className="header-content">
-          <div className="menu-wrapper">
-            <button ref={menuBtnRef} className="menu-btn" onClick={()=>setMenuOpen(o=>!o)} aria-haspopup="menu" aria-expanded={menuOpen} aria-controls="mainmenu-dropdown" title={menuOpen? t.closeMenu : t.openMenu}>
-              <span aria-hidden="true">☰</span> {t.menu}
-            </button>
-            <div id="mainmenu-dropdown" ref={menuRef} className={`menu-dropdown ${menuOpen?'open':''}`} role="menu" aria-hidden={!menuOpen}>
-              <ul className="menu-list" role="none">
-                <li role="none"><button role="menuitem" className={`menu-item ${currentView==='main'?'active':''}`} onClick={()=>handleSelect('main')} aria-current={currentView==='main'?'page':undefined}>{t.app}</button></li>
-                <li role="none"><button role="menuitem" className={`menu-item ${currentView==='guide'?'active':''}`} onClick={()=>handleSelect('guide')} aria-current={currentView==='guide'?'page':undefined}>{t.guide}</button></li>
-              </ul>
-            </div>
-          </div>
+      <div className="odoo-control">
+        <div className="tabs" role="tablist" aria-label="Views">
+          <Tab id="main" label={t.tabs.main} />
+          <Tab id="guide" label={t.tabs.guide} />
         </div>
-      </nav>
+        <div className="cp-actions">
+          <button className="chip">Filter</button>
+            <button className="chip">Group</button>
+          <button className="chip">Favorites</button>
+          <span className="badge" aria-label="Notifications">3</span>
+        </div>
+      </div>
     </header>
   )
 }
