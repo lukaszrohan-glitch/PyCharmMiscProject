@@ -123,13 +123,16 @@ async function delAdmin(path){
 }
 
 export async function login(email, password){
+  const url = `${API_BASE}/api/auth/login`
+  console.log('Login API call to:', url)
   const headers = { 'Content-Type': 'application/json' }
-  const res = await fetch(`${API_BASE}/api/auth/login`, {
+  const res = await fetch(url, {
     method: 'POST',
     headers,
     body: JSON.stringify({ email, password })
   })
   const txt = await res.text()
+  console.log('Login response status:', res.status, 'body:', txt)
   if(!res.ok){
     let msg = txt
     try{ msg = JSON.parse(txt) }catch{}
