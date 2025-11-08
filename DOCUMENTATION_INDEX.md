@@ -21,7 +21,7 @@
 3. **[NETWORK_ACCESS_GUIDE_PL.md](NETWORK_ACCESS_GUIDE_PL.md)** - Dostęp sieciowy
    - Dostęp z innych urządzeń w sieci
    - Konfiguracja dla dostępu zewnętrznego
-   - Port forwarding i ngrok
+   - Port forwarding
    - Bezpieczeństwo
 
 4. **[DOCKER_TROUBLESHOOTING_PL.md](DOCKER_TROUBLESHOOTING_PL.md)** - Rozwiązywanie problemów
@@ -29,6 +29,26 @@
    - Procedury diagnostyczne
    - Procedury resetowania
    - Monitoring i logi
+
+5. **⭐ [DOSTEP_ZEWNETRZNY.md](DOSTEP_ZEWNETRZNY.md)** - Udostępnianie publicznie
+   - Jak udostępnić aplikację użytkownikom spoza sieci
+   - Zero konfiguracji dla użytkowników końcowych
+   - Cloudflare Tunnel (stały link, darmowy)
+   - Port Forwarding, VPS
+   - Najprostszy sposób - 10 minut setup
+
+6. **⭐ [UDOSTEPNIANIE_UZYTKOWNIKOM.md](UDOSTEPNIANIE_UZYTKOWNIKOM.md)** - Prosty przewodnik
+   - Krok po kroku jak udostępnić
+   - Co użytkownik musi zrobić (NIC!)
+   - Rozwiązywanie problemów
+   - Zarządzanie kluczami API
+
+7. **⭐ [CLOUDFLARE_SETUP.md](CLOUDFLARE_SETUP.md)** - Setup Cloudflare Tunnel
+   - Szczegółowa instrukcja krok po kroku
+   - Rozwiązywanie problemów
+   - Komendy i konfiguracja
+   - Rozwiązywanie problemów
+   - Zarządzanie kluczami API
 
 ---
 
@@ -51,7 +71,7 @@
 3. **[NETWORK_ACCESS_GUIDE.md](NETWORK_ACCESS_GUIDE.md)** - Network access
    - Access from other devices on network
    - External access configuration
-   - Port forwarding and ngrok
+   - Port forwarding
    - Security
 
 4. **[DOCKER_TROUBLESHOOTING.md](DOCKER_TROUBLESHOOTING.md)** - Troubleshooting
@@ -59,6 +79,36 @@
    - Diagnostic procedures
    - Reset procedures
    - Monitoring and logs
+
+5. **⭐ [PUBLIC_ACCESS.md](PUBLIC_ACCESS.md)** - Share publicly
+   - How to share app with users outside your network
+   - Zero configuration for end users
+   - Cloudflare Tunnel (permanent link, free)
+   - Port Forwarding, VPS
+   - Simplest method in 10 minutes
+
+6. **⭐ [SHARE_WITH_USERS.md](SHARE_WITH_USERS.md)** - Simple guide
+   - Step by step how to share
+   - What users need to do (NOTHING!)
+   - Troubleshooting
+   - Managing API keys
+
+7. **⭐ [CLOUDFLARE_SETUP.md](CLOUDFLARE_SETUP.md)** - Cloudflare Tunnel Setup
+   - Detailed step-by-step instructions
+   - Troubleshooting
+   - Commands and configuration
+
+5. **⭐ [PUBLIC_ACCESS.md](PUBLIC_ACCESS.md)** - Share publicly
+   - How to share app with users outside your network
+   - Zero configuration for end users
+   - ngrok, Cloudflare Tunnel, VPS
+   - Simplest method in 2 minutes
+
+6. **⭐ [SHARE_WITH_USERS.md](SHARE_WITH_USERS.md)** - Simple guide
+   - Step by step how to share
+   - What users need to do (NOTHING!)
+   - Troubleshooting
+   - Managing API keys
 
 ---
 
@@ -86,12 +136,14 @@
 **Polski:**
 1. Zacznij tutaj: [QUICKSTART_PL.md](QUICKSTART_PL.md)
 2. Jeśli masz problemy: [DOCKER_TROUBLESHOOTING_PL.md](DOCKER_TROUBLESHOOTING_PL.md)
-3. Dostęp z sieci: [NETWORK_ACCESS_GUIDE_PL.md](NETWORK_ACCESS_GUIDE_PL.md)
+3. ⭐ **Udostępnij innym**: [UDOSTEPNIANIE_UZYTKOWNIKOM.md](UDOSTEPNIANIE_UZYTKOWNIKOM.md)
+4. Dostęp z sieci: [NETWORK_ACCESS_GUIDE_PL.md](NETWORK_ACCESS_GUIDE_PL.md)
 
 **English:**
 1. Start here: [QUICKSTART.md](QUICKSTART.md)
 2. If you have issues: [DOCKER_TROUBLESHOOTING.md](DOCKER_TROUBLESHOOTING.md)
-3. Network access: [NETWORK_ACCESS_GUIDE.md](NETWORK_ACCESS_GUIDE.md)
+3. ⭐ **Share with others**: [SHARE_WITH_USERS.md](SHARE_WITH_USERS.md)
+4. Network access: [NETWORK_ACCESS_GUIDE.md](NETWORK_ACCESS_GUIDE.md)
 
 ### Dla Deweloperów / For Developers
 1. Full docs: [README.md](README.md) / [README_PL.md](README_PL.md)

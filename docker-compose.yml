@@ -50,9 +50,19 @@ services:
       backend:
         condition: service_healthy
     volumes:
-      - ./frontend/src:/app/src:rw
-      - ./frontend/vite.config.js:/app/vite.config.js:ro
-      - ./frontend/index.html:/app/index.html:ro
+      - ./frontend:/app:rw
+      - /app/node_modules
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - '80:80'
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
 
 volumes:
   db_data:

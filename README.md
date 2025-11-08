@@ -2,17 +2,22 @@
 
 🇬🇧 **English** | [🇵🇱 Polski](README_PL.md)
 
+> 🌐 **NEW!** Share your app publicly in 2 minutes - users just click a link, zero installation!  
+> See: [SHARE_WITH_USERS.md](SHARE_WITH_USERS.md) ⭐
+
 ---
 
 ## 📚 Documentation
 
 - **English:**
   - [Quick Start Guide](QUICKSTART.md)
+  - [**Public Access Guide**](PUBLIC_ACCESS.md) - ⭐ Share app with users outside your network
   - [Network Access Guide](NETWORK_ACCESS_GUIDE.md)
   - [Docker Troubleshooting](DOCKER_TROUBLESHOOTING.md)
   
 - **Polski:**
   - [Szybki Start](QUICKSTART_PL.md)
+  - [**Dostęp Zewnętrzny**](DOSTEP_ZEWNETRZNY.md) - ⭐ Udostępnij aplikację użytkownikom
   - [Przewodnik Dostępu Sieciowego](NETWORK_ACCESS_GUIDE_PL.md)
   - [Rozwiązywanie Problemów z Dockerem](DOCKER_TROUBLESHOOTING_PL.md)
 
@@ -29,6 +34,23 @@ http://localhost:5173
 ```
 
 **Full documentation:** See [QUICKSTART.md](QUICKSTART.md) or [QUICKSTART_PL.md](QUICKSTART_PL.md)
+
+---
+
+## 🌐 Share App Publicly (Zero-Config for Users)
+
+Want to share the app with users outside your network?
+
+### ⚡ Best Method (10 minutes setup, permanent link):
+
+1. Download cloudflared from https://github.com/cloudflare/cloudflared/releases
+2. Run `SHARE-PUBLIC.cmd` (or `UDOSTEPNIJ.cmd` for Polish)
+3. Send the **permanent** link to your users
+
+**Users just click the link - no installation, no configuration needed!**  
+**Link never changes - share it once, works forever!**
+
+📖 **Full guide**: See [PUBLIC_ACCESS.md](PUBLIC_ACCESS.md) or [DOSTEP_ZEWNETRZNY.md](DOSTEP_ZEWNETRZNY.md)
 
 ---
 

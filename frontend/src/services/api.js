@@ -11,18 +11,22 @@ function getApiBase() {
   }
 
   // Auto-detect based on window.location
-  // If accessing via localhost:5173, use localhost:8000
-  // If accessing via network IP or domain, use same host with port 8000
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname
     const protocol = window.location.protocol
+    const port = window.location.port
 
-    // Construct API URL with same hostname but port 8000
-    return `${protocol}//${hostname}:8000/api`
+    // If we're on localhost:5173 (dev), use localhost:8000
+    if (hostname === 'localhost' && port === '5173') {
+      return `${protocol}//localhost:8000/api`
+    }
+
+    // For production/tunnel access, use /api on same host (nginx proxies to backend)
+    return `${protocol}//${window.location.host}/api`
   }
 
   // Fallback for SSR or build time
-  return 'http://localhost:8000/api'
+  return '/api'
 }
 
 const API_BASE = getApiBase()

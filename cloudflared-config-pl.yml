@@ -1,0 +1,12 @@
+tunnel: 9320212e-f379-4261-8777-f9623823beee
+credentials-file: C:\Users\lukas\.cloudflared\9320212e-f379-4261-8777-f9623823beee.json
+originRequest:
+  noTLSVerify: false
+
+ingress:
+  - hostname: arkuszowniasmb.pl
+    service: http://localhost:80
+  - hostname: www.arkuszowniasmb.pl
+    service: http://localhost:80
+  - service: http_status:404
+

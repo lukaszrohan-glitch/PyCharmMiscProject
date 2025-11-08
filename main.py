@@ -43,6 +43,19 @@ API_KEYS = [k.strip() for k in os.getenv("API_KEYS", "").split(",") if k.strip()
 # modify check_api_key to log usage
 def check_api_key(x_api_key: Optional[str] = Header(None), api_key: Optional[str] = None):
     key = x_api_key or api_key
+
+    # If no API keys are configured at all, allow access (demo/dev mode)
+    if not API_KEYS:
+        # Check if there are any DB keys
+        try:
+            db_keys = auth.list_api_keys()
+            if not db_keys:
+                # No keys configured anywhere - allow access for easy onboarding
+                return True
+        except Exception:
+            # DB issue - if no env keys, allow access
+            return True
+
     if not key:
         raise HTTPException(status_code=401, detail="Invalid or missing API key")
 

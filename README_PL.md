@@ -1,5 +1,10 @@
 # Narzędzie SMB - Dokumentacja 📚
 
+> 🌐 **NOWOŚĆ!** Udostępnij aplikację publicznie w 2 minuty - użytkownicy tylko klikają link, zero instalacji!  
+> Zobacz: [UDOSTEPNIANIE_UZYTKOWNIKOM.md](UDOSTEPNIANIE_UZYTKOWNIKOM.md) ⭐
+
+---
+
 ## 🎯 Przegląd
 
 Kompleksowe narzędzie dla małych i średnich przedsiębiorstw (SMB) do zarządzania całym procesem biznesowym:
@@ -8,6 +13,7 @@ Kompleksowe narzędzie dla małych i średnich przedsiębiorstw (SMB) do zarząd
 - 📦 Zarządzanie magazynem
 - 💰 Analiza finansowa
 - 🔑 Zarządzanie kluczami API
+- 🌐 Udostępnianie publiczne - zero konfiguracji dla użytkowników
 
 ---
 
@@ -597,6 +603,24 @@ MIT License - możesz używać, modyfikować i dystrybuować swobodnie.
 - 📧 Email: lukasz.rohan@gmail.com
 - 🐛 Issues: https://github.com/lukaszrohan-glitch/PyCharmMiscProject/issues
 - 📚 Dokumentacja: Zobacz pliki w katalogu projektu
+- 🌐 **Dostęp Zewnętrzny**: Zobacz `DOSTEP_ZEWNETRZNY.md` - jak udostępnić aplikację publicznie
+
+---
+
+## 🌐 Udostępnianie Aplikacji Publicznie
+
+Chcesz udostępnić aplikację użytkownikom spoza Twojej sieci?
+
+### ⚡ Najlepsza Metoda (10 minut setup, stały link):
+
+1. Pobierz cloudflared z https://github.com/cloudflare/cloudflared/releases
+2. Uruchom `UDOSTEPNIJ.cmd`
+3. Wyślij **stały** link użytkownikom
+
+**Użytkownicy po prostu klikają link - bez instalacji, bez konfiguracji!**  
+**Link nigdy się nie zmienia - udostępnij raz, działa zawsze!**
+
+📖 **Pełny przewodnik**: Zobacz `DOSTEP_ZEWNETRZNY.md`
 
 ---
 

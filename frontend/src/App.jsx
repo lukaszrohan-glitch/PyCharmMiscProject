@@ -3,6 +3,7 @@ import { getOrders, getFinance, createOrder, createTimesheet, createInventory, c
 import AdminPage from './AdminPage'
 import OrderLinesEditor from './OrderLinesEditor'
 import Autocomplete from './components/Autocomplete'
+import Header from './components/Header'
 import { useToast } from './components/Toast'
 import { useI18n, translateStatus } from './i18n.jsx'
 import StatusBadge from './components/StatusBadge'
@@ -21,6 +22,7 @@ export default function App(){
 
   // API key
   const [apiKeyInput, setApiKeyInput] = useState('')
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false)
 
   // Admin key
   const [adminKeyInput, setAdminKeyInput] = useState('')
@@ -162,27 +164,37 @@ export default function App(){
   }
 
   return (
-    <div className="container">
-      <div className="app-header">
-        <h1>{t('app_title')}</h1>
-        <input placeholder={t('write_api_key_placeholder')} value={apiKeyInput} onChange={e=>setApiKeyInput(e.target.value)} />
-        <button onClick={applyApiKey}>Set API key</button>
-        <button onClick={()=>setShowAdmin(s=>!s)}>{t('toggle_admin')}</button>
-        <div className="lang-toggle">
-          <span>{t('language')}:</span>
-          <button onClick={()=>setLang('pl')} title="Polski" aria-label="Polski">🇵🇱</button>
-          <button onClick={()=>setLang('en')} title="English" aria-label="English">🇬🇧</button>
+    <>
+      <Header lang={lang} setLang={setLang} />
+
+      <div className="container">
+        <div className="api-key-section">
+          {showApiKeyInput && (
+            <div style={{display:'flex', gap:'8px', alignItems:'center', marginBottom:'16px'}}>
+              <input placeholder={t('write_api_key_placeholder')} value={apiKeyInput} onChange={e=>setApiKeyInput(e.target.value)} />
+              <button onClick={applyApiKey}>Set API key</button>
+              <button onClick={()=>setShowApiKeyInput(false)} style={{background:'#6c757d'}}>✕</button>
+            </div>
+          )}
+
+          <div style={{display:'flex', gap:'8px', alignItems:'center', marginBottom:'16px'}}>
+            {!showApiKeyInput && (
+              <button onClick={()=>setShowApiKeyInput(true)} style={{background:'#6c757d', fontSize:'0.9em'}}>
+                🔑 {t('api_key_optional')}
+              </button>
+            )}
+            <button onClick={()=>setShowAdmin(s=>!s)}>{t('toggle_admin')}</button>
+          </div>
         </div>
-      </div>
 
-      {showAdmin ? <AdminPage onClose={()=>setShowAdmin(false)} /> : null}
+        {showAdmin ? <AdminPage onClose={()=>setShowAdmin(false)} /> : null}
 
-      {loading && <div className="loading">{t('loading')}</div>}
-      {msg && <div style={{color:'green'}}>{msg}</div>}
-      {err && <div style={{color:'crimson'}}>{err}</div>}
-      <div className="columns">
-        <div className="col">
-          <h2>{t('orders')}</h2>
+        {loading && <div className="loading">{t('loading')}</div>}
+        {msg && <div style={{color:'green'}}>{msg}</div>}
+        {err && <div style={{color:'crimson'}}>{err}</div>}
+        <div className="columns">
+          <div className="col">
+            <h2>{t('orders')}</h2>
           <ul>
             {orders.map(o => (
               <li key={o.order_id}>
@@ -225,7 +237,7 @@ export default function App(){
             </FormField>
             <FormField>
               <select value={tsOrder} onChange={e=>setTsOrder(e.target.value)}>
-                <option value="">-- select order (optional) --</option>
+                <option value="">{t('select_order_optional')}</option>
                 {orders.map(o=> <option key={o.order_id} value={o.order_id}>{o.order_id}</option>)}
               </select>
             </FormField>
@@ -275,6 +287,7 @@ export default function App(){
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   )
 }
