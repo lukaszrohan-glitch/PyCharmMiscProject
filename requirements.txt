@@ -1,6 +1,9 @@
 fastapi==0.115.0
 uvicorn[standard]==0.30.0
 # Postgres driver is optional; use requirements-postgres.txt if needed
+# psycopg2-binary==2.9.6
+httpx==0.24.1
+pydantic==2.6.4
 python-dotenv==1.0.1
 pytest==7.4.0
 alembic==1.11.1

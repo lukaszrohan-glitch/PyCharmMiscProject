@@ -359,3 +359,4 @@ def admin_purge_audit(days: int = 30, _ok: bool = Depends(check_admin_key)):
         return {"purged": True}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
+

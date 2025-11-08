@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 from fastapi import HTTPException, Depends, Header
 from jose import jwt
-from passlib.hash import bcrypt
+from passlib.hash import pbkdf2_sha256 as hasher
 
 from db import fetch_one, fetch_all, execute
 
@@ -57,7 +57,7 @@ def ensure_user_tables():
         row = fetch_one(SQL_GET_USER_BY_EMAIL, (admin_email,))
         if not row:
             user_id = 'admin'
-            pwd_hash = bcrypt.hash(os.getenv('ADMIN_PASSWORD', 'admin'))
+            pwd_hash = hasher.hash(os.getenv('ADMIN_PASSWORD', 'admin'))
             execute(SQL_INSERT_USER, (user_id, admin_email, None, pwd_hash, True, 'enterprise'), returning=True)
     except Exception:
         pass
@@ -79,7 +79,7 @@ def login_user(email: str, password: str) -> Dict:
     user = fetch_one(SQL_GET_USER_BY_EMAIL, (email,))
     if not user or not user.get('active'):
         raise HTTPException(status_code=401, detail='Invalid credentials')
-    if not bcrypt.verify(password, user['password_hash']):
+    if not hasher.verify(password, user['password_hash']):
         raise HTTPException(status_code=401, detail='Invalid credentials')
     token = _make_token(user)
     return {'token': token, 'user': {k: user[k] for k in ['user_id','email','company_id','is_admin','subscription_plan']}}
@@ -114,7 +114,7 @@ def require_admin(user=Depends(get_current_user)):
 def create_user(email: str, company_id: Optional[str], is_admin: bool, subscription_plan: Optional[str]) -> Dict:
     # auto-generate password
     raw_password = secrets.token_hex(4)  # short initial password; user should change
-    pwd_hash = bcrypt.hash(raw_password)
+    pwd_hash = hasher.hash(raw_password)
     user_id = f'U-{secrets.token_hex(3)}'
     rows = execute(SQL_INSERT_USER, (user_id, email, company_id, pwd_hash, is_admin, subscription_plan), returning=True)
     if not rows:
@@ -130,9 +130,9 @@ def list_users():
 
 def change_password(user_id: str, old_password: str, new_password: str):
     user = fetch_one(SQL_GET_USER_BY_ID, (user_id,))
-    if not user or not bcrypt.verify(old_password, user['password_hash']):
+    if not user or not hasher.verify(old_password, user['password_hash']):
         raise HTTPException(status_code=401, detail='Old password mismatch')
-    new_hash = bcrypt.hash(new_password)
+    new_hash = hasher.hash(new_password)
     execute(SQL_UPDATE_PASSWORD, (new_hash, user_id), returning=True)
     return {'changed': True}
 
@@ -149,4 +149,3 @@ def list_plans():
         if r.get('features'):
             r['features'] = r['features'].split(',')
     return rows
-
