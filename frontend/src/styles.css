@@ -609,6 +609,17 @@ ul li button:hover::before {
 .menu-item { width:100%; text-align:left; background:transparent; color:#fff; border:none; padding:10px; border-radius:6px; font-size:14px; }
 .menu-item.active { background:rgba(72,187,120,0.25); border:1px solid #48bb78; }
 
-/* Language buttons same size */
-.lang-btn { background:transparent; border:2px solid transparent; padding:6px 10px; font-size:14px; line-height:1; min-width:42px; color:#fff; font-weight:700; border-radius:6px; cursor:pointer; }
-.lang-btn.active { background:rgba(72,187,120,0.25); border-color:#48bb78; }
+/* Accessible menu and skip link enhancements */
+.menu-dropdown { position:absolute; inset-block-start:100%; inline-size:220px; transform-origin:top; transform:scaleY(0); opacity:0; pointer-events:none; transition:transform .16s ease, opacity .16s ease; background:#1f3d5c; border:1px solid rgba(255,255,255,.25); border-radius:8px; padding:6px; box-shadow:0 8px 18px rgba(0,0,0,.35); }
+.menu-dropdown.open { transform:scaleY(1); opacity:1; pointer-events:auto; }
+.menu-list { list-style:none; margin:0; padding:0; }
+.menu-item { padding:.75rem 1rem; text-align:left; width:100%; background:transparent; color:#fff; border:none; border-radius:6px; font-size:14px; }
+.menu-item:hover, .menu-item:focus { background:rgba(255,255,255,.12); outline:none; }
+.menu-item.active { font-weight:600; background:rgba(72,187,120,.25); border:1px solid #48bb78; }
+.lang-btn, .menu-btn { min-inline-size:44px; min-block-size:44px; }
+.skip-link { position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden; }
+.skip-link:focus { left:1rem; top:1rem; width:auto; height:auto; background:#1f3d5c; color:#fff; padding:.5rem .75rem; border-radius:6px; z-index:1000; }
+.logo-icon rect { fill:#2c5282 }
+.logo-icon circle { fill:#48bb78 }
+.logo-icon path { stroke:#fff }
+@media (prefers-reduced-motion: reduce){ .menu-dropdown { transition:none; }}
