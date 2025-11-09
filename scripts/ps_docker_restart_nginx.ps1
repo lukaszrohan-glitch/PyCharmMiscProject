@@ -1,8 +1,16 @@
 # PowerShell helper to restart nginx service via docker-compose (PowerShell friendly)
-param()
+param(
+    [string]$Service = 'nginx'
+)
 
-Write-Host "Restarting nginx via docker-compose..." -ForegroundColor Cyan
-$proc = Start-Process -FilePath docker-compose -ArgumentList @('restart','nginx') -NoNewWindow -Wait -PassThru
-if ($proc.ExitCode -ne 0) { Write-Error "docker-compose restart nginx failed with exit code $($proc.ExitCode)"; exit $proc.ExitCode }
-Write-Host "nginx restarted." -ForegroundColor Green
+Write-Host "Restarting service '$Service' via docker-compose..." -ForegroundColor Cyan
 
+# Use the call operator (&) so PowerShell passes arguments correctly to docker-compose
+& docker-compose restart $Service
+$rc = $LASTEXITCODE
+if ($rc -ne 0) {
+    Write-Error "docker-compose restart $Service failed with exit code $rc"
+    exit $rc
+}
+
+Write-Host "$Service restarted." -ForegroundColor Green

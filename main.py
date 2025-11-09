@@ -119,6 +119,11 @@ except Exception:
 def health():
     return {"ok": True}
 
+# Compatibility route: some proxies forward /api/healthz
+@app.get("/api/healthz")
+def health_api():
+    return health()
+
 
 # ---- READ ENDPOINTS ----
 @app.get("/api/orders", response_model=List[Order])
