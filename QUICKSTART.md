@@ -1,153 +1,227 @@
-# Quick Start Guide - SMB Tool
+# Arkuszownia SMB - Quick Start Guide
 
-## Problem: Can't see Docker containers?
+## For Windows Users (5 minutes to production)
 
-You have **3 easy options** to run the app:
+### Step 1: Prerequisites Check
+```powershell
+# Check if Docker is installed
+docker --version
 
----
+# Check if Node.js is installed
+node --version
 
-## Option 1: Diagnose Docker (RECOMMENDED FIRST)
-
-Run this to check what's wrong:
-```cmd
-scripts\docker-diagnostic.cmd
+# Check if Git is installed
+git --version
 ```
 
-This will tell you:
-- ✓ Is Docker Desktop running?
-- ✓ Can Docker commands work?
-- ✓ Are there any containers?
-- ✓ What's the status?
+If any command fails, install:
+- **Docker Desktop**: https://www.docker.com/products/docker-desktop/
+- **Node.js**: https://nodejs.org/ (LTS version)
+- **Git**: https://git-scm.com/download/win
 
-**If Docker Desktop isn't running:**
-1. Open Start Menu
-2. Type "Docker Desktop"
-3. Click to open
-4. Wait for whale icon in system tray to be green
-5. Try the diagnostic again
-
----
-
-## Option 2: Use Docker (after starting Desktop)
-
-Once Docker Desktop is running:
-
-### Simple start:
-```cmd
-docker compose up -d --build
+### Step 2: Clone or Navigate to Project
+```powershell
+cd C:\Users\lukas\PyCharmMiscProject
 ```
 
-### Full reset (if problems):
-```cmd
-scripts\reset-docker.cmd
-```
-
-### Check it's working:
-```cmd
-docker compose ps
-```
-
-Should show 3 services running:
-- db (postgres)
-- backend (python/fastapi)
-- frontend (vite/react)
-
----
-
-## Option 3: Run Locally (NO Docker needed) ⭐
-
-**If Docker keeps having issues, skip it entirely:**
-
-```cmd
-scripts\start-local.cmd
+### Step 3: Start the Application
+```powershell
+.\manage.ps1 start
 ```
 
 This will:
-1. ✓ Check Python is installed
-2. ✓ Check Node.js is installed
-3. ✓ Install dependencies
-4. ✓ Start backend on port 8000
-5. ✓ Start frontend on port 5173
-6. ✓ Open 2 terminal windows (one for each)
+1. Build the React frontend
+2. Start PostgreSQL database
+3. Start FastAPI backend
+4. Start Nginx reverse proxy
 
-**Advantages:**
-- No Docker Desktop needed
-- Faster startup
-- Easier to debug
-- Works even if Docker is broken
+### Step 4: Verify Everything Works
+```powershell
+.\manage.ps1 test
+```
 
-**What you get:**
-- Backend: http://localhost:8000
-- API Docs: http://localhost:8000/docs
-- Frontend: http://localhost:5173 (Polish UI with 🇵🇱/🇬🇧 toggle)
+You should see:
+```
+[1/3] Frontend... OK
+[2/3] API health... OK
+[3/3] API endpoint... OK
 
----
+All tests passed!
+```
 
-## Access the App
+### Step 5: Open the Application
+Open your browser and go to:
+**http://localhost:8080**
 
-Once running (either Docker or local):
-
-**Frontend:** http://localhost:5173
-- **Modern interface** with blue gradient header and color-coded status badges
-- Default language: Polish (polski)
-- Switch to English: click 🇬🇧 flag in header
-- Admin panel: click "Toggle Admin" button
-- **Color-coded statuses**: Cyan (New), Yellow (Planned), Orange (In Production), Green (Done), Purple (Invoiced)
-
-**Backend API:** http://localhost:8000/docs
-
-**Default credentials:**
-- API Key: `changeme123`
-- Admin Key: `test-admin-key`
+🎉 **You're done!**
 
 ---
 
-## Common Issues
+## Common Commands
 
-### "React is not defined" white page
-**Fix:** Hard refresh (Ctrl+F5) or open in Incognito window
+| Command | Description |
+|---------|-------------|
+| `.\manage.ps1 start` | Start all services |
+| `.\manage.ps1 stop` | Stop all services |
+| `.\manage.ps1 restart` | Restart services |
+| `.\manage.ps1 rebuild` | Full rebuild |
+| `.\manage.ps1 status` | Check status |
+| `.\manage.ps1 logs` | View logs |
+| `.\manage.ps1 test` | Run health checks |
+| `.\manage.ps1 clean` | Remove everything |
 
-### Port already in use
-**Fix:** Stop other services using ports 8000, 5173, or 5432
+## Troubleshooting
 
-### Node not found
-**Fix:** Install Node.js from https://nodejs.org (LTS version)
+### Port 8080 already in use
+Edit `docker-compose.yml` and change:
+```yaml
+nginx:
+  ports:
+    - "8081:80"  # Change 8080 to 8081
+```
 
-### Python not found
-**Fix:** Install Python 3.9+ from https://python.org
+### Frontend shows blank page
+```powershell
+.\manage.ps1 rebuild
+```
+
+### Database issues
+```powershell
+.\manage.ps1 clean
+.\manage.ps1 start
+```
+
+### View detailed logs
+```powershell
+docker-compose logs backend
+docker-compose logs nginx
+docker-compose logs db
+```
+
+## API Testing
+
+### Using PowerShell
+```powershell
+# Health check
+Invoke-WebRequest -Uri "http://localhost:8080/api/healthz" -UseBasicParsing
+
+# Get products (requires API key)
+$headers = @{'X-API-Key'='dev-key-change-in-production'}
+Invoke-WebRequest -Uri "http://localhost:8080/api/products" -Headers $headers -UseBasicParsing
+```
+
+### Using curl (if installed)
+```bash
+# Health check
+curl http://localhost:8080/api/healthz
+
+# Get products
+curl -H "X-API-Key: dev-key-change-in-production" http://localhost:8080/api/products
+```
+
+## Production Deployment
+
+### 1. Update Security Settings
+Edit `.env` file:
+```env
+API_KEYS=your-secure-random-key-here
+ADMIN_KEY=your-secure-admin-key-here
+```
+
+### 2. Enable Cloudflare Tunnel (Optional)
+1. Create tunnel at https://one.dash.cloudflare.com/
+2. Copy the tunnel token
+3. Add to `.env`:
+   ```env
+   CLOUDFLARE_TUNNEL_TOKEN=your-token-here
+   ```
+4. Start with production profile:
+   ```powershell
+   docker-compose --profile production up -d
+   ```
+
+### 3. Set up Backups
+```powershell
+# Backup database
+docker-compose exec db pg_dump -U smb_user smbtool > backup-$(Get-Date -Format 'yyyy-MM-dd').sql
+
+# Restore database
+Get-Content backup-2025-11-09.sql | docker-compose exec -T db psql -U smb_user smbtool
+```
+
+## Architecture Overview
+
+```
+Browser (You)
+    ↓
+http://localhost:8080
+    ↓
+┌─────────────────────────────────┐
+│   Nginx (Reverse Proxy)         │
+│   Port 8080                      │
+│                                  │
+│   ├─ / → Frontend (React)       │
+│   └─ /api/* → Backend (FastAPI) │
+└─────────────┬───────────────────┘
+              │
+    ┌─────────┴────────┐
+    ↓                  ↓
+┌─────────────┐  ┌──────────────┐
+│  Frontend   │  │  Backend     │
+│  (React)    │  │  (Python)    │
+│  Static     │  │  Port 8000   │
+│  Files      │  │              │
+└─────────────┘  └──────┬───────┘
+                        ↓
+                 ┌──────────────┐
+                 │  PostgreSQL  │
+                 │  Database    │
+                 │  Port 5432   │
+                 └──────────────┘
+```
+
+## Features
+
+✅ **Order Management** - Create and track customer orders
+✅ **Inventory Control** - Manage stock levels
+✅ **Timesheet Tracking** - Log employee working hours
+✅ **Financial Reports** - View revenue and costs
+✅ **Multi-language** - Polish and English support
+✅ **API Access** - RESTful API with authentication
+✅ **Admin Panel** - User and key management
+
+## Default Test Data
+
+The system comes with sample data:
+- 2 Products (P-100, P-101)
+- 2 Customers (C-1001, C-1002)
+- 2 Employees (E-1, E-2)
+- Sample orders, inventory, and timesheets
+
+## Need Help?
+
+1. Check the main README.md for detailed documentation
+2. Run `.\manage.ps1 help` for command help
+3. View logs: `.\manage.ps1 logs`
+4. Test health: `.\manage.ps1 test`
+
+## System Requirements
+
+- **OS**: Windows 10/11 with WSL2
+- **RAM**: 4GB minimum, 8GB recommended
+- **Disk**: 2GB free space
+- **CPU**: 2 cores minimum
+
+## Performance Tips
+
+1. **Use SSD** - Database performs better on SSD
+2. **Allocate more RAM to Docker** - In Docker Desktop settings
+3. **Close unused applications** - Free up system resources
+4. **Regular cleanup** - Run `.\manage.ps1 clean` periodically
 
 ---
 
-## All Available Scripts
-
-| Script | Purpose | When to Use |
-|--------|---------|-------------|
-| `docker-diagnostic.cmd` | Check Docker status | First step when Docker isn't working |
-| `start-local.cmd` | Run without Docker | Docker not available or having issues |
-| `reset-docker.cmd` | Full Docker reset | Docker containers broken/corrupted |
-| `fix-frontend-build.cmd` | Fix node_modules error | Docker build fails with symlink error |
-| `frontend-dev.cmd` | Start frontend only | Just need frontend dev server |
-
----
-
-## Still Stuck?
-
-1. Try local mode: `scripts\start-local.cmd`
-2. Check detailed guide: `DOCKER_TROUBLESHOOTING.md`
-3. Make sure Docker Desktop is actually running (whale icon in tray)
-4. Restart computer
-5. Reinstall Docker Desktop
-
----
-
-## What's Next?
-
-Once the app is running:
-1. Open http://localhost:5173
-2. Set API key: paste `changeme123` and click "Set API key"
-3. Create a test order
-4. View finance panel for that order
-5. Try switching between Polish (🇵🇱) and English (🇬🇧)
-
-For production deployment, see README.md
+**Version**: 1.0.0  
+**Last Updated**: November 9, 2025  
+**License**: Proprietary
 
