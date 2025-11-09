@@ -1,9 +1,0 @@
-# Config file for cloudflared
-tunnel: 9320212e-f379-4261-8777-f9623823beee
-
-ingress:
-  - hostname: arkuszowniasmb.pl
-    service: http://nginx:80
-  - hostname: www.arkuszowniasmb.pl
-    service: http://nginx:80
-  - service: http_status:404
