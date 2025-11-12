@@ -1,0 +1,18 @@
+# This file tells cloudflared how to route traffic from your public domain to your internal services.
+# For more details, see: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/tunnel-guide/local/local-management/ingress/
+
+# The hostname is the publicly accessible URL for your service.
+# The service is the internal address of your application (http://nginx:80).
+# noTLSVerify: true is added to solve the "Cannot determine default origin certificate path" error.
+ingress:
+  - hostname: arkuszowniasmb.pl
+    service: http://nginx:80
+    originRequest:
+      noTLSVerify: true
+  - hostname: www.arkuszowniasmb.pl
+    service: http://nginx:80
+    originRequest:
+      noTLSVerify: true
+  # This is a catch-all rule that will respond with a 404 for any other traffic.
+  - service: http_status:404
+

@@ -1,6 +1,6 @@
 # Dockerfile for SMB Tool backend (FastAPI)
 # Base image
-FROM python:3.11-slim as builder
+FROM python:3.11-slim AS builder
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -52,6 +52,9 @@ USER app
 # Copy application code
 COPY --chown=app:app . .
 
+# Add entrypoint script and ensure executable
+RUN chmod +x entrypoint.sh
+
 # Create necessary directories with proper permissions
 RUN mkdir -p /app/logs && chmod 755 /app/logs
 
@@ -62,5 +65,5 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 # Expose port
 EXPOSE 8000
 
-# Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run via entrypoint to wait for DB and run migrations
+CMD ["./entrypoint.sh"]

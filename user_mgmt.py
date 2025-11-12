@@ -13,6 +13,8 @@ from db import fetch_one, fetch_all, execute
 JWT_SECRET = os.getenv('JWT_SECRET', secrets.token_urlsafe(32))
 JWT_ALG = 'HS256'
 JWT_EXP_MINUTES = int(os.getenv('JWT_EXP_MINUTES', '120'))
+# Added missing refresh token lifetime constant (was causing NameError)
+JWT_REFRESH_DAYS = int(os.getenv('JWT_REFRESH_DAYS', '7'))
 MAX_LOGIN_ATTEMPTS = 5
 LOGIN_LOCKOUT_MINUTES = 15
 
@@ -161,9 +163,13 @@ def require_admin(user=Depends(get_current_user)):
 
 # --- CRUD ops ---
 
-def create_user(email: str, company_id: Optional[str], is_admin: bool, subscription_plan: Optional[str]) -> Dict:
-    # auto-generate password
-    raw_password = secrets.token_hex(4)  # short initial password; user should change
+def create_user(email: str, company_id: Optional[str], is_admin: bool, subscription_plan: Optional[str], initial_password: Optional[str] = None) -> Dict:
+    # If caller supplies a password use it (trim to 72 bytes for hash libs that warn)
+    raw_password = initial_password.strip() if initial_password else secrets.token_hex(8)
+    if len(raw_password) > 72:
+        raw_password = raw_password[:72]
+    if len(raw_password) < 8:
+        raise HTTPException(status_code=400, detail='Password too short (min 8 chars)')
     pwd_hash = hasher.hash(raw_password)
     user_id = f'U-{secrets.token_hex(3)}'
     rows = execute(SQL_INSERT_USER, (user_id, email, company_id, pwd_hash, is_admin, subscription_plan), returning=True)

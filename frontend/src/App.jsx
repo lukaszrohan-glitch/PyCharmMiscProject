@@ -1,24 +1,66 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
+import Login from './components/Login';
+import Dashboard from './components/Dashboard';
+import Settings from './components/Settings';
+import { getToken, setToken } from './services/api';
 import styles from './App.module.css';
 
+// Placeholder components for different views
+const Orders = () => <div>Orders View (w budowie)</div>;
+const Inventory = () => <div>Inventory View (w budowie)</div>;
+const Timesheets = () => <div>Timesheets View (w budowie)</div>;
+const Reports = () => <div>Reports View (w budowie)</div>;
+
 export default function App() {
-  const [lang, setLang] = useState(
-    localStorage.getItem('lang') || 'pl'
-  );
+  const [lang, setLang] = useState(localStorage.getItem('lang') || 'pl');
   const [currentView, setCurrentView] = useState('dashboard');
-  const [profile] = useState({
-    name: 'Admin',
-    email: 'admin@arkuszowniasmb.pl'
-  });
+  const [profile, setProfile] = useState(null);
+  const [isSettingsOpen, setSettingsOpen] = useState(false);
+
+  // Check for existing token on initial load
+  useEffect(() => {
+    const token = getToken();
+    if (token) {
+      // In a real app, you'd verify the token and fetch the user profile
+      setProfile({ name: 'Admin', email: 'admin@arkuszowniasmb.pl', is_admin: true });
+    }
+  }, []);
+
+  const handleLogin = (data) => {
+    setProfile(data.user);
+    setToken(data.token);
+  };
 
   const handleLogout = () => {
-    alert(lang === 'pl' ? 'Wylogowano (demo)' : 'Logged out (demo)');
+    setProfile(null);
+    setToken(null);
+    setCurrentView('dashboard');
   };
 
   const handleSettings = () => {
-    alert(lang === 'pl' ? 'Ustawienia (w przygotowaniu)' : 'Settings (coming soon)');
+    setSettingsOpen(true);
   };
+
+  const renderView = () => {
+    switch (currentView) {
+      case 'orders':
+        return <Orders />;
+      case 'inventory':
+        return <Inventory />;
+      case 'timesheets':
+        return <Timesheets />;
+      case 'reports':
+        return <Reports />;
+      case 'dashboard':
+      default:
+        return <Dashboard lang={lang} setCurrentView={setCurrentView} />;
+    }
+  };
+
+  if (!profile) {
+    return <Login onLogin={handleLogin} lang={lang} setLang={setLang} />;
+  }
 
   return (
     <div className={styles.app}>
@@ -33,83 +75,16 @@ export default function App() {
       />
       <main id="main-content" className={styles.mainContent}>
         <div className={styles.container}>
-          <div className={styles.hero}>
-            <h1 className={styles.heroTitle}>
-              {lang === 'pl' ? 'Witamy w Arkuszownia SMB' : 'Welcome to Arkuszownia SMB'}
-            </h1>
-            <p className={styles.heroSubtitle}>
-              {lang === 'pl'
-                ? 'System zarządzania produkcją dla małych i średnich przedsiębiorstw'
-                : 'Manufacturing management system for small and medium enterprises'
-              }
-            </p>
-          </div>
-
-          <div className={styles.cards}>
-            <div className={styles.card}>
-              <div className={styles.cardIcon}>📋</div>
-              <h3 className={styles.cardTitle}>
-                {lang === 'pl' ? 'Zamówienia' : 'Orders'}
-              </h3>
-              <p className={styles.cardText}>
-                {lang === 'pl'
-                  ? 'Zarządzaj zamówieniami klientów'
-                  : 'Manage customer orders'
-                }
-              </p>
-            </div>
-
-            <div className={styles.card}>
-              <div className={styles.cardIcon}>📦</div>
-              <h3 className={styles.cardTitle}>
-                {lang === 'pl' ? 'Magazyn' : 'Inventory'}
-              </h3>
-              <p className={styles.cardText}>
-                {lang === 'pl'
-                  ? 'Kontroluj stany magazynowe'
-                  : 'Control inventory levels'
-                }
-              </p>
-            </div>
-
-            <div className={styles.card}>
-              <div className={styles.cardIcon}>⏱️</div>
-              <h3 className={styles.cardTitle}>
-                {lang === 'pl' ? 'Czas pracy' : 'Timesheets'}
-              </h3>
-              <p className={styles.cardText}>
-                {lang === 'pl'
-                  ? 'Monitoruj czas pracowników'
-                  : 'Monitor employee time'
-                }
-              </p>
-            </div>
-
-            <div className={styles.card}>
-              <div className={styles.cardIcon}>📈</div>
-              <h3 className={styles.cardTitle}>
-                {lang === 'pl' ? 'Raporty' : 'Reports'}
-              </h3>
-              <p className={styles.cardText}>
-                {lang === 'pl'
-                  ? 'Analizuj wyniki działalności'
-                  : 'Analyze business results'
-                }
-              </p>
-            </div>
-          </div>
-
-          <div className={styles.status}>
-            <div className={styles.statusBadge}>
-              <span className={styles.statusDot}></span>
-              <span className={styles.statusText}>
-                {lang === 'pl' ? 'System działa poprawnie' : 'System operational'}
-              </span>
-            </div>
-          </div>
+          {renderView()}
         </div>
       </main>
+      {isSettingsOpen && (
+        <Settings
+          profile={profile}
+          onClose={() => setSettingsOpen(false)}
+          lang={lang}
+        />
+      )}
     </div>
   );
 }
-

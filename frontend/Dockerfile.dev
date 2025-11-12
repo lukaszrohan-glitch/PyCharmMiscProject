@@ -1,21 +1,34 @@
-FROM node:18-alpine AS builder
+# Use Node.js 18 as base
+FROM node:18-slim
 
+# Install dependencies required for development
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
 WORKDIR /app
 
-# Copy package files first (for better caching)
+# Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies with legacy peer deps to handle conflicts
+RUN npm install --legacy-peer-deps
 
-# Copy source files (node_modules excluded via .dockerignore)
+# Copy the rest of the code
 COPY . .
 
-# Build the app
-RUN npm run build
+# Set permissions for node_modules and create .vite directory
+RUN mkdir -p node_modules/.vite && \
+    chown -R node:node /app && \
+    chmod -R 755 /app
 
-FROM nginx:alpine
-COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/nginx.conf
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+# Switch to non-root user
+USER node
+
+# Expose Vite's default port
+EXPOSE 5173
+
+# Start Vite dev server with host set to allow external connections
+CMD ["sh", "-c", "npm run dev -- --host 0.0.0.0"]

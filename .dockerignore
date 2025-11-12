@@ -1,0 +1,13 @@
+.git
+.gitignore
+*.pyc
+__pycache__/
+logs/
+.db.sqlite
+_dev_db.sqlite
+frontend/node_modules/
+frontend/.env
+.env
+*.log
+cloudflared.log
+

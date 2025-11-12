@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:15
+    container_name: smb_db
     environment:
       POSTGRES_DB: smbtool
       POSTGRES_USER: smb_user
@@ -17,15 +18,11 @@ services:
 
   backend:
     build: .
+    container_name: smb_backend
     depends_on:
       db:
         condition: service_healthy
-    environment:
-      DATABASE_URL: postgresql://smb_user:smb_password@db:5432/smbtool
-      CORS_ORIGINS: "http://localhost:8080,http://localhost:3000,https://arkuszowniasmb.pl"
-      API_KEYS: ${API_KEYS:-dev-key-change-in-production}
-      ADMIN_KEY: ${ADMIN_KEY:-admin-change-in-production}
-      ALLOWED_HOSTS: "localhost,127.0.0.1,arkuszowniasmb.pl"
+    env_file: .env
     volumes:
       - ./logs:/app/logs
     healthcheck:
@@ -35,8 +32,18 @@ services:
       retries: 3
     restart: unless-stopped
 
+  frontend-build:
+    image: node:18-alpine
+    container_name: smb_frontend_build
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    command: sh -lc "npm ci && npm run build"
+    restart: "no"
+
   nginx:
     image: nginx:alpine
+    container_name: smb_nginx
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./logs/nginx:/var/log/nginx
@@ -44,12 +51,30 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_started
+      frontend-build:
+        condition: service_completed_successfully
     restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: smb_cloudflared
+    env_file: .env
+    environment:
+      TUNNEL_METRICS: "0.0.0.0:20241"
+      TUNNEL_LOGLEVEL: "info"
+    command: --no-autoupdate tunnel run --token ${TUNNEL_TOKEN}
+    volumes:
+      - ./config.yml:/etc/cloudflared/config.yml:ro
+    depends_on:
+      - nginx
+    restart: unless-stopped
+
+volumes:
+  db_data:
 
 networks:
   default:
     name: arkuszowniasmb_net
-
-volumes:
-  db_data:
+    driver: bridge

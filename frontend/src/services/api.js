@@ -42,7 +42,24 @@ export function setApiKey(key){
 export function setAdminKey(key){
   ADMIN_KEY = key
 }
-export function setToken(t){ TOKEN = t }
+export function setToken(t){
+  TOKEN = t
+  try {
+    if (t) {
+      localStorage.setItem('token', t)
+    } else {
+      localStorage.removeItem('token')
+    }
+  } catch {}
+}
+export function getToken(){
+  if (TOKEN) return TOKEN
+  try {
+    const t = localStorage.getItem('token')
+    if (t) TOKEN = t
+  } catch {}
+  return TOKEN
+}
 
 async function req(path){
   const res = await fetch(`${API_BASE}${path}`)

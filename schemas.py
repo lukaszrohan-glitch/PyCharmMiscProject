@@ -105,6 +105,7 @@ class UserCreateAdmin(BaseModel):
     company_id: Optional[str] = None
     is_admin: bool = False
     subscription_plan: Optional[str] = 'free'
+    password: Optional[str] = None  # optional initial password supplied by admin
 
 
 class UserLogin(BaseModel):

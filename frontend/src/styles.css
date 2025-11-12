@@ -692,32 +692,45 @@ ul li button:hover::before {
   font-size: .85rem;
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  body {
-    background: #111827;
-    color: #f1f5f9;
-  }
-
-  .login-card {
-    background: #1f2937;
-    color: #f1f5f9;
-  }
-
-  .login-card input {
-    background: #111827;
-    color: #f1f5f9;
-    border-color: #374151;
-  }
-
-  .login-card button {
-    background: #2563eb;
-  }
-
-  .col {
-    background: #1f2937;
-  }
+/* Login page wrapper & brand */
+.login-wrapper{
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
 }
+@media (prefers-color-scheme: dark){
+  .login-wrapper{ background: linear-gradient(180deg, #0b1220 0%, #0e1626 100%); }
+}
+.login-brand{
+  display:flex; align-items:center; justify-content:center; gap:12px; padding:24px 16px;
+}
+.logo-mini{ width:40px; height:40px; border-radius:10px; background:#2563eb; color:#fff; display:grid; place-items:center; font-weight:700 }
+.brand-title{ margin:0; line-height:1; font-size:1.25rem }
+.brand-tag{ margin:2px 0 0; color:#6b7280; font-size:.9rem }
+.lang-inline{ margin-left:auto; display:flex; gap:6px; }
+.lang-inline button{ padding:6px 10px; border:1px solid #e5e7eb; border-radius:999px; background:#fff; cursor:pointer }
+.lang-inline button.active{ background:#111827; color:#fff; border-color:#111827 }
+@media (prefers-color-scheme: dark){
+  .brand-tag{ color:#9ca3af }
+  .lang-inline button{ background:#1f2937; border-color:#374151; color:#e5e7eb }
+  .lang-inline button.active{ background:#2563eb; border-color:#2563eb }
+}
+
+/* Fields & primary button in login card */
+.field{ display:flex; flex-direction:column; gap:6px }
+.field span{ font-size:.9rem; color:#475569 }
+.pwd-row{ display:flex; gap:6px }
+.toggle-pwd{ padding:10px 12px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; cursor:pointer }
+.primary-btn{ padding:10px 14px; border:0; border-radius:8px; background:#2563eb; color:#fff; font-weight:600; cursor:pointer }
+.primary-btn:disabled{ background:#93c5fd; cursor:not-allowed }
+.disclaimer{ margin:8px 0 0; font-size:.8rem; color:#64748b }
+@media (prefers-color-scheme: dark){
+  .field span{ color:#cbd5e1 }
+  .toggle-pwd{ background:#111827; border-color:#374151; color:#e5e7eb }
+  .disclaimer{ color:#9ca3af }
+}
+
 /* ============================================
    IMPROVED HEADER STYLES (Odoo-like)
    ============================================ */

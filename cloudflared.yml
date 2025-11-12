@@ -1,0 +1,7 @@
+url: http://localhost:8080
+logfile: C:\Users\lukas\.cloudflared\cloudflared.log
+loglevel: debug
+metrics: 127.0.0.1:49500
+no-autoupdate: true
+# Token-based auth: start cloudflared with: cloudflared.exe tunnel --no-autoupdate run --token <TOKEN>
+# Do not add tunnel credentials or cert here when using a token-only setup.

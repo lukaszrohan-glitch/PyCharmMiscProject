@@ -1,40 +1,40 @@
 #!/usr/bin/env python3
-import sys
 import os
+import sys
 import secrets
-import bcrypt
+from passlib.hash import pbkdf2_sha256 as hasher
+
 sys.path.append(os.path.dirname(__file__))
+from db import execute, fetch_one
 
-from db import execute
+SQL_GET_USER_BY_EMAIL = "SELECT user_id, email FROM users WHERE email = %s LIMIT 1;"
+SQL_INSERT_USER = "INSERT INTO users (user_id, email, company_id, password_hash, is_admin, subscription_plan) VALUES (%s, %s, %s, %s, %s, %s) RETURNING user_id;"
+SQL_UPDATE_PASSWORD = "UPDATE users SET password_hash = %s WHERE user_id = %s RETURNING user_id;"
 
-def create_admin():
-    email = 'ciopqj@gmail.com'
-    password = 'SMB#Admin2025!'  # More secure password
-    company_id = 'SMB'
-    is_admin = True
-    subscription_plan = 'premium'
+def create_or_update_admin():
+    email = os.getenv('ADMIN_EMAIL', 'admin@example.com').strip()
+    password = os.getenv('ADMIN_PASSWORD', 'admin')
+    company_id = os.getenv('ADMIN_COMPANY', 'SMB')
+    plan = os.getenv('ADMIN_PLAN', 'enterprise')
 
-    # Bcrypt password hashing
-    pwd_bytes = password.encode('utf-8')
-    if len(pwd_bytes) > 72:
-        pwd_bytes = pwd_bytes[:72]
-    pwd_hash = bcrypt.hashpw(pwd_bytes, bcrypt.gensalt()).decode('utf-8')
+    row = fetch_one(SQL_GET_USER_BY_EMAIL, (email,))
+    if row:
+        # Update password for existing admin/user
+        pwd_hash = hasher.hash(password)
+        execute(SQL_UPDATE_PASSWORD, (pwd_hash, row['user_id']), returning=True)
+        print(f"Updated password for existing user: {email}")
+        return
 
-    user_id = f'U-{secrets.token_hex(3)}'
-
-    try:
-        rows = execute("INSERT INTO users (user_id, email, company_id, password_hash, is_admin, subscription_plan) VALUES (%s, %s, %s, %s, %s, %s) RETURNING user_id, email, company_id, is_admin, subscription_plan;",
-                      (user_id, email, company_id, pwd_hash, is_admin, subscription_plan),
-                      returning=True)
-        if rows:
-            print(f"Admin user created successfully!")
-            print(f"Login with:")
-            print(f"Email: {email}")
-            print(f"Password: {password}")
-        else:
-            print("Failed to create user")
-    except Exception as e:
-        print(f"Error creating admin: {e}")
+    user_id = 'admin'  # keep stable id for seeded admin
+    pwd_hash = hasher.hash(password)
+    execute(SQL_INSERT_USER, (user_id, email, company_id, pwd_hash, True, plan), returning=True)
+    print("Admin user created successfully!")
+    print(f"Email: {email}")
+    print("Password: (taken from ADMIN_PASSWORD env)")
 
 if __name__ == '__main__':
-    create_admin()
+    try:
+        create_or_update_admin()
+    except Exception as e:
+        print(f"Error creating/updating admin: {e}")
+        sys.exit(1)

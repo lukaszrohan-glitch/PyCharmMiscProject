@@ -270,7 +270,7 @@ def auth_change_password(payload: PasswordChange, user=Depends(get_current_user)
 @app.post('/api/admin/users')
 def admin_create_user(payload: UserCreateAdmin, _admin=Depends(require_admin)):
     try:
-        row = create_user(payload.email, payload.company_id, payload.is_admin, payload.subscription_plan)
+        row = create_user(payload.email, payload.company_id, payload.is_admin, payload.subscription_plan, getattr(payload, 'password', None))
         return row
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
