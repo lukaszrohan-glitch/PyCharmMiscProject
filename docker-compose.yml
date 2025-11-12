@@ -49,7 +49,7 @@ services:
       - ./logs/nginx:/var/log/nginx
       - ./frontend/dist:/usr/share/nginx/html:ro
     ports:
-      - "8080:80"
+      - "8088:80"
     depends_on:
       backend:
         condition: service_started

@@ -4,9 +4,10 @@ function getApiBase() {
   const envBase = import.meta.env.VITE_API_BASE
 
   if (envBase) {
-    // Environment variable is set, use it
-    let base = envBase.replace(/\/+$/, '')
-    if (!base.endsWith('/api')) base = base + '/api'
+    // If provided explicitly, respect it as-is or normalize once
+    let base = envBase.trim()
+    // Normalize trailing slash only; do not force '/api' to avoid double prefixes
+    base = base.replace(/\/+$/, '')
     return base
   }
 
@@ -16,17 +17,17 @@ function getApiBase() {
     const protocol = window.location.protocol
     const port = window.location.port
 
-    // If we're on localhost:5173 (dev), use localhost:8000
+    // If we're on localhost:5173 (dev), talk to backend:8000 directly
     if (hostname === 'localhost' && port === '5173') {
       return `${protocol}//localhost:8000`
     }
 
-    // For production/tunnel access, use /api on same host (nginx proxies to backend)
-    return `${protocol}//${window.location.host}/api`
+    // In production/tunnel, use same-origin base (without '/api'); callers pass '/api/...'
+    return `${protocol}//${window.location.host}`
   }
 
-  // Fallback for SSR or build time
-  return '/api'
+  // Fallback
+  return ''
 }
 
 const API_BASE = getApiBase()
@@ -180,3 +181,8 @@ export const adminListKeys = () => reqAdmin('/api/admin/api-keys')
 export const adminCreateKey = (payload) => postAdmin('/api/admin/api-keys', payload)
 export const adminDeleteKey = (key) => delAdmin(`/api/admin/api-keys/${encodeURIComponent(key)}`)
 export const adminRotateKey = (keyId) => postAdmin(`/api/admin/api-keys/${encodeURIComponent(keyId)}/rotate`, {})
+
+// Password reset and user invitation
+export const requestPasswordReset = (email) => postAuth('/api/auth/request-reset', { email })
+export const resetPasswordWithToken = (token, new_password) => postAuth('/api/auth/reset', { token, new_password })
+export const inviteUserAdmin = (payload) => postAuth('/api/admin/users', payload)
