@@ -9,8 +9,9 @@ from passlib.hash import pbkdf2_sha256 as hasher
 
 from db import fetch_one, fetch_all, execute
 
-# Use a strong secret key in production
-JWT_SECRET = os.getenv('JWT_SECRET', secrets.token_urlsafe(32))
+# Use a strong secret key in production - must be at least 32 bytes for HS256
+_default_secret = os.urandom(32).hex() if not os.getenv('JWT_SECRET') else None
+JWT_SECRET = os.getenv('JWT_SECRET', _default_secret)
 JWT_ALG = 'HS256'
 JWT_EXP_MINUTES = int(os.getenv('JWT_EXP_MINUTES', '120'))
 # Added missing refresh token lifetime constant (was causing NameError)
@@ -61,14 +62,18 @@ def ensure_user_tables():
         execute(SQL_CREATE_USERS)
         execute(SQL_CREATE_PLANS)
         # seed admin user if not exists
-        admin_email = os.getenv('ADMIN_EMAIL', 'admin@example.com')
+        admin_email = os.getenv('ADMIN_EMAIL', 'admin@arkuszowniasmb.pl')
+        admin_password = os.getenv('ADMIN_PASSWORD', 'SMB#Admin2025!')
         row = fetch_one(SQL_GET_USER_BY_EMAIL, (admin_email,))
         if not row:
             user_id = 'admin'
-            pwd_hash = hasher.hash(os.getenv('ADMIN_PASSWORD', 'admin'))
+            pwd_hash = hasher.hash(admin_password)
             execute(SQL_INSERT_USER, (user_id, admin_email, None, pwd_hash, True, 'enterprise'), returning=True)
-    except Exception:
-        pass
+            print(f"✅ Admin user created: {admin_email}")
+        else:
+            print(f"✓ Admin user already exists: {admin_email}")
+    except Exception as e:
+        print(f"⚠ Error ensuring user tables: {e}")
 
 # --- Auth helpers ---
 
@@ -205,3 +210,33 @@ def list_plans():
         if r.get('features'):
             r['features'] = r['features'].split(',')
     return rows
+
+
+def request_password_reset(email: str) -> Dict:
+    user = fetch_one(SQL_GET_USER_BY_EMAIL, (email,))
+    if not user:
+        return {'message': 'If email exists, reset link has been sent'}
+    
+    reset_token = jwt.encode(
+        {'sub': user['user_id'], 'type': 'reset', 'exp': datetime.utcnow() + timedelta(hours=24)},
+        JWT_SECRET,
+        algorithm=JWT_ALG
+    )
+    return {'reset_token': reset_token, 'message': 'Reset token generated'}
+
+
+def reset_password_with_token(token: str, new_password: str) -> Dict:
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+        if payload.get('type') != 'reset':
+            raise HTTPException(status_code=400, detail='Invalid token type')
+        user_id = payload['sub']
+    except JWTError:
+        raise HTTPException(status_code=400, detail='Invalid or expired reset token')
+    
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail='Password too short (min 8 chars)')
+    
+    new_hash = hasher.hash(new_password)
+    execute(SQL_UPDATE_PASSWORD, (new_hash, user_id))
+    return {'changed': True}

@@ -9,7 +9,7 @@ ORDER BY order_date DESC, order_id;
 """
 
 SQL_FINANCE_ONE = """
-SELECT order_id, revenue, material_cost, labor_cost, gross_margin, last_updated
+SELECT order_id, revenue, material_cost, labor_cost, gross_margin
 FROM v_order_finance
 WHERE order_id = %s;
 """
@@ -21,7 +21,7 @@ ORDER BY order_id, component_id;
 """
 
 SQL_PLANNED_ONE = """
-SELECT order_id, total_hours, completed_hours, remaining_hours, efficiency
+SELECT order_id, planned_hours
 FROM v_planned_time
 WHERE order_id = %s;
 """

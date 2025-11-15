@@ -109,13 +109,12 @@ def create_api_key(label: Optional[str] = None, created_at: Optional[datetime] =
     """Create a new API key. Returns a dict with id, label, created_at, active and plaintext 'api_key' (only here).
     The plaintext is shown only once and is not stored in plaintext long-term (key_text is stored but can be nullified later).
     """
-    import db as _db
+    from db import _get_pool
 
     plaintext = secrets.token_urlsafe(32)
     key_hash, salt = _hash_key(plaintext)
 
-    # If using sqlite fallback (no pool), insert using sqlite-compatible placeholders and functions
-    if getattr(_db, '_get_pool')() is None:
+    if _get_pool() is None:
         # sqlite: use ? placeholders and datetime('now') instead of now()
         sql = """
         INSERT INTO api_keys (key_text, key_hash, salt, label, created_at, active)
@@ -199,9 +198,9 @@ def rotate_api_key(key_id: int, by: Optional[str] = None) -> Dict[str, Any]:
 
 def log_api_key_event(api_key_id: Optional[int], event_type: str, event_by: Optional[str] = None, details: Optional[dict] = None):
     try:
-        import db as _db
+        from db import _get_pool
         payload = (api_key_id, event_type, event_by, json.dumps(details) if details else None)
-        pool = getattr(_db, '_get_pool')()
+        pool = _get_pool()
         if pool is None:
             # sqlite: include event_time using datetime('now')
             sql = "INSERT INTO api_key_audit (api_key_id, event_type, event_by, event_time, details) VALUES (?, ?, ?, datetime('now'), ?)"

@@ -22,7 +22,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Install Python dependencies
 COPY requirements.txt .
-RUN pip install -r requirements.txt requests
+RUN pip install -r requirements.txt
 
 # Final stage
 FROM python:3.11-slim
@@ -37,7 +37,7 @@ ENV PATH="/opt/venv/bin:$PATH" \
 
 # Install runtime dependencies and setup user
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libpq5 curl \
+    && apt-get install -y --no-install-recommends libpq5 curl bash \
     && rm -rf /var/lib/apt/lists/* \
     && useradd -m -s /bin/bash app \
     && mkdir /app \
@@ -52,11 +52,11 @@ USER app
 # Copy application code
 COPY --chown=app:app . .
 
-# Add entrypoint script and ensure executable
-RUN chmod +x entrypoint.sh
-
 # Create necessary directories with proper permissions
 RUN mkdir -p /app/logs && chmod 755 /app/logs
+
+# Add entrypoint script and ensure executable
+RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
@@ -66,4 +66,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 EXPOSE 8000
 
 # Run via entrypoint to wait for DB and run migrations
-CMD ["./entrypoint.sh"]
+CMD ["sh", "/app/entrypoint.sh"]

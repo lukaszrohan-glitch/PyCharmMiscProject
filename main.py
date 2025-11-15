@@ -20,7 +20,7 @@ from queries import (
 )
 import auth
 from auth import log_api_key_event, mark_last_used
-from user_mgmt import ensure_user_tables, login_user, create_user, list_users, change_password, create_plan, list_plans, get_current_user, require_admin
+from user_mgmt import ensure_user_tables, login_user, create_user, list_users, change_password, create_plan, list_plans, get_current_user, require_admin, request_password_reset, reset_password_with_token
 
 app = FastAPI(title="SMB Tool API", version="1.0")
 
@@ -91,11 +91,9 @@ ADMIN_KEY = os.getenv("ADMIN_KEY")
 
 
 def check_admin_key(x_admin_key: Optional[str] = Header(None)):
-    admin_key = os.getenv("ADMIN_KEY")
-    if not admin_key:
-        # admin key not configured; deny access to admin endpoints in production unless set
+    if not ADMIN_KEY:
         raise HTTPException(status_code=401, detail="Admin key not configured")
-    if x_admin_key != admin_key:
+    if x_admin_key != ADMIN_KEY:
         raise HTTPException(status_code=401, detail="Invalid admin key")
     return True
 
@@ -129,9 +127,11 @@ def health_api():
 @app.get("/api/orders", response_model=List[Order])
 def orders_list():
     try:
-        return fetch_all(SQL_ORDERS)
+        rows = fetch_all(SQL_ORDERS)
+        return rows if rows else []
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+        print(f"Error fetching orders: {exc}")
+        raise HTTPException(status_code=500, detail="Failed to fetch orders")
 
 
 @app.get("/api/finance/{order_id}", response_model=Optional[Finance])
@@ -267,6 +267,23 @@ def auth_change_password(payload: PasswordChange, user=Depends(get_current_user)
     return change_password(user['user_id'], payload.old_password, payload.new_password)
 
 
+@app.post('/api/auth/request-reset')
+def auth_request_reset(payload: Dict[str, str]):
+    email = payload.get('email')
+    if not email:
+        raise HTTPException(status_code=400, detail='Email required')
+    return request_password_reset(email)
+
+
+@app.post('/api/auth/reset')
+def auth_reset(payload: Dict[str, str]):
+    token = payload.get('token')
+    new_password = payload.get('new_password')
+    if not token or not new_password:
+        raise HTTPException(status_code=400, detail='Token and new_password required')
+    return reset_password_with_token(token, new_password)
+
+
 @app.post('/api/admin/users')
 def admin_create_user(payload: UserCreateAdmin, _admin=Depends(require_admin)):
     try:
@@ -345,13 +362,11 @@ def admin_api_key_audit(_ok: bool = Depends(check_admin_key)):
 @app.delete('/api/admin/api-key-audit')
 def admin_purge_audit(days: int = 30, _ok: bool = Depends(check_admin_key)):
     try:
-        import db as _db
-        pool = getattr(_db, '_get_pool')()
+        from db import _get_pool
+        pool = _get_pool()
         if pool is None:
-            # sqlite: delete older than or equal to N days and any rows missing event_time
             execute("DELETE FROM api_key_audit WHERE event_time IS NULL OR event_time = '' OR event_time <= datetime('now', ?)", ("-" + str(days) + " days",))
         else:
-            # Postgres: delete older than or equal to N days and rows missing event_time
             execute("DELETE FROM api_key_audit WHERE event_time IS NULL OR event_time <= now() - interval '1 day' * %s", (days,))
         return {"purged": True}
     except Exception as exc:

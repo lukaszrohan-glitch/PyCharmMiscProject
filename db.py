@@ -212,8 +212,6 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
     cur.execute("INSERT OR IGNORE INTO inventory(txn_id, txn_date, product_id, qty_change, reason) VALUES (?,?,?,?,?)", ('TXN-PO-1', None, 'P-101', 500, 'PO'))
     conn.commit()
 
-    # Development views (simplified) so API queries don't fail under sqlite.
-    # v_order_finance: aggregate basic revenue & costs.
     cur.executescript("""
     CREATE VIEW IF NOT EXISTS v_order_finance AS
     SELECT
@@ -221,7 +219,8 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
       COALESCE(SUM(ol.qty * ol.unit_price * (1 - ol.discount_pct)), 0) AS revenue,
       COALESCE(SUM(ol.qty * p.std_cost), 0) AS material_cost,
       COALESCE((SELECT SUM(t.hours * e.hourly_rate) FROM timesheets t JOIN employees e ON t.emp_id = e.emp_id WHERE t.order_id = o.order_id), 0) AS labor_cost,
-      COALESCE(SUM(ol.qty * ol.unit_price * (1 - ol.discount_pct)), 0) - COALESCE(SUM(ol.qty * p.std_cost), 0) - COALESCE((SELECT SUM(t.hours * e.hourly_rate) FROM timesheets t JOIN employees e ON t.emp_id = e.emp_id WHERE t.order_id = o.order_id), 0) AS gross_margin
+      COALESCE(SUM(ol.qty * ol.unit_price * (1 - ol.discount_pct)), 0) - COALESCE(SUM(ol.qty * p.std_cost), 0) - COALESCE((SELECT SUM(t.hours * e.hourly_rate) FROM timesheets t JOIN employees e ON t.emp_id = e.emp_id WHERE t.order_id = o.order_id), 0) AS gross_margin,
+      datetime('now') AS last_updated
     FROM orders o
     LEFT JOIN order_lines ol ON o.order_id = ol.order_id
     LEFT JOIN products p ON ol.product_id = p.product_id
@@ -243,9 +242,15 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
     CREATE VIEW IF NOT EXISTS v_planned_time AS
     SELECT
       o.order_id,
-      COALESCE(SUM(ol.qty) * 0.1, 0) AS planned_hours
+      COALESCE(SUM(ol.qty) * 0.1, 0) AS planned_hours,
+      COALESCE(SUM(CASE WHEN t.hours IS NOT NULL THEN t.hours ELSE 0 END), 0) AS completed_hours,
+      MAX(COALESCE(SUM(ol.qty) * 0.1, 0) - COALESCE(SUM(CASE WHEN t.hours IS NOT NULL THEN t.hours ELSE 0 END), 0), 0) AS remaining_hours,
+      CASE WHEN COALESCE(SUM(ol.qty) * 0.1, 0) > 0 
+           THEN ROUND(100.0 * COALESCE(SUM(CASE WHEN t.hours IS NOT NULL THEN t.hours ELSE 0 END), 0) / COALESCE(SUM(ol.qty) * 0.1, 0), 2)
+           ELSE 0 END AS efficiency
     FROM orders o
     LEFT JOIN order_lines ol ON o.order_id = ol.order_id
+    LEFT JOIN timesheets t ON o.order_id = t.order_id
     GROUP BY o.order_id;
     """)
     # Insert minimal seed data for development views
