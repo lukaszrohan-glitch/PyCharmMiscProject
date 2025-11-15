@@ -302,6 +302,7 @@ def execute(sql: str, params: Optional[Tuple] = None, returning: bool = False):
         with get_conn() as conn:
             cur = conn.cursor()
             sql_exec = sql.replace('%s', '?') if params else sql
+            sql_exec = sql_exec.split('RETURNING')[0].rstrip() if 'RETURNING' in sql_exec else sql_exec
             cur.execute(sql_exec, params or ())
             if returning:
                 rows = cur.fetchall()
