@@ -8,7 +8,7 @@
   "deploy": {
     "numReplicas": 1,
     "restartPolicyType": "always",
-    "restartPolicyMaxRetries": 0,
+    "restartPolicyMaxRetries": 3,
     "healthchecks": {
       "liveness": {
         "type": "http",
