@@ -10,31 +10,31 @@ from db import fetch_all, fetch_one, execute
 
 SQL_CREATE_API_KEYS_TABLE = """
 CREATE TABLE IF NOT EXISTS api_keys (
-  id bigserial PRIMARY KEY,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
   key_text text,
   key_hash text,
   salt text,
   label text,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  active boolean NOT NULL DEFAULT true,
-  last_used timestamptz
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  active BOOLEAN NOT NULL DEFAULT 1,
+  last_used TEXT
 );
 """
 
 SQL_CREATE_API_KEY_AUDIT_TABLE = """
 CREATE TABLE IF NOT EXISTS api_key_audit (
-  audit_id bigserial PRIMARY KEY,
-  api_key_id bigint,
+  audit_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  api_key_id INTEGER,
   event_type text NOT NULL,
   event_by text,
-  event_time timestamptz NOT NULL DEFAULT now(),
+  event_time TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   details text
 );
 """
 
 SQL_INSERT_API_KEY = """
 INSERT INTO api_keys (key_text, key_hash, salt, label, created_at, active)
-VALUES (%s, %s, %s, %s, COALESCE(%s, now()), COALESCE(%s, true))
+VALUES (%s, %s, %s, %s, COALESCE(%s, CURRENT_TIMESTAMP), COALESCE(%s, 1))
 RETURNING id, key_text, label, created_at, active;
 """
 
@@ -48,11 +48,11 @@ SELECT id, key_text, label, created_at, active FROM api_keys ORDER BY created_at
 """
 
 SQL_GET_API_KEY_BY_KEYTEXT = """
-SELECT id, key_text, key_hash, salt, label, created_at, active FROM api_keys WHERE key_text = %s AND active = true LIMIT 1;
+SELECT id, key_text, key_hash, salt, label, created_at, active FROM api_keys WHERE key_text = %s AND active = 1 LIMIT 1;
 """
 
 SQL_GET_API_KEY_BY_HASH = """
-SELECT id, key_text, key_hash, salt, label, created_at, active FROM api_keys WHERE active = true;
+SELECT id, key_text, key_hash, salt, label, created_at, active FROM api_keys WHERE active = 1;
 """
 
 SQL_DELETE_API_KEY_BY_ID = """
@@ -64,11 +64,11 @@ DELETE FROM api_keys WHERE key_text = %s RETURNING id;
 """
 
 SQL_ROTATE_API_KEY = """
-UPDATE api_keys SET active = false WHERE id = %s RETURNING id;
+UPDATE api_keys SET active = 0 WHERE id = %s RETURNING id;
 """
 
 SQL_UPDATE_LAST_USED = """
-UPDATE api_keys SET last_used = now() WHERE id = %s RETURNING id;
+UPDATE api_keys SET last_used = CURRENT_TIMESTAMP WHERE id = %s RETURNING id;
 """
 
 

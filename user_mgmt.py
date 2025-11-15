@@ -26,13 +26,13 @@ CREATE TABLE IF NOT EXISTS users (
   email TEXT NOT NULL UNIQUE,
   company_id TEXT,
   password_hash TEXT NOT NULL,
-  is_admin BOOLEAN NOT NULL DEFAULT false,
-  active BOOLEAN NOT NULL DEFAULT true,
-  created_at timestamptz NOT NULL DEFAULT now(),
+  is_admin BOOLEAN NOT NULL DEFAULT 0,
+  active BOOLEAN NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   subscription_plan TEXT DEFAULT 'free',
   failed_login_attempts INTEGER DEFAULT 0,
-  last_failed_login timestamptz,
-  password_changed_at timestamptz DEFAULT now()
+  last_failed_login TEXT,
+  password_changed_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 """
 
@@ -119,7 +119,7 @@ def login_user(email: str, password: str) -> Dict:
     if not hasher.verify(password, user['password_hash']):
         # Update failed attempts
         execute(
-            "UPDATE users SET failed_login_attempts = COALESCE(failed_login_attempts, 0) + 1, last_failed_login = now() WHERE user_id = %s",
+            "UPDATE users SET failed_login_attempts = COALESCE(failed_login_attempts, 0) + 1, last_failed_login = CURRENT_TIMESTAMP WHERE user_id = %s",
             (user['user_id'],)
         )
         raise HTTPException(status_code=401, detail='Invalid credentials')
