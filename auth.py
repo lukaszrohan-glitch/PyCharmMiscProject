@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS api_keys (
   salt text,
   label text,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  active BOOLEAN NOT NULL DEFAULT 1,
+  active INTEGER NOT NULL DEFAULT 1,
   last_used TEXT
 );
 """

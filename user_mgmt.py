@@ -26,8 +26,8 @@ CREATE TABLE IF NOT EXISTS users (
   email TEXT NOT NULL UNIQUE,
   company_id TEXT,
   password_hash TEXT NOT NULL,
-  is_admin BOOLEAN NOT NULL DEFAULT 0,
-  active BOOLEAN NOT NULL DEFAULT 1,
+  is_admin INTEGER NOT NULL DEFAULT 0,
+  active INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   subscription_plan TEXT DEFAULT 'free',
   failed_login_attempts INTEGER DEFAULT 0,
@@ -59,9 +59,41 @@ SQL_LIST_PLANS = "SELECT plan_id, name, max_orders, max_users, features FROM sub
 
 def ensure_user_tables():
     try:
-        execute(SQL_CREATE_USERS)
-        execute(SQL_CREATE_PLANS)
-        # seed admin user if not exists
+        from db import _get_pool
+        pool = _get_pool()
+        
+        if pool is None:
+            sql_users = """
+CREATE TABLE IF NOT EXISTS users (
+  user_id TEXT PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  company_id TEXT,
+  password_hash TEXT NOT NULL,
+  is_admin INTEGER NOT NULL DEFAULT 0,
+  active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  subscription_plan TEXT DEFAULT 'free',
+  failed_login_attempts INTEGER DEFAULT 0,
+  last_failed_login TEXT,
+  password_changed_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+"""
+            sql_plans = """
+CREATE TABLE IF NOT EXISTS subscription_plans (
+  plan_id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  max_orders INTEGER,
+  max_users INTEGER,
+  features TEXT
+);
+"""
+        else:
+            sql_users = SQL_CREATE_USERS
+            sql_plans = SQL_CREATE_PLANS
+        
+        execute(sql_users)
+        execute(sql_plans)
+        
         admin_email = os.getenv('ADMIN_EMAIL', 'admin@arkuszowniasmb.pl')
         admin_password = os.getenv('ADMIN_PASSWORD', 'SMB#Admin2025!')
         row = fetch_one(SQL_GET_USER_BY_EMAIL, (admin_email,))
@@ -69,11 +101,11 @@ def ensure_user_tables():
             user_id = 'admin'
             pwd_hash = hasher.hash(admin_password)
             execute(SQL_INSERT_USER, (user_id, admin_email, None, pwd_hash, True, 'enterprise'), returning=True)
-            print(f"✅ Admin user created: {admin_email}")
+            print(f"Admin user created: {admin_email}")
         else:
-            print(f"✓ Admin user already exists: {admin_email}")
+            print(f"Admin user already exists: {admin_email}")
     except Exception as e:
-        print(f"⚠ Error ensuring user tables: {e}")
+        print(f"Error ensuring user tables: {e}")
 
 # --- Auth helpers ---
 
