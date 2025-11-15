@@ -401,6 +401,17 @@ if FRONTEND_DIST.exists():
         name="assets",
     )
 
+    @app.get("/")
+    async def spa_root():
+        index_file = FRONTEND_DIST / "index.html"
+        if index_file.exists():
+            return FileResponse(index_file)
+        logger.error(f"Frontend index.html not found at {index_file}")
+        raise HTTPException(
+            status_code=500,
+            detail="Frontend not built. Run: cd frontend && npm run build"
+        )
+
     @app.get("/{full_path:path}")
     async def spa_fallback(full_path: str):
         index_file = FRONTEND_DIST / "index.html"
