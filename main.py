@@ -1,17 +1,23 @@
 import os
+import logging
 from typing import List, Optional, Dict
 from datetime import datetime
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Header, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
+
+logger = logging.getLogger(__name__)
 
 from db import fetch_all, fetch_one, execute
 from schemas import (
     Order, Finance,
     OrderCreate, OrderLineCreate, TimesheetCreate, InventoryCreate,
-    UserLogin, PasswordChange, UserCreateAdmin, SubscriptionPlanCreate
+    UserLogin, PasswordChange, UserCreateAdmin, SubscriptionPlanCreate,
+    PasswordResetRequest, PasswordReset
 )
 from queries import (
     SQL_ORDERS, SQL_FINANCE_ONE, SQL_SHORTAGES, SQL_PLANNED_ONE,
@@ -25,18 +31,18 @@ from user_mgmt import ensure_user_tables, login_user, create_user, list_users, c
 app = FastAPI(title="SMB Tool API", version="1.0")
 
 # ---- CORS ----
-# Allow configured origins, or use regex pattern to allow any host on common dev ports
 origins_env = os.getenv("CORS_ORIGINS", "")
 if origins_env:
     origins = [o.strip() for o in origins_env.split(",") if o.strip()]
+    allow_credentials = True
 else:
-    # If no specific origins set, allow all (for development/internal network use)
     origins = ["*"]
+    allow_credentials = False
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -49,40 +55,33 @@ API_KEYS = [k.strip() for k in os.getenv("API_KEYS", "").split(",") if k.strip()
 def check_api_key(x_api_key: Optional[str] = Header(None), api_key: Optional[str] = None):
     key = x_api_key or api_key
 
-    # If no API keys are configured at all, allow access (demo/dev mode)
     if not API_KEYS:
-        # Check if there are any DB keys
         try:
             db_keys = auth.list_api_keys()
             if not db_keys:
-                # No keys configured anywhere - allow access for easy onboarding
                 return True
-        except Exception:
-            # DB issue - if no env keys, allow access
+        except Exception as e:
+            logger.warning(f"DB error checking API keys during onboarding: {e}")
             return True
 
     if not key:
         raise HTTPException(status_code=401, detail="Invalid or missing API key")
 
-    # First, check static env-configured keys
     if API_KEYS and key in API_KEYS:
         return True
 
-    # Next, check DB-backed api_keys
     try:
         row = auth.get_api_key(key)
         if row:
-            # mark last used and log audit
             try:
                 if row.get('id'):
                     mark_last_used(row.get('id'))
                     log_api_key_event(row.get('id'), 'used', 'api')
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"Failed to log API key event: {e}")
             return True
-    except Exception:
-        # if DB unreachable, fall back to env-only behavior
-        pass
+    except Exception as e:
+        logger.warning(f"DB error checking API key: {e}")
 
     raise HTTPException(status_code=401, detail="Invalid or missing API key")
 
@@ -268,20 +267,13 @@ def auth_change_password(payload: PasswordChange, user=Depends(get_current_user)
 
 
 @app.post('/api/auth/request-reset')
-def auth_request_reset(payload: Dict[str, str]):
-    email = payload.get('email')
-    if not email:
-        raise HTTPException(status_code=400, detail='Email required')
-    return request_password_reset(email)
+def auth_request_reset(payload: PasswordResetRequest):
+    return request_password_reset(payload.email)
 
 
 @app.post('/api/auth/reset')
-def auth_reset(payload: Dict[str, str]):
-    token = payload.get('token')
-    new_password = payload.get('new_password')
-    if not token or not new_password:
-        raise HTTPException(status_code=400, detail='Token and new_password required')
-    return reset_password_with_token(token, new_password)
+def auth_reset(payload: PasswordReset):
+    return reset_password_with_token(payload.token, payload.new_password)
 
 
 @app.post('/api/admin/users')
@@ -399,11 +391,26 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-# --- Middleware ---
-@app.middleware("http")
-async def db_session_middleware(request: Request, call_next):
-    try:
-        response = await call_next(request)
-        return response
-    except Exception as e:
-        return await global_exception_handler(request, e)
+# --- Frontend SPA routing (Railway deployment) ---
+FRONTEND_DIST = Path(__file__).parent / "frontend" / "dist"
+
+if FRONTEND_DIST.exists():
+    app.mount(
+        "/assets",
+        StaticFiles(directory=FRONTEND_DIST / "assets", check_dir=True),
+        name="assets",
+    )
+
+    @app.get("/{full_path:path}")
+    async def spa_fallback(full_path: str):
+        index_file = FRONTEND_DIST / "index.html"
+        if index_file.exists():
+            return FileResponse(index_file)
+        logger.error(f"Frontend index.html not found at {index_file}")
+        raise HTTPException(
+            status_code=500,
+            detail="Frontend not built. Run: cd frontend && npm run build"
+        )
+
+
+

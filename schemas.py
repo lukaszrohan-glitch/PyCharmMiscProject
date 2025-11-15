@@ -132,3 +132,12 @@ class SubscriptionPlan(BaseModel):
     max_orders: Optional[int] = None
     max_users: Optional[int] = None
     features: Optional[List[str]] = None
+
+
+class PasswordResetRequest(BaseModel):
+    email: str = Field(..., min_length=5)
+
+
+class PasswordReset(BaseModel):
+    token: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=8)

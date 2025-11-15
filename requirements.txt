@@ -1,5 +1,6 @@
 fastapi==0.115.0
 uvicorn[standard]==0.30.0
+aiofiles==23.2.1
 # Postgres driver is optional; use requirements-postgres.txt if needed
 psycopg2-binary==2.9.6
 httpx==0.24.1
