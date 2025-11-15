@@ -1,48 +1,51 @@
 # Arkuszownia SMB - Manufacturing Management System
 
-System zarządzania produkcją dla małych i średnich przedsiębiorstw.
+Manufacturing and order management system for small and medium businesses.
 
-## Quick Start (Windows/PowerShell)
+## Quick Deploy to Railway.app (Recommended)
+
+### 1. Connect GitHub Repository
+1. Go to https://railway.app
+2. Sign in with GitHub
+3. Create "New Project" → "Deploy from GitHub"
+4. Select `PyCharmMiscProject` repository
+
+### 2. Add PostgreSQL
+- Click "Add" in Railway dashboard
+- Select "PostgreSQL"
+- Railway auto-provisions the database with `DATABASE_URL`
+
+### 3. Configure Environment Variables
+In Railway project settings, add from `.env.example`:
+- `ADMIN_KEY` - Admin authentication key
+- `API_KEYS` - Comma-separated API keys  
+- `JWT_SECRET` - JWT signing secret (min 32 bytes)
+- `CORS_ORIGINS` - Your Railway domain + any custom domains
+
+### 4. Deploy
+- Push to GitHub `main` branch
+- Railway auto-deploys
+- Visit `https://<your-project>.railway.app`
+
+---
+
+## Local Development (Docker)
 
 ### Prerequisites
 - Docker Desktop (with WSL2)
-- Node.js 18+ (for local frontend development)
+- Node.js 18+
 - Git
 
-### 1. Start the Application
-
+### Start Application
 ```powershell
-# Clone and enter directory
-cd C:\Users\lukas\PyCharmMiscProject
-
-# Build frontend
-cd frontend
-npm install
-npm run build
-cd ..
-
-# Start all services
+cd frontend && npm install && npm run build && cd ..
 docker-compose up -d
-
-# Check status
-docker-compose ps
-
-# View logs
-docker-compose logs -f
 ```
 
-### 2. Access the Application
-
+### Access
 - **Frontend**: http://localhost:8080
-- **API**: http://localhost:8080/api
-- **Health Check**: http://localhost:8080/api/healthz
-
-### 3. Default Credentials
-
-API Key (for testing): `dev-key-change-in-production`
-Admin Key: `admin-change-in-production`
-
-⚠️ **IMPORTANT**: Change these in production via `.env` file!
+- **API**: http://localhost:8080/api  
+- **Health**: http://localhost:8080/api/healthz
 
 ## PowerShell Helper Commands
 
