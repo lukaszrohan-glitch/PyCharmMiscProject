@@ -1,7 +1,16 @@
-url: http://localhost:8080
+tunnel-token: eyJhIjoiMWQzYWI2ZDU4ZjZkZjQ1NTEwMTlkOTZhMTQ3MmJkNGIiLCJ0IjoiY2RmOThiOWUtZjEzNS00ODZhLWI5YzUtNjFhZWM3YzVjNzc0IiwicyI6Ik1UUmxZbUUyT1dFdE5qQTFOaTAwWXpFd0xUaGhaR1F0WldJeVpqY3lOVEkzWVdaayJ9
 logfile: C:\Users\lukas\.cloudflared\cloudflared.log
 loglevel: debug
 metrics: 127.0.0.1:49500
 no-autoupdate: true
-# Token-based auth: start cloudflared with: cloudflared.exe tunnel --no-autoupdate run --token <TOKEN>
-# Do not add tunnel credentials or cert here when using a token-only setup.
+
+ingress:
+  - hostname: arkuszowniasmb.com
+    service: http://localhost:8088
+    originRequest:
+      noTLSVerify: false
+  - hostname: www.arkuszowniasmb.com
+    service: http://localhost:8088
+    originRequest:
+      noTLSVerify: false
+  - service: http_status:404

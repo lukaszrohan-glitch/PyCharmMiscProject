@@ -280,18 +280,107 @@ docker-compose up -d --build
 
 ## Production Deployment
 
-### With Cloudflare Tunnel
+### With Cloudflare Tunnel - SSH-Based Setup (home.pl)
 
-1. Create a Cloudflare Tunnel at https://one.dash.cloudflare.com/
-2. Copy the tunnel token
-3. Add to `.env`:
-   ```env
-   CLOUDFLARE_TUNNEL_TOKEN=your-actual-tunnel-token
-   ```
-4. Start with production profile:
+**Goal**: Establish a permanent public tunnel via home.pl server to expose the local application
+
+#### Prerequisites
+- Active home.pl hosting account with SSH/SFTP enabled
+- SSH access configured: `Konta → SSH/SFTP` in home.pl control panel
+- Cloudflare Tunnel token from https://one.dash.cloudflare.com/
+- Credentials format: `username@domain.home.pl` (e.g., `serwer2581752@serwer2581752.home.pl`)
+
+#### Setup Script: `setup-homepl-tunnel.ps1`
+
+The script automates tunnel deployment on the remote home.pl server:
+
+```powershell
+# Run with your tunnel token
+powershell -File .\setup-homepl-tunnel.ps1 -TunnelToken "your-cloudflare-tunnel-token"
+```
+
+**What the script does**:
+1. Tests SSH connectivity to home.pl server
+2. Downloads and installs cloudflared on remote server
+3. Creates tunnel configuration with ingress rules for both domains
+4. Sets up systemd service for automatic restart on server reboot
+5. Starts the tunnel and verifies connectivity
+
+**Configuration**:
+- Tunnels to: `http://localhost:8088` (nginx on local Docker)
+- Supports domains:
+  - `arkuszowniasmb.com` / `www.arkuszowniasmb.com`
+  - `arkuszowniasmb.pl` / `www.arkuszowniasmb.pl`
+
+#### Current Status - SSH Connection Issue
+
+**Issue**: SSH connection times out when connecting to home.pl server
+```
+ssh: connect to host serwer2581752.home.pl port 22: Connection timed out
+```
+
+**Root Cause**: The home.pl server (serwer2581752.home.pl) is currently unreachable on port 22
+
+**Troubleshooting Steps**:
+
+1. **Verify SSH is enabled** in home.pl control panel:
+   - Log in to https://www.home.pl/
+   - Go to `Konta → SSH/SFTP`
+   - Ensure SSH access is activated
+
+2. **Test connectivity manually**:
    ```powershell
-   docker-compose --profile production up -d
+   # Check DNS resolution
+   nslookup serwer2581752.home.pl
+   
+   # Test SSH connectivity
+   ssh -v serwer2581752@serwer2581752.home.pl "echo test"
+   
+   # If behind NAT/firewall, check if port 22 is accessible
+   Test-NetConnection -ComputerName serwer2581752.home.pl -Port 22
    ```
+
+3. **Common fixes**:
+   - Contact home.pl support if SSH is disabled
+   - Check if SSH port is blocked by ISP/firewall
+   - Verify correct username/domain format
+   - Wait 15-30 minutes after enabling SSH for propagation
+
+4. **Alternative approach** - Local Windows Cloudflare Tunnel:
+   If SSH to home.pl fails permanently, set up cloudflared locally:
+   ```powershell
+   # Download cloudflared.exe to project directory
+   # Create tunnel in Cloudflare dashboard with token
+   # Run: .\cloudflared.exe tunnel --token "your-token-here"
+   ```
+
+#### Monitor Tunnel Status
+
+Once connected, monitor the remote tunnel:
+```powershell
+# View live logs from tunnel on home.pl
+ssh serwer2581752@serwer2581752.home.pl 'sudo journalctl -u cloudflared -f'
+
+# Check service status
+ssh serwer2581752@serwer2581752.home.pl 'sudo systemctl status cloudflared'
+
+# Restart tunnel if needed
+ssh serwer2581752@serwer2581752.home.pl 'sudo systemctl restart cloudflared'
+```
+
+#### For Future Work
+
+**Next Steps if connection is restored**:
+1. Run the setup script with valid tunnel token
+2. Verify domains are routed through Cloudflare in Zero Trust dashboard
+3. Test public access via https://arkuszowniasmb.pl
+4. Update DNS records if needed
+5. Monitor tunnel logs for stability
+
+**Documentation Files**:
+- `CLOUDFLARE_TUNNEL_GUIDE.md` - Detailed tunnel configuration reference
+- `DEPLOYMENT_READY.md` - Complete deployment checklist
+- `NETWORK_APP_ANALYSIS.md` - System architecture and health status
 
 ### Security Checklist
 

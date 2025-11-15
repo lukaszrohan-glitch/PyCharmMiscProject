@@ -1,0 +1,14 @@
+tunnel-token: eyJhIjoiMWQzYWI2ZDU4ZjZkZjQ1NTEwMTlkOTZhMTQ3MmJkNGIiLCJ0IjoiY2RmOThiOWUtZjEzNS00ODZhLWI5YzUtNjFhZWM3YzVjNzc0IiwicyI6Ik1UUmxZbUUyT1dFdE5qQTFOaTAwWXpFd0xUaGhaR1F0WldJeVpqY3lOVEkzWVdaayJ9
+logfile: C:\Users\lukas\.cloudflared\cloudflared.log
+loglevel: debug
+
+ingress:
+  - hostname: arkuszowniasmb.com
+    service: http://localhost:8088
+    originRequest:
+      noTLSVerify: false
+  - hostname: www.arkuszowniasmb.com
+    service: http://localhost:8088
+    originRequest:
+      noTLSVerify: false
+  - service: http_status:404

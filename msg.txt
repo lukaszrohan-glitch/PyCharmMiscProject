@@ -1,0 +1,1 @@
+fix(api-base,ports): correct API base and move nginx to 8088 for working healthz 

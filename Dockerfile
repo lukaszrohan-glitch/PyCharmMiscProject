@@ -65,5 +65,8 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 # Expose port
 EXPOSE 8000
 
+# Environment variables
+ENV DATABASE_URL=""
+
 # Run via entrypoint to wait for DB and run migrations
 CMD ["sh", "/app/entrypoint.sh"]

@@ -18,12 +18,17 @@ export default function App() {
   const [profile, setProfile] = useState(null);
   const [isSettingsOpen, setSettingsOpen] = useState(false);
 
-  // Check for existing token on initial load
   useEffect(() => {
     const token = getToken();
     if (token) {
-      // In a real app, you'd verify the token and fetch the user profile
-      setProfile({ name: 'Admin', email: 'admin@arkuszowniasmb.pl', is_admin: true });
+      import('./services/api').then(api => {
+        api.getProfile()
+          .then(profile => setProfile(profile))
+          .catch(() => {
+            setToken(null);
+            setProfile(null);
+          });
+      });
     }
   }, []);
 

@@ -106,6 +106,38 @@ CREATE TABLE IF NOT EXISTS api_key_audit (
   details jsonb
 );
 
+-- Users tables (required by user_mgmt.py)
+CREATE TABLE IF NOT EXISTS users (
+  user_id TEXT PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  company_id TEXT,
+  password_hash TEXT NOT NULL,
+  is_admin BOOLEAN NOT NULL DEFAULT false,
+  active BOOLEAN NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  subscription_plan TEXT DEFAULT 'free',
+  failed_login_attempts INTEGER DEFAULT 0,
+  last_failed_login timestamptz,
+  password_changed_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS subscription_plans (
+  plan_id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  max_orders INTEGER,
+  max_users INTEGER,
+  features TEXT
+);
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  token_id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  token_hash TEXT NOT NULL UNIQUE,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  expires_at timestamptz NOT NULL,
+  used_at timestamptz
+);
+
 -- minimal seed
 INSERT INTO customers(customer_id, name, nip, address, email) VALUES ('CUST-ALFA', 'Alfa Sp. z o.o.', '1234567890', 'Warszawa', 'biuro@alfa.pl') ON CONFLICT DO NOTHING;
 INSERT INTO products(product_id, name, std_cost, price) VALUES ('P-100', 'Gadzet A', 10, 30), ('P-101', 'Komponent X', 2, 5) ON CONFLICT DO NOTHING;
@@ -119,6 +151,20 @@ INSERT INTO inventory(txn_id, txn_date, product_id, qty_change, reason) VALUES (
 INSERT INTO inventory(txn_id, txn_date, product_id, qty_change, reason) VALUES ('TXN-WO-RCPT-1', CURRENT_DATE, 'P-100', 50, 'WO') ON CONFLICT DO NOTHING;
 INSERT INTO timesheets(emp_id, ts_date, order_id, operation_no, hours, notes) VALUES ('E-01', CURRENT_DATE, 'ORD-0001', 10, 6.5, 'Seria 50 szt.') ON CONFLICT DO NOTHING;
 INSERT INTO api_keys (key_text, label, created_at, active) VALUES ('changeme123', 'default-dev-key', now(), true) ON CONFLICT DO NOTHING;
+
+-- Create subscription plans
+INSERT INTO subscription_plans(plan_id, name, max_orders, max_users, features) VALUES 
+  ('free', 'Free Plan', 10, 1, 'Basic features'),
+  ('pro', 'Pro Plan', 100, 5, 'Advanced features'),
+  ('enterprise', 'Enterprise Plan', NULL, NULL, 'All features')
+ON CONFLICT DO NOTHING;
+
+-- Create admin user (Note: In production, use a real password hash via create_admin.py)
+-- This user has email admin@arkuszowniasmb.pl with a placeholder hash
+-- Password is typically set via scripts/create_admin.py or via API
+INSERT INTO users(user_id, email, company_id, password_hash, is_admin, active, subscription_plan) VALUES 
+  ('admin-001', 'admin@arkuszowniasmb.pl', 'company-001', '$2b$12$placeholder.hash.here', true, true, 'enterprise')
+ON CONFLICT DO NOTHING;
 
 -- --------------------------------------------------------------------
 -- Views required by API endpoints (finance, shortages, planned time)

@@ -1,0 +1,75 @@
+groups:
+  - name: arkuszownia_alerts
+    interval: 30s
+    rules:
+      - alert: InstanceDown
+        expr: up == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Instance {{ $labels.job }} is down"
+          description: "{{ $labels.job }} at {{ $labels.instance }} has been down for more than 5 minutes."
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is above 85% (current: {{ $value | humanizePercentage }})"
+
+      - alert: HighCPUUsage
+        expr: (100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is above 80% (current: {{ $value | humanize }}%)"
+
+      - alert: HighDiskUsage
+        expr: (1 - (node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs"} / node_filesystem_size_bytes)) > 0.85
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High disk usage on {{ $labels.instance }}"
+          description: "Disk usage is above 85% on {{ $labels.device }} (current: {{ $value | humanizePercentage }})"
+
+      - alert: BackendHighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Backend high error rate"
+          description: "Backend is returning errors at a rate above 5% (current: {{ $value | humanizePercentage }})"
+
+      - alert: DatabaseConnectionPoolExhausted
+        expr: pg_connections_used / pg_connections_max > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Database connection pool almost exhausted"
+          description: "Database connection usage is above 80% (current: {{ $value | humanizePercentage }})"
+
+      - alert: NginxHighErrorRate
+        expr: rate(nginx_http_requests_total{status=~"5.."}[5m]) > 0.01
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Nginx high error rate"
+          description: "Nginx is returning 5xx errors (current: {{ $value | humanize }} per second)"
+
+      - alert: BackendResponseTimeHigh
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Backend response time high"
+          description: "95th percentile response time is above 1s (current: {{ $value | humanizeDuration }})"

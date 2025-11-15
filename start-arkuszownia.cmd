@@ -43,5 +43,5 @@ echo   Press Ctrl+C to stop the tunnel
 echo ═══════════════════════════════════════════════════════════
 echo.
 
-cloudflared.exe tunnel --config cloudflared-config.yml run arkuszowniasmb
+cloudflared.exe tunnel --config cloudflared-config.yml run
 

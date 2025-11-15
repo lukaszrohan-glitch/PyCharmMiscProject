@@ -1,145 +1,242 @@
-# 🎯 Quick Reference Card - Public Sharing
+# Quick Reference Guide
 
-## For You (Host)
+## 🟢 System Status Commands
 
-### First Time Only:
-```powershell
-# 1. Download cloudflared from https://github.com/cloudflare/cloudflared/releases
-# 2. Extract to project folder
-# 3. Login to Cloudflare (creates free account)
-cloudflared.exe tunnel login
-# 4. Create tunnel
-cloudflared.exe tunnel create my-app
-# 5. Create cloudflared-config.yml (see docs)
+```bash
+# Check all containers
+docker-compose ps
+
+# Check specific service logs
+docker-compose logs backend
+docker-compose logs nginx
+docker-compose logs db
+
+# Full system health
+curl http://localhost:8088/api/healthz
 ```
 
-### Every Time:
-```powershell
-# Double-click:
-UDOSTEPNIJ.cmd          # Polish
-SHARE-PUBLIC.cmd        # English
+---
 
-# Or manually:
+## 🚀 Start/Stop Operations
+
+```bash
+# Start everything
 docker-compose up -d
-cloudflared.exe tunnel --config cloudflared-config.yml run my-app
-```
 
-### Share:
-```
-Send permanent link to users:
-https://my-app.trycloudflare.com
-(Link never changes!)
+# Stop everything (keep data)
+docker-compose stop
+
+# Stop and remove (keep volumes)
+docker-compose down
+
+# Stop and remove everything (wipe data)
+docker-compose down -v
 ```
 
 ---
 
-## For Users
+## 🔗 Access Points
 
-### What They Do:
-1. Click link
-2. Choose: Skip API key OR Enter key
-3. Use the app!
-
-### What They DON'T Need:
-❌ Installation
-❌ Configuration  
-❌ Technical knowledge
-❌ Docker/Python
-❌ Any setup
-❌ Click welcome screens
+| Service | URL | Auth |
+|---------|-----|------|
+| Frontend | http://localhost:8088 | None |
+| API (local) | http://localhost:8000 | API Key |
+| Database | localhost:5432 | psql credentials |
+| Health | http://localhost:8088/api/healthz | None |
 
 ---
 
-## Key Files
+## 🔑 API Key Testing
+
+```bash
+# List orders (requires API key)
+curl -H "x-api-key: dev-key-change-in-production" http://localhost:8000/api/orders
+
+# Get products (no auth needed)
+curl http://localhost:8000/api/products
+
+# Login (get JWT token)
+curl -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@arkuszowniasmb.pl","password":"YOUR_PASSWORD"}'
+```
+
+---
+
+## 🗄️ Database Operations
+
+```bash
+# Connect to database
+docker-compose exec -T db psql -U smb_user -d smbtool
+
+# Inside psql:
+\dt                    # List tables
+SELECT * FROM orders;  # Query data
+\q                     # Exit
+
+# Backup database
+docker-compose exec -T db pg_dump -U smb_user smbtool > backup.sql
+
+# Restore database
+cat backup.sql | docker-compose exec -T db psql -U smb_user smbtool
+```
+
+---
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+docker-compose exec backend pytest tests/ -v
+
+# Run specific test
+docker-compose exec backend pytest tests/test_auth.py -v
+
+# Run with coverage
+docker-compose exec backend pytest tests/ --cov=.
+```
+
+---
+
+## 🌐 Cloudflare Tunnel
+
+```bash
+# Start tunnel
+cloudflared.exe --config cloudflared.yml
+
+# Check tunnel status
+curl https://arkuszowniasmb.com/api/healthz
+
+# View tunnel logs
+type C:\Users\lukas\.cloudflared\cloudflared.log
+
+# Service control (Windows)
+net start cloudflared
+net stop cloudflared
+```
+
+---
+
+## 🔧 Common Fixes
+
+### **Frontend blank page**
+```bash
+cd frontend && npm run build && cd ..
+docker-compose restart nginx
+```
+
+### **Port in use**
+Edit `docker-compose.yml`:
+```yaml
+nginx:
+  ports:
+    - "8089:80"  # Change from 8088
+```
+
+### **Database won't connect**
+```bash
+docker-compose restart db
+# Wait 30 seconds
+curl http://localhost:8088/api/healthz
+```
+
+### **API returning 401 Unauthorized**
+- Check API key in `.env`
+- Verify header: `-H "x-api-key: YOUR_KEY"`
+
+### **Tests fail with psycopg2 error**
+```bash
+# Run tests in Docker (recommended)
+docker-compose exec backend pytest tests/
+```
+
+---
+
+## 📊 Files to Know
 
 | File | Purpose |
 |------|---------|
-| `UDOSTEPNIJ.cmd` | 🇵🇱 Auto-start script |
-| `SHARE-PUBLIC.cmd` | 🇬🇧 Auto-start script |
-| `UDOSTEPNIANIE_UZYTKOWNIKOM.md` | 🇵🇱 Simple guide (you) |
-| `SHARE_WITH_USERS.md` | 🇬🇧 Simple guide (you) |
-| `DOSTEP_ZEWNETRZNY.md` | 🇵🇱 Technical details |
-| `PUBLIC_ACCESS.md` | 🇬🇧 Technical details |
-| `PRZEWODNIK_UZYTKOWNIKA.md` | 🇵🇱 User guide |
-| `USER_GUIDE.md` | 🇬🇧 User guide |
+| `.env` | Configuration & secrets |
+| `docker-compose.yml` | Service orchestration |
+| `nginx.conf` | Web server config |
+| `main.py` | FastAPI backend |
+| `frontend/src/App.jsx` | React frontend |
+| `scripts/init.sql` | Database schema |
+| `Dockerfile` | Container build |
 
 ---
 
-## Quick Troubleshooting
+## 🚨 Emergency Operations
 
-| Problem | Fix |
-|---------|-----|
-| cloudflared not found | Put `cloudflared.exe` in project folder |
-| Docker error | Start Docker Desktop |
-| Link doesn't work | `docker-compose restart` |
-| Blank page | `docker-compose logs frontend` |
-| Cloudflare error 1033 | Restart tunnel |
+### **Complete Reset**
+```bash
+docker-compose down -v
+docker-compose up -d --build
+# Wait 30 seconds for database initialization
+curl http://localhost:8088/api/healthz
+```
 
----
+### **View Real-Time Logs**
+```bash
+docker-compose logs -f backend
+# Press Ctrl+C to exit
+```
 
-## Commands
-
-```powershell
-# Start app
-docker-compose up -d
-
-# Stop app
-docker-compose down
-
-# Restart app
+### **Force Restart All**
+```bash
 docker-compose restart
-
-# View logs
-docker-compose logs -f
-
-# Check status
-docker-compose ps
-
-# Start Cloudflare Tunnel
-cloudflared.exe tunnel --config cloudflared-config.yml run my-app
 ```
 
 ---
 
-## Security
+## ✅ Health Check Script
 
 ```bash
-# Change admin key in .env:
-ADMIN_API_KEY=your-strong-key-64-chars
+@echo off
+echo Checking Arkuszownia SMB health...
+echo.
 
-# Remove test keys (in app Admin panel):
-Delete test-key-12345
+echo [1/4] Checking containers...
+docker-compose ps | findstr /C:"Up" >nul && echo OK || echo FAILED
+
+echo [2/4] Checking frontend...
+curl -s http://localhost:8088/api/healthz | findstr /C:"ok" >nul && echo OK || echo FAILED
+
+echo [3/4] Checking API...
+curl -s http://localhost:8000/healthz | findstr /C:"ok" >nul && echo OK || echo FAILED
+
+echo [4/4] Checking database...
+docker-compose exec -T db psql -U smb_user -d smbtool -c "SELECT 1;" >nul 2>&1 && echo OK || echo FAILED
+
+echo.
+echo All checks complete!
 ```
 
 ---
 
-## Benefits (Cloudflare Tunnel)
+## 📞 Documentation
 
-- ✅ Permanent link (never changes)
-- ✅ Free forever
-- ✅ No time limits
-- ✅ Fast (CDN)
-- ✅ No welcome screens
+Quick links to detailed docs:
 
----
-
-## Upgrade Options
-
-| Need | Solution |
-|------|----------|
-| Custom domain | Configure in Cloudflare (free) |
-| More control | VPS hosting ($5-10/mo) |
-| Production | VPS + own domain |
+- **Deployment**: `DEPLOYMENT_READY.md`
+- **System Architecture**: `NETWORK_APP_ANALYSIS.md`
+- **Cloudflare Setup**: `CLOUDFLARE_TUNNEL_GUIDE.md`
+- **API Keys**: `API_KEYS_GUIDE.md`
+- **User Management**: `docs/LOGIN_AND_USERS.md`
+- **Development**: `README_DEV.md`
+- **User Guide**: `README.md`
 
 ---
 
-## Support
+## 🎯 Useful Ports
 
-📖 Full docs: `PUBLIC_ACCESS_SUMMARY.md`
-📧 Help: lukasz.rohan@gmail.com
-🐛 Issues: GitHub
+- `8088` - Nginx (frontend)
+- `8000` - FastAPI backend
+- `5432` - PostgreSQL
+- `5173` - Frontend dev server (Vite)
+- `49500` - Cloudflare metrics
 
 ---
 
-**Print this card or save it for quick reference! 📋**
-
+**Last Updated**: 2025-11-14
+**Version**: 1.0.0

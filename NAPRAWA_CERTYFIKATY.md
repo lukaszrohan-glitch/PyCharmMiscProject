@@ -64,14 +64,21 @@ originRequest:
 
 ## 📋 Co Teraz?
 
+### ✅ DNS Zaktualizowane (13 listopada 2025)
+
+Rekordy DNS zostały zaktualizowane w Cloudflare na nowy UUID tunelu:
+- `arkuszowniasmb.pl` → `f76aa0fc-675f-4053-a70a-54f66629db04.cfargotunnel.com`
+- `www` → `f76aa0fc-675f-4053-a70a-54f66629db04.cfargotunnel.com`
+
 ### Wszystko Działa Normalnie!
 
 Tunel został zrestartowany z poprawioną konfiguracją i działa bez błędów.
 
 **Możesz:**
-1. Kontynuować testowanie strony
-2. Udostępniać link użytkownikom
-3. Używać aplikacji normalnie
+1. Uruchomić tunel komendą: `.\start-arkuszownia.pl.cmd`
+2. Testować stronę na https://arkuszowniasmb.pl
+3. Udostępniać link użytkownikom
+4. Używać aplikacji normalnie
 
 ---
 
@@ -84,7 +91,7 @@ Get-Process cloudflared
 
 ### Sprawdź Status Tunelu:
 ```powershell
-.\cloudflared.exe tunnel info arkuszowniasmb-pl
+.\cloudflared.exe tunnel info arkuszowniasmb
 ```
 
 ### Sprawdź Stronę:

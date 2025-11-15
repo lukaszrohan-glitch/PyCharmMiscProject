@@ -1,0 +1,286 @@
+// Dynamic API base URL detection
+// If VITE_API_BASE is set, use it. Otherwise, detect based on current location
+function getApiBase() {
+  const envBase = import.meta.env.VITE_API_BASE
+
+  if (envBase) {
+    // If provided explicitly, use it unless it would cause mixed-content or points to localhost in prod
+    let base = envBase.trim()
+    base = base.replace(/\/+$/, '')
+    try {
+      if (typeof window !== 'undefined') {
+        const isHttps = window.location.protocol === 'https:'
+        const host = window.location.hostname
+        const isLocalHost = /^(localhost|127\.0\.0\.1)$/.test(host)
+        const isLocalEnv = /^https?:\/\/(localhost|127\.0\.0\.1)(:\\d+)?$/i.test(base)
+
+        // If we are on a real domain (not localhost) and VITE_API_BASE is localhost -> ignore to avoid cross-origin/mixed content in prod
+        if (!isLocalHost && isLocalEnv) {
+          return `${window.location.protocol}//${window.location.host}`
+        }
+        // If page is HTTPS but env base is HTTP -> avoid mixed content by using same-origin
+        if (isHttps && base.startsWith('http://')) {
+          return `${window.location.protocol}//${window.location.host}`
+        }
+      }
+    } catch {}
+    return base
+  }
+
+  // Auto-detect based on window.location
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname
+    const protocol = window.location.protocol
+    const port = window.location.port
+
+    // If we're on localhost:5173 (dev), talk to backend:8000 directly
+    if (hostname === 'localhost' && port === '5173') {
+      // Ensure dev uses plain HTTP to FastAPI (no TLS on 8000)
+      return `http://localhost:8000`
+    }
+
+    // In production/tunnel, use relative paths (empty base). Nginx proxies /api to backend.
+    return ''
+  }
+
+  // Fallback
+  return ''
+}
+
+const API_BASE = getApiBase()
+console.log('API Base URL:', API_BASE)
+
+let API_KEY = import.meta.env.VITE_API_KEY || null
+let ADMIN_KEY = import.meta.env.VITE_ADMIN_KEY || null
+let TOKEN = null
+
+export function setApiKey(key){
+  API_KEY = key
+}
+export function setAdminKey(key){
+  ADMIN_KEY = key
+}
+export function setToken(t){
+  TOKEN = t
+  try {
+    if (t) {
+      localStorage.setItem('token', t)
+    } else {
+      localStorage.removeItem('token')
+    }
+  } catch {}
+}
+export function getToken(){
+  if (TOKEN) return TOKEN
+  try {
+    const t = localStorage.getItem('token')
+    if (t) TOKEN = t
+  } catch {}
+  return TOKEN
+}
+
+async function req(path){
+  try {
+    const res = await fetch(`${API_BASE}${path}`, { credentials: 'include' })
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    return res.json()
+  } catch (err) {
+    console.error('GET failed', path, err)
+    throw new Error(`Network/Fetch error for ${path}: ${err?.message || err}`)
+  }
+}
+
+async function reqAdmin(path){
+  const headers = {}
+  if(ADMIN_KEY) headers['x-admin-key'] = ADMIN_KEY
+  try {
+    const res = await fetch(`${API_BASE}${path}`, { headers, credentials: 'include' })
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    return res.json()
+  } catch (err) {
+    console.error('GET(admin) failed', path, err)
+    throw new Error(`Network/Fetch error for ${path}: ${err?.message || err}`)
+  }
+}
+
+async function reqAuth(path){
+  const headers = {}
+  if(TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN
+  try {
+    const res = await fetch(`${API_BASE}${path}`, { headers, credentials: 'include' })
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    return res.json()
+  } catch (err) {
+    console.error('GET(auth) failed', path, err)
+    throw new Error(`Network/Fetch error for ${path}: ${err?.message || err}`)
+  }
+}
+
+async function postJson(path, body){
+  const headers = { 'Content-Type': 'application/json' }
+  if(API_KEY) headers['x-api-key'] = API_KEY
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: 'POST',
+      headers,
+      credentials: 'include',
+      body: JSON.stringify(body)
+    })
+    const txt = await res.text()
+    if(!res.ok){
+      let msg = txt
+      try{ msg = JSON.parse(txt) }catch{}
+      throw new Error((msg && msg.detail) ? msg.detail : `${res.status} ${res.statusText} - ${txt}`)
+    }
+    try{ return JSON.parse(txt) }catch{ return txt }
+  } catch (err) {
+    console.error('POST failed', path, err)
+    throw new Error(`Network/Fetch error for ${path}: ${err?.message || err}`)
+  }
+}
+
+async function postAdmin(path, body){
+  const headers = { 'Content-Type': 'application/json' }
+  if(ADMIN_KEY) headers['x-admin-key'] = ADMIN_KEY
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: 'POST',
+      headers,
+      credentials: 'include',
+      body: JSON.stringify(body)
+    })
+    const txt = await res.text()
+    if(!res.ok){
+      let msg = txt
+      try{ msg = JSON.parse(txt) }catch{}
+      throw new Error((msg && msg.detail) ? msg.detail : `${res.status} ${res.statusText} - ${txt}`)
+    }
+    try{ return JSON.parse(txt) }catch{ return txt }
+  } catch (err) {
+    console.error('POST(admin) failed', path, err)
+    throw new Error(`Network/Fetch error for ${path}: ${err?.message || err}`)
+  }
+}
+
+async function postAuth(path, body){
+  const headers = { 'Content-Type': 'application/json' }
+  if(TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN
+  try {
+    const res = await fetch(`${API_BASE}${path}`, { method:'POST', headers, credentials: 'include', body: JSON.stringify(body) })
+    const txt = await res.text()
+    if(!res.ok) throw new Error(txt)
+    try{return JSON.parse(txt)}catch{return txt}
+  } catch (err) {
+    console.error('POST(auth) failed', path, err)
+    throw new Error(`Network/Fetch error for ${path}: ${err?.message || err}`)
+  }
+}
+
+async function delAdmin(path){
+  const headers = {}
+  if(ADMIN_KEY) headers['x-admin-key'] = ADMIN_KEY
+  try {
+    const res = await fetch(`${API_BASE}${path}`, { method: 'DELETE', headers, credentials: 'include' })
+    const txt = await res.text()
+    if(!res.ok){
+      let msg = txt
+      try{ msg = JSON.parse(txt) }catch{}
+      throw new Error((msg && msg.detail) ? msg.detail : `${res.status} ${res.statusText} - ${txt}`)
+    }
+    try{ return JSON.parse(txt) }catch{ return txt }
+  } catch (err) {
+    console.error('DELETE(admin) failed', path, err)
+    throw new Error(`Network/Fetch error for ${path}: ${err?.message || err}`)
+  }
+}
+
+export async function login(email, password){
+  const url = `${API_BASE}/api/auth/login`
+  console.log('Login API call to:', url)
+  const headers = { 'Content-Type': 'application/json' }
+  try {
+    // Trim inputs to avoid accidental spaces-only submissions in dev
+    const eTrim = (email || '').trim()
+    const pTrim = (password || '').trim()
+    const res = await fetch(url, {
+      method: 'POST',
+      headers,
+      credentials: 'include',
+      body: JSON.stringify({ email: eTrim, password: pTrim })
+    })
+    const txt = await res.text()
+    console.log('Login response status:', res.status, 'body:', txt)
+    if(!res.ok){
+      // For 5xx and HTML error bodies (e.g., Cloudflare 502), return concise message
+      if (res.status >= 500 || /^\s*<!DOCTYPE/i.test(txt)) {
+        throw new Error(`Failed to reach API: ${res.status} ${res.statusText}`)
+      }
+      let msg = txt
+      let detail = null
+      try{ msg = JSON.parse(txt); detail = msg && msg.detail }catch{}
+
+      // Fallback retry: if backend says credentials are required (parsing issue), retry as form-urlencoded
+      const message = (detail || `${res.status} ${res.statusText}`)
+      if (res.status === 400 && /email and password are required/i.test(message)) {
+        try {
+          const formHeaders = { 'Content-Type': 'application/x-www-form-urlencoded' }
+          const formBody = new URLSearchParams({ email: eTrim, password: pTrim }).toString()
+          const res2 = await fetch(url, { method: 'POST', headers: formHeaders, credentials: 'include', body: formBody })
+          const txt2 = await res2.text()
+          console.log('Login retry (form) status:', res2.status, 'body:', txt2)
+          if (!res2.ok) {
+            // If second attempt also fails, bubble up its error if available
+            if (res2.status >= 500 || /^\s*<!DOCTYPE/i.test(txt2)) {
+              throw new Error(`Failed to reach API: ${res2.status} ${res2.statusText}`)
+            }
+            let msg2 = txt2
+            try{ msg2 = JSON.parse(txt2) }catch{}
+            throw new Error((msg2 && msg2.detail) ? msg2.detail : `${res2.status} ${res2.statusText}`)
+          }
+          try{ return JSON.parse(txt2) }catch{ return txt2 }
+        } catch (retryErr) {
+          // If retry threw, rethrow as-is if Error, else wrap
+          if (retryErr instanceof Error) throw retryErr
+          throw new Error(String(retryErr))
+        }
+      }
+
+      throw new Error(message)
+    }
+    try{ return JSON.parse(txt) }catch{ return txt }
+  } catch (err) {
+    console.error('Login network error:', err)
+    // Preserve server-provided error messages (e.g., validation like "email and password are required").
+    // Only wrap non-Error types.
+    if (err instanceof Error) throw err
+    throw new Error(String(err))
+  }
+}
+export const getProfile = () => reqAuth('/api/user/profile')
+export const changePassword = (old_password, new_password) => postAuth('/api/auth/change-password', { old_password, new_password })
+export const adminCreateUser = (payload) => postAuth('/api/admin/users', payload)
+export const adminListUsers = () => reqAuth('/api/admin/users')
+export const adminCreatePlan = (payload) => postAuth('/api/admin/subscription-plans', payload)
+export const adminListPlans = () => reqAuth('/api/admin/subscription-plans')
+export const getOrders = ()=> req('/api/orders')
+export const getFinance = (orderId)=> req(`/api/finance/${encodeURIComponent(orderId)}`)
+export const getShortages = ()=> req('/api/shortages')
+export const getPlannedTime = (orderId)=> req(`/api/planned-time/${encodeURIComponent(orderId)}`)
+export const getProducts = ()=> req('/api/products')
+export const getCustomers = ()=> req('/api/customers')
+
+export const createOrder = (payload) => postJson('/api/orders', payload)
+export const createOrderLine = (payload) => postJson('/api/order-lines', payload)
+export const createTimesheet = (payload) => postJson('/api/timesheets', payload)
+export const createInventory = (payload) => postJson('/api/inventory', payload)
+
+// Admin API: list/create/delete api keys
+export const adminListKeys = () => reqAdmin('/api/admin/api-keys')
+export const adminCreateKey = (payload) => postAdmin('/api/admin/api-keys', payload)
+export const adminDeleteKey = (key) => delAdmin(`/api/admin/api-keys/${encodeURIComponent(key)}`)
+export const adminRotateKey = (keyId) => postAdmin(`/api/admin/api-keys/${encodeURIComponent(keyId)}/rotate`, {})
+
+// Password reset and user invitation
+export const requestPasswordReset = (email) => postAuth('/api/auth/request-reset', { email })
+export const resetPasswordWithToken = (token, new_password) => postAuth('/api/auth/reset', { token, new_password })
+export const inviteUserAdmin = (payload) => postAuth('/api/admin/users', payload)
