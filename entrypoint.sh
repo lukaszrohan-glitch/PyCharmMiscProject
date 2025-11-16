@@ -20,20 +20,40 @@ elif echo "$DATABASE_URL" | grep -qi postgres; then
     python3 - <<'PYEOF'
 import os
 import sys
-import psycopg2
-from urllib.parse import urlparse
 
 try:
     database_url = os.environ.get('DATABASE_URL', '')
     if not database_url:
+        print("[DB Check] No DATABASE_URL", file=sys.stderr)
         sys.exit(0)
     
+    try:
+        import psycopg2
+    except ImportError:
+        print("[DB Check] psycopg2 not available, trying socket check", file=sys.stderr)
+        import socket
+        from urllib.parse import urlparse
+        parsed = urlparse(database_url)
+        host = parsed.hostname or 'localhost'
+        port = parsed.port or 5432
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(3)
+            s.connect((host, int(port)))
+            s.close()
+            sys.exit(0)
+        except:
+            sys.exit(1)
+    
+    from urllib.parse import urlparse
     parsed = urlparse(database_url)
     host = parsed.hostname or 'localhost'
     port = parsed.port or 5432
     user = parsed.username or 'postgres'
     password = parsed.password or ''
     database = parsed.path.lstrip('/') or 'postgres'
+    
+    print(f"[DB Check] Attempting connection to {host}:{port}/{database}", file=sys.stderr)
     
     conn = psycopg2.connect(
         host=host,
@@ -42,19 +62,27 @@ try:
         password=password,
         database=database,
         connect_timeout=5,
-        sslmode='require'
+        sslmode='allow'
     )
     conn.close()
+    print("[DB Check] Connection successful", file=sys.stderr)
     sys.exit(0)
+    
 except psycopg2.OperationalError as e:
-    if 'FATAL' in str(e) or 'does not exist' in str(e):
+    error_msg = str(e)
+    if 'FATAL' in error_msg or 'does not exist' in error_msg or 'password authentication' in error_msg:
+        print(f"[DB Check] Authentication/DB error (acceptable): {error_msg}", file=sys.stderr)
         sys.exit(0)
+    print(f"[DB Check] Connection error: {error_msg}", file=sys.stderr)
     sys.exit(1)
+    
 except Exception as e:
+    print(f"[DB Check] Unexpected error: {type(e).__name__}: {str(e)}", file=sys.stderr)
     sys.exit(1)
 PYEOF
     
-    if [ $? -eq 0 ]; then
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -eq 0 ]; then
       echo "✓ Database is reachable (after $ATTEMPTS attempts)"
       break
     fi
