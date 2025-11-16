@@ -1,5 +1,0 @@
-tunnel-token: eyJhIjoiMWQzYWI2ZDU4ZjZkZjQ1NTEwMTlkOTZhMTQ3MmJkNGIiLCJ0IjoiNmZhNTI3YzQtNDM1MS00OWY5LTkzMzktNmYxYjkxNDAyMzllIiwicyI6IlhJdGRpSTBoeGM3TmdMLzFzZzlpbnVxS3VUTUNzL2d6aDRDbm9VS3F5QzA9In0=
-ingress:
-  - hostname: api.arkuszowniasmb.pl
-    service: http://backend:8000
-  - service: http_status:404
