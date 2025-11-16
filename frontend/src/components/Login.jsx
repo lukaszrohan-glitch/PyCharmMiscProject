@@ -2,8 +2,8 @@ import React, { useState } from 'react'
 import { login, setToken } from '../services/api.js'
 
 export default function Login({ onLogin, lang }) {
-  const [email, setEmail] = useState('admin@arkuszowniasmb.pl')
-  const [password, setPassword] = useState('SMB#Admin2025!')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [err, setErr] = useState(null)
   const [loading, setLoading] = useState(false)
 

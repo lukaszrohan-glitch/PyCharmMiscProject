@@ -3,7 +3,7 @@ import { useI18n } from '../i18n'
 import { changePassword } from '../services/api'
 import { useToast } from './Toast'
 
-export default function Settings({ profile, onClose, lang }) {
+export default function Settings({ profile, onClose, onOpenAdmin, lang }) {
   const [oldPassword, setOldPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -93,8 +93,7 @@ export default function Settings({ profile, onClose, lang }) {
           <div className="admin-section">
             <h3>{t('admin_tools')}</h3>
             <div className="admin-actions">
-              <button onClick={() => window.location.href = '/admin'}>{t('admin_panel')}</button>
-              <button onClick={() => window.location.href = '/audit'}>{t('view_audit_logs')}</button>
+              <button onClick={onOpenAdmin}>{t('admin_panel')}</button>
             </div>
           </div>
         )}

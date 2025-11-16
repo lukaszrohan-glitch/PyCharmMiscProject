@@ -7,6 +7,7 @@ import Orders from './components/Orders';
 import Inventory from './components/Inventory';
 import Timesheets from './components/Timesheets';
 import Products from './components/Products';
+import Admin from './components/Admin';
 import { getToken, setToken } from './services/api';
 import styles from './App.module.css';
 
@@ -55,6 +56,8 @@ export default function App() {
         return <Timesheets lang={lang} />;
       case 'reports':
         return <Products lang={lang} />;
+      case 'admin':
+        return <Admin lang={lang} />;
       case 'dashboard':
       default:
         return <Dashboard lang={lang} setCurrentView={setCurrentView} />;
@@ -85,6 +88,7 @@ export default function App() {
         <Settings
           profile={profile}
           onClose={() => setSettingsOpen(false)}
+          onOpenAdmin={() => { setSettingsOpen(false); setCurrentView('admin'); }}
           lang={lang}
         />
       )}
