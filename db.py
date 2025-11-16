@@ -58,7 +58,11 @@ def _create_pool() -> Any:
         dsn = DATABASE_URL
         if PG_SSLMODE and dsn and "sslmode=" not in dsn:
             dsn = _append_sslmode_to_url(dsn, PG_SSLMODE)
-        return SimpleConnectionPool(MINCONN, MAXCONN, dsn=dsn)
+        
+        connect_timeout = int(os.getenv("DB_CONNECT_TIMEOUT", "10"))
+        dsn_with_timeout = f"{dsn}?connect_timeout={connect_timeout}" if "?" not in dsn else f"{dsn}&connect_timeout={connect_timeout}"
+        
+        return SimpleConnectionPool(MINCONN, MAXCONN, dsn=dsn_with_timeout)
 
     # sqlite fallback (development): use a simple connection per call
     return None

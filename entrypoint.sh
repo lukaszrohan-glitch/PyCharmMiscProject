@@ -5,12 +5,17 @@ PORT=${PORT:-8000}
 if [ -z "$DATABASE_URL" ]; then
   echo "WARNING: DATABASE_URL not set, using SQLite fallback"
 elif echo "$DATABASE_URL" | grep -qE '^\$\{|^\$'; then
-  echo "WARNING: DATABASE_URL appears to be a template string (not substituted)"
+  echo "ERROR: DATABASE_URL appears to be a template string (not substituted). Check Railway environment variables."
+  exit 1
 elif echo "$DATABASE_URL" | grep -qi postgres; then
   echo "Waiting for database at $(echo $DATABASE_URL | sed 's/:.*@/@/g')..."
   ATTEMPTS=0
-  until python - <<'EOF'
-import os, socket, sys
+  MAX_ATTEMPTS=300
+  WAIT_TIME=1
+  
+  while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
+    python - <<'EOF'
+import os, socket, sys, time
 from urllib.parse import urlparse
 try:
     u = os.environ.get('DATABASE_URL')
@@ -20,25 +25,44 @@ try:
     host = p.hostname or 'db'
     port = p.port or 5432
     s = socket.socket()
-    s.settimeout(1.0)
+    s.settimeout(3.0)
     s.connect((host, int(port)))
     s.close()
-except Exception:
+    sys.exit(0)
+except Exception as e:
     sys.exit(1)
 EOF
-  do
-    ATTEMPTS=$((ATTEMPTS+1))
-    if [ $ATTEMPTS -gt 60 ]; then
-      echo "Warning: Database not reachable after $ATTEMPTS attempts, continuing anyway"
+    
+    if [ $? -eq 0 ]; then
+      echo "✓ Database is reachable (after $ATTEMPTS attempts)"
       break
     fi
-    sleep 1
+    
+    ATTEMPTS=$((ATTEMPTS+1))
+    if [ $((ATTEMPTS % 30)) -eq 0 ]; then
+      echo "Still waiting... ($ATTEMPTS/$MAX_ATTEMPTS seconds)"
+    fi
+    
+    sleep $WAIT_TIME
+    if [ $WAIT_TIME -lt 10 ]; then
+      WAIT_TIME=$((WAIT_TIME + 1))
+    fi
   done
+  
+  if [ $ATTEMPTS -ge $MAX_ATTEMPTS ]; then
+    echo "ERROR: Database not reachable after ${MAX_ATTEMPTS}s"
+    echo "Deployment cannot proceed without database connection"
+    exit 1
+  fi
 fi
 
 if [ -f alembic.ini ] && [ -n "$DATABASE_URL" ] && ! echo "$DATABASE_URL" | grep -qE '^\$\{|^\$'; then
   echo "Running Alembic migrations..."
-  alembic upgrade head || echo "Note: Migrations failed or not applicable"
+  if ! alembic upgrade head; then
+    echo "ERROR: Alembic migrations failed"
+    exit 1
+  fi
+  echo "✓ Migrations completed successfully"
 fi
 
 echo "Starting uvicorn $APP_MODULE on port $PORT"
