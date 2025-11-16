@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/bin/bash
+set -e
 APP_MODULE=${APP_MODULE:-main:app}
 PORT=${PORT:-8000}
 
@@ -8,30 +9,50 @@ elif echo "$DATABASE_URL" | grep -qE '^\$\{|^\$'; then
   echo "ERROR: DATABASE_URL appears to be a template string (not substituted). Check Railway environment variables."
   exit 1
 elif echo "$DATABASE_URL" | grep -qi postgres; then
-  echo "Waiting for database at $(echo $DATABASE_URL | sed 's/:.*@/@/g')..."
+  DB_URL_DISPLAY=$(echo "$DATABASE_URL" | sed 's/:.*@/@/g')
+  echo "Waiting for PostgreSQL database at $DB_URL_DISPLAY..."
+  
   ATTEMPTS=0
   MAX_ATTEMPTS=300
   WAIT_TIME=1
   
   while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
-    python - <<'EOF'
-import os, socket, sys, time
+    python3 - <<'PYEOF'
+import os
+import sys
+import psycopg2
 from urllib.parse import urlparse
+
 try:
-    u = os.environ.get('DATABASE_URL')
-    if not u:
+    database_url = os.environ.get('DATABASE_URL', '')
+    if not database_url:
         sys.exit(0)
-    p = urlparse(u)
-    host = p.hostname or 'db'
-    port = p.port or 5432
-    s = socket.socket()
-    s.settimeout(3.0)
-    s.connect((host, int(port)))
-    s.close()
+    
+    parsed = urlparse(database_url)
+    host = parsed.hostname or 'localhost'
+    port = parsed.port or 5432
+    user = parsed.username or 'postgres'
+    password = parsed.password or ''
+    database = parsed.path.lstrip('/') or 'postgres'
+    
+    conn = psycopg2.connect(
+        host=host,
+        port=port,
+        user=user,
+        password=password,
+        database=database,
+        connect_timeout=5,
+        sslmode='require'
+    )
+    conn.close()
     sys.exit(0)
+except psycopg2.OperationalError as e:
+    if 'FATAL' in str(e) or 'does not exist' in str(e):
+        sys.exit(0)
+    sys.exit(1)
 except Exception as e:
     sys.exit(1)
-EOF
+PYEOF
     
     if [ $? -eq 0 ]; then
       echo "✓ Database is reachable (after $ATTEMPTS attempts)"
@@ -40,7 +61,7 @@ EOF
     
     ATTEMPTS=$((ATTEMPTS+1))
     if [ $((ATTEMPTS % 30)) -eq 0 ]; then
-      echo "Still waiting... ($ATTEMPTS/$MAX_ATTEMPTS seconds)"
+      echo "Still waiting for database... ($ATTEMPTS/$MAX_ATTEMPTS seconds)"
     fi
     
     sleep $WAIT_TIME
@@ -50,8 +71,11 @@ EOF
   done
   
   if [ $ATTEMPTS -ge $MAX_ATTEMPTS ]; then
-    echo "ERROR: Database not reachable after ${MAX_ATTEMPTS}s"
-    echo "Deployment cannot proceed without database connection"
+    echo "ERROR: Database not reachable after ${MAX_ATTEMPTS}s at $DB_URL_DISPLAY"
+    echo "Check that:"
+    echo "  - DATABASE_URL environment variable is correctly set in Railway"
+    echo "  - PostgreSQL instance is running"
+    echo "  - Network connectivity exists between app and database"
     exit 1
   fi
 fi

@@ -39,7 +39,10 @@ def run_migrations_online():
     
     try:
         connect_timeout = int(os.getenv("DB_CONNECT_TIMEOUT", "10"))
-        connect_args = {"connect_timeout": connect_timeout}
+        connect_args = {
+            "connect_timeout": connect_timeout,
+            "sslmode": "require"
+        }
         
         connectable = engine_from_config(
             configuration,
