@@ -12,28 +12,55 @@ import { getToken, setToken } from './services/api';
 import styles from './App.module.css';
 
 export default function App() {
-  const [lang, setLang] = useState(localStorage.getItem('lang') || 'pl');
+  const [lang, setLang] = useState(
+    typeof window !== 'undefined'
+      ? localStorage.getItem('lang') || 'pl'
+      : 'pl'
+  );
   const [currentView, setCurrentView] = useState('dashboard');
   const [profile, setProfile] = useState(null);
   const [isSettingsOpen, setSettingsOpen] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
+  // zapisujemy język przy zmianie
+  useEffect(() => {
+    try {
+      localStorage.setItem('lang', lang);
+    } catch {
+      // ignorujemy błędy localStorage (np. private mode)
+    }
+  }, [lang]);
+
+  // sprawdzamy token + profil przy starcie
   useEffect(() => {
     const token = getToken();
-    if (token) {
-      import('./services/api').then(api => {
-        api.getProfile()
-          .then(profile => setProfile(profile))
-          .catch(() => {
-            setToken(null);
-            setProfile(null);
-          });
-      });
+    if (!token) {
+      setCheckingAuth(false);
+      return;
     }
+
+    (async () => {
+      try {
+        // uwaga: dynamiczny import OK jeśli chcesz code-splitting,
+        // ale nie jest konieczny, skoro i tak importujesz getToken/setToken
+        const api = await import('./services/api');
+        const profileData = await api.getProfile();
+        setProfile(profileData);
+      } catch (e) {
+        console.error(e);
+        setToken(null); // warto mieć implementację, która czyści token
+        setProfile(null);
+      } finally {
+        setCheckingAuth(false);
+      }
+    })();
   }, []);
 
   const handleLogin = (data) => {
+    // załóżmy, że data = { user, token }
     setProfile(data.user);
     setToken(data.token);
+    setCurrentView('dashboard');
   };
 
   const handleLogout = () => {
@@ -57,14 +84,32 @@ export default function App() {
       case 'reports':
         return <Products lang={lang} />;
       case 'admin':
-        return <Admin lang={lang} />;
+        // prosty guard po stronie frontu – backend i tak musi sprawdzać
+        if (profile?.is_admin) {
+          return <Admin lang={lang} />;
+        }
+        return <Dashboard lang={lang} setCurrentView={setCurrentView} />;
       case 'dashboard':
       default:
         return <Dashboard lang={lang} setCurrentView={setCurrentView} />;
     }
   };
 
+  // podczas sprawdzania autoryzacji – prosty ekran ładowania
+  if (checkingAuth) {
+    return (
+      <div className={styles.app}>
+        <main id="main-content" className={styles.mainContent}>
+          <div className={styles.container}>
+            <p>Loading...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   if (!profile) {
+    // Login może mieć przełącznik języka, więc przekazanie setLang ma sens
     return <Login onLogin={handleLogin} lang={lang} setLang={setLang} />;
   }
 
@@ -80,15 +125,16 @@ export default function App() {
         onLogout={handleLogout}
       />
       <main id="main-content" className={styles.mainContent}>
-        <div className={styles.container}>
-          {renderView()}
-        </div>
+        <div className={styles.container}>{renderView()}</div>
       </main>
       {isSettingsOpen && (
         <Settings
           profile={profile}
           onClose={() => setSettingsOpen(false)}
-          onOpenAdmin={() => { setSettingsOpen(false); setCurrentView('admin'); }}
+          onOpenAdmin={() => {
+            setSettingsOpen(false);
+            setCurrentView('admin');
+          }}
           lang={lang}
         />
       )}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { adminListUsers, adminCreateUser, setAdminKey } from '../services/api';
 
 export default function Admin({ lang }) {
@@ -27,54 +27,108 @@ export default function Admin({ lang }) {
       created_at: { pl: 'Data utworzenia', en: 'Created At' },
       user_added: { pl: 'Użytkownik dodany!', en: 'User added!' },
       user_deleted: { pl: 'Użytkownik usunięty!', en: 'User deleted!' },
-      confirm_delete: { pl: 'Czy na pewno chcesz usunąć tego użytkownika?', en: 'Are you sure you want to delete this user?' },
-      enter_admin_key: { pl: 'Wprowadź klucz administratora aby zarządzać użytkownikami', en: 'Enter admin key to manage users' },
-      password_requirements: { pl: 'Hasło musi mieć co najmniej 8 znaków, zawierać littery, cyfry i znaki specjalne', en: 'Password must have at least 8 characters with letters, numbers and special characters' },
-      no_users: { pl: 'Brak użytkowników', en: 'No users' }
+      confirm_delete: {
+        pl: 'Czy na pewno chcesz usunąć tego użytkownika?',
+        en: 'Are you sure you want to delete this user?'
+      },
+      enter_admin_key: {
+        pl: 'Wprowadź klucz administratora aby zarządzać użytkownikami',
+        en: 'Enter admin key to manage users'
+      },
+      password_requirements: {
+        pl: 'Hasło musi mieć co najmniej 8 znaków, zawierać litery, cyfry i znaki specjalne',
+        en: 'Password must have at least 8 characters with letters, numbers and special characters'
+      },
+      no_users: { pl: 'Brak użytkowników', en: 'No users' },
+      error_generic: {
+        pl: 'Coś poszło nie tak. Spróbuj ponownie.',
+        en: 'Something went wrong. Please try again.'
+      },
+      error_auth_failed: {
+        pl: 'Uwierzytelnianie nie powiodło się. Sprawdź klucz admina.',
+        en: 'Authentication failed. Check the admin key.'
+      },
+      error_required: {
+        pl: 'E-mail i hasło są wymagane.',
+        en: 'Email and password are required.'
+      },
+      error_password_weak: {
+        pl: 'Hasło nie spełnia wymagań złożoności.',
+        en: 'Password does not meet complexity requirements.'
+      },
+      yes: { pl: 'Tak', en: 'Yes' },
+      no: { pl: 'Nie', en: 'No' },
+      actions: { pl: 'Akcje', en: 'Actions' }
     };
     return translations[key]?.[lang] || key;
   };
 
+  const isStrongPassword = (pwd) =>
+    /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(pwd);
+
   const authenticate = async () => {
+    const trimmedKey = adminKey.trim();
+    if (!trimmedKey) {
+      setError('❌ ' + t('error_auth_failed'));
+      return;
+    }
+
     setError('');
     setSuccess('');
     setLoading(true);
-    setAdminKey(adminKey);
+
     try {
+      // Uwaga: zadbaj, żeby setAdminKey NIE zapisywał klucza w localStorage,
+      // tylko np. w pamięci i dodawał nagłówek x-admin-key do zapytań admina.
+      setAdminKey(trimmedKey);
       const result = await adminListUsers();
-      setUsers(result);
+      setUsers(result || []);
       setIsAuthed(true);
       setSuccess('✅ ' + t('authenticate'));
     } catch (err) {
-      setError('❌ ' + err.message);
+      console.error(err);
       setIsAuthed(false);
+      setError('❌ ' + t('error_auth_failed'));
     } finally {
       setLoading(false);
     }
   };
 
   const createUser = async () => {
-    if (!newUserEmail.trim() || !newUserPassword.trim()) {
-      setError('❌ Email and password are required');
+    const email = newUserEmail.trim();
+    const password = newUserPassword;
+
+    if (!email || !password) {
+      setError('❌ ' + t('error_required'));
       return;
     }
+
+    if (!isStrongPassword(password)) {
+      setError('❌ ' + t('error_password_weak'));
+      return;
+    }
+
     setError('');
     setSuccess('');
     setLoading(true);
+
     try {
-      await adminCreateUser({ 
-        email: newUserEmail, 
-        password: newUserPassword,
-        is_admin: newUserIsAdmin 
+      await adminCreateUser({
+        email,
+        password,
+        is_admin: newUserIsAdmin
       });
+
       setSuccess('🎉 ' + t('user_added'));
       setNewUserEmail('');
       setNewUserPassword('');
       setNewUserIsAdmin(false);
+
       const updated = await adminListUsers();
-      setUsers(updated);
+      setUsers(updated || []);
     } catch (err) {
-      setError('❌ ' + err.message);
+      console.error(err);
+      setError('❌ ' + t('error_generic'));
     } finally {
       setLoading(false);
     }
@@ -82,24 +136,35 @@ export default function Admin({ lang }) {
 
   const deleteUser = async (userId) => {
     if (!confirm(t('confirm_delete'))) return;
+
     setError('');
     setSuccess('');
     setLoading(true);
+
     try {
-      await fetch(`${import.meta.env.VITE_API_BASE || window.location.origin}/api/admin/users/${encodeURIComponent(userId)}`, {
-        method: 'DELETE',
-        headers: {
-          'x-admin-key': adminKey
+      const base = import.meta.env.VITE_API_BASE || window.location.origin;
+      const res = await fetch(
+        `${base}/api/admin/users/${encodeURIComponent(userId)}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'x-admin-key': adminKey.trim()
+          }
         }
-      }).then(res => {
-        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-        return res.json();
-      });
+      );
+
+      if (!res.ok) {
+        throw new Error(`HTTP_${res.status}`);
+      }
+
+      await res.json().catch(() => ({})); // ignore body, just in case
+
       const updated = await adminListUsers();
-      setUsers(updated);
+      setUsers(updated || []);
       setSuccess('✅ ' + t('user_deleted'));
     } catch (err) {
-      setError('❌ ' + err.message);
+      console.error(err);
+      setError('❌ ' + t('error_generic'));
     } finally {
       setLoading(false);
     }
@@ -110,7 +175,9 @@ export default function Admin({ lang }) {
       <div className="api-key-auth">
         <div className="auth-card">
           <h2>🔐 {t('admin_key')}</h2>
-          <p style={{ color: '#6b7280', marginBottom: '1.5rem' }}>{t('enter_admin_key')}</p>
+          <p style={{ color: '#6b7280', marginBottom: '1.5rem' }}>
+            {t('enter_admin_key')}
+          </p>
 
           {error && <div className="error-msg">{error}</div>}
           {success && <div className="success-msg">{success}</div>}
@@ -120,10 +187,14 @@ export default function Admin({ lang }) {
             placeholder={t('admin_key')}
             value={adminKey}
             onChange={(e) => setAdminKeyInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && authenticate()}
+            onKeyDown={(e) => e.key === 'Enter' && !loading && authenticate()}
             disabled={loading}
+            autoComplete="off"
           />
-          <button onClick={authenticate} disabled={loading || !adminKey.trim()}>
+          <button
+            onClick={authenticate}
+            disabled={loading || !adminKey.trim()}
+          >
             {loading ? '⏳' : '🔓'} {t('authenticate')}
           </button>
         </div>
@@ -147,6 +218,8 @@ export default function Admin({ lang }) {
             value={newUserEmail}
             onChange={(e) => setNewUserEmail(e.target.value)}
             disabled={loading}
+            required
+            autoComplete="email"
           />
           <input
             placeholder={t('password')}
@@ -155,8 +228,12 @@ export default function Admin({ lang }) {
             onChange={(e) => setNewUserPassword(e.target.value)}
             disabled={loading}
             title={t('password_requirements')}
+            required
+            autoComplete="new-password"
           />
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <label
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+          >
             <input
               type="checkbox"
               checked={newUserIsAdmin}
@@ -165,16 +242,31 @@ export default function Admin({ lang }) {
             />
             {t('is_admin')}
           </label>
-          <button onClick={createUser} disabled={loading || !newUserEmail.trim() || !newUserPassword.trim()}>
+          <button
+            onClick={createUser}
+            disabled={
+              loading ||
+              !newUserEmail.trim() ||
+              !newUserPassword.trim()
+            }
+          >
             {loading ? '⏳' : '✨'} {t('create')}
           </button>
         </div>
       </div>
 
       <div className="keys-list">
-        <h3>👥 {t('users')} ({users.length})</h3>
+        <h3>
+          👥 {t('users')} ({users.length})
+        </h3>
         {users.length === 0 ? (
-          <p style={{ textAlign: 'center', color: '#9ca3af', padding: '2rem' }}>
+          <p
+            style={{
+              textAlign: 'center',
+              color: '#9ca3af',
+              padding: '2rem'
+            }}
+          >
             {t('no_users')}
           </p>
         ) : (
@@ -184,16 +276,29 @@ export default function Admin({ lang }) {
                 <th>{t('email')}</th>
                 <th>{t('is_admin')}</th>
                 <th>{t('created_at')}</th>
-                <th style={{ textAlign: 'right' }}>Actions</th>
+                <th style={{ textAlign: 'right' }}>{t('actions')}</th>
               </tr>
             </thead>
             <tbody>
               {users.map((user) => (
                 <tr key={user.id}>
-                  <td><strong>{user.email}</strong></td>
-                  <td>{user.is_admin ? '✅ Yes' : '❌ No'}</td>
-                  <td style={{ fontSize: '0.85rem', color: '#6b7280' }}>
-                    {new Date(user.created_at).toLocaleDateString(lang === 'pl' ? 'pl-PL' : 'en-US')}
+                  <td>
+                    <strong>{user.email}</strong>
+                  </td>
+                  <td>
+                    {user.is_admin ? `✅ ${t('yes')}` : `❌ ${t('no')}`}
+                  </td>
+                  <td
+                    style={{
+                      fontSize: '0.85rem',
+                      color: '#6b7280'
+                    }}
+                  >
+                    {user.created_at
+                      ? new Date(user.created_at).toLocaleDateString(
+                          lang === 'pl' ? 'pl-PL' : 'en-US'
+                        )
+                      : '—'}
                   </td>
                   <td style={{ textAlign: 'right' }}>
                     <button

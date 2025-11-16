@@ -3,15 +3,37 @@ import { useI18n } from '../i18n'
 import { changePassword } from '../services/api'
 import { useToast } from './Toast'
 
-export default function Settings({ profile, onClose, onOpenAdmin, lang }) {
+export default function Settings({ profile, onClose, onOpenAdmin }) {
   const [oldPassword, setOldPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const toast = useToast()
   const { t } = useI18n()
 
+  const isStrongPassword = (pwd) =>
+    /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/.test(pwd)
+
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (loading) return
+
+    // podstawowa walidacja po stronie frontu
+    if (!oldPassword || !newPassword) {
+      toast.show(t('password_both_required'), 'error')
+      return
+    }
+
+    if (oldPassword === newPassword) {
+      toast.show(t('password_same_error'), 'error')
+      return
+    }
+
+    if (!isStrongPassword(newPassword)) {
+      // ten sam komunikat, co w title / hint
+      toast.show(t('password_requirements'), 'error')
+      return
+    }
+
     setLoading(true)
     try {
       await changePassword(oldPassword, newPassword)
@@ -20,9 +42,12 @@ export default function Settings({ profile, onClose, onOpenAdmin, lang }) {
       setNewPassword('')
       onClose()
     } catch (err) {
-      toast.show(err?.response?.data?.detail || String(err), 'error')
+      console.error(err)
+      // nie pokazujemy raw błędu z backendu
+      toast.show(t('password_change_failed'), 'error')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return (
@@ -66,6 +91,7 @@ export default function Settings({ profile, onClose, onOpenAdmin, lang }) {
               onChange={e => setOldPassword(e.target.value)}
               required
               minLength={8}
+              autoComplete="current-password"
             />
           </div>
           <div className="form-group">
@@ -77,13 +103,17 @@ export default function Settings({ profile, onClose, onOpenAdmin, lang }) {
               onChange={e => setNewPassword(e.target.value)}
               required
               minLength={8}
-              pattern="^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*#?&])[A-Za-z\\d@$!%*#?&]{8,}$"
+              pattern="^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$"
               title={t('password_requirements')}
+              autoComplete="new-password"
             />
             <small className="help-text">{t('password_hint')}</small>
           </div>
           <div className="form-actions">
-            <button type="submit" disabled={loading}>
+            <button
+              type="submit"
+              disabled={loading || !oldPassword || !newPassword}
+            >
               {loading ? t('changing') : t('change_password')}
             </button>
           </div>
