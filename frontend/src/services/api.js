@@ -171,10 +171,110 @@ export const getPlannedTime = (orderId)=> req(`/api/planned-time/${encodeURIComp
 export const getProducts = ()=> req('/api/products')
 export const getCustomers = ()=> req('/api/customers')
 
+export const createProduct = (payload) => postJson('/api/products', payload)
+export const updateProduct = (productId, payload) => {
+  const headers = { 'Content-Type': 'application/json' }
+  if(API_KEY) headers['x-api-key'] = API_KEY
+  return fetch(`${API_BASE}/api/products/${encodeURIComponent(productId)}`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(payload)
+  }).then(res => {
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    return res.json()
+  })
+}
+export const deleteProduct = (productId) => {
+  const headers = {}
+  if(API_KEY) headers['x-api-key'] = API_KEY
+  return fetch(`${API_BASE}/api/products/${encodeURIComponent(productId)}`, {
+    method: 'DELETE',
+    headers
+  }).then(res => {
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    return res.text().then(text => text ? JSON.parse(text) : {})
+  })
+}
+
 export const createOrder = (payload) => postJson('/api/orders', payload)
+export const updateOrder = (orderId, payload) => {
+  const headers = { 'Content-Type': 'application/json' }
+  if(API_KEY) headers['x-api-key'] = API_KEY
+  return fetch(`${API_BASE}/api/orders/${encodeURIComponent(orderId)}`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(payload)
+  }).then(res => {
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    return res.json()
+  })
+}
+export const deleteOrder = (orderId) => {
+  const headers = {}
+  if(API_KEY) headers['x-api-key'] = API_KEY
+  return fetch(`${API_BASE}/api/orders/${encodeURIComponent(orderId)}`, {
+    method: 'DELETE',
+    headers
+  }).then(res => {
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    return res.text().then(text => text ? JSON.parse(text) : {})
+  })
+}
 export const createOrderLine = (payload) => postJson('/api/order-lines', payload)
 export const createTimesheet = (payload) => postJson('/api/timesheets', payload)
 export const createInventory = (payload) => postJson('/api/inventory', payload)
+
+export const getTimesheets = () => req('/api/timesheets')
+export const getInventory = () => req('/api/inventory')
+export const getEmployees = () => req('/api/employees')
+
+export const updateTimesheet = (tsId, payload) => {
+  const headers = { 'Content-Type': 'application/json' }
+  if(API_KEY) headers['x-api-key'] = API_KEY
+  return fetch(`${API_BASE}/api/timesheets/${encodeURIComponent(tsId)}`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(payload)
+  }).then(res => {
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    return res.json()
+  })
+}
+export const deleteTimesheet = (tsId) => {
+  const headers = {}
+  if(API_KEY) headers['x-api-key'] = API_KEY
+  return fetch(`${API_BASE}/api/timesheets/${encodeURIComponent(tsId)}`, {
+    method: 'DELETE',
+    headers
+  }).then(res => {
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    return res.text().then(text => text ? JSON.parse(text) : {})
+  })
+}
+
+export const updateInventory = (txnId, payload) => {
+  const headers = { 'Content-Type': 'application/json' }
+  if(API_KEY) headers['x-api-key'] = API_KEY
+  return fetch(`${API_BASE}/api/inventory/${encodeURIComponent(txnId)}`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(payload)
+  }).then(res => {
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    return res.json()
+  })
+}
+export const deleteInventory = (txnId) => {
+  const headers = {}
+  if(API_KEY) headers['x-api-key'] = API_KEY
+  return fetch(`${API_BASE}/api/inventory/${encodeURIComponent(txnId)}`, {
+    method: 'DELETE',
+    headers
+  }).then(res => {
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    return res.text().then(text => text ? JSON.parse(text) : {})
+  })
+}
 
 // Admin API: list/create/delete api keys
 export const adminListKeys = () => reqAdmin('/api/admin/api-keys')

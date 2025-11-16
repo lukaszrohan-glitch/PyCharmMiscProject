@@ -3,14 +3,12 @@ import Header from './components/Header';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Settings from './components/Settings';
+import Orders from './components/Orders';
+import Inventory from './components/Inventory';
+import Timesheets from './components/Timesheets';
+import Products from './components/Products';
 import { getToken, setToken } from './services/api';
 import styles from './App.module.css';
-
-// Placeholder components for different views
-const Orders = () => <div>Orders View (w budowie)</div>;
-const Inventory = () => <div>Inventory View (w budowie)</div>;
-const Timesheets = () => <div>Timesheets View (w budowie)</div>;
-const Reports = () => <div>Reports View (w budowie)</div>;
 
 export default function App() {
   const [lang, setLang] = useState(localStorage.getItem('lang') || 'pl');
@@ -50,13 +48,13 @@ export default function App() {
   const renderView = () => {
     switch (currentView) {
       case 'orders':
-        return <Orders />;
+        return <Orders lang={lang} />;
       case 'inventory':
-        return <Inventory />;
+        return <Inventory lang={lang} />;
       case 'timesheets':
-        return <Timesheets />;
+        return <Timesheets lang={lang} />;
       case 'reports':
-        return <Reports />;
+        return <Products lang={lang} />;
       case 'dashboard':
       default:
         return <Dashboard lang={lang} setCurrentView={setCurrentView} />;
