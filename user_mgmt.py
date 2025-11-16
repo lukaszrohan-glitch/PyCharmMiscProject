@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS subscription_plans (
         if not row:
             user_id = 'admin'
             pwd_hash = hasher.hash(admin_password)
-            execute(SQL_INSERT_USER, (user_id, admin_email, None, pwd_hash, True, 'enterprise'), returning=True)
+            execute(SQL_INSERT_USER, (user_id, admin_email, None, pwd_hash, 1, 'enterprise'), returning=True)
             print(f"Admin user created: {admin_email}")
         else:
             print(f"Admin user already exists: {admin_email}")
@@ -209,7 +209,7 @@ def create_user(email: str, company_id: Optional[str], is_admin: bool, subscript
         raise HTTPException(status_code=400, detail='Password too short (min 8 chars)')
     pwd_hash = hasher.hash(raw_password)
     user_id = f'U-{secrets.token_hex(3)}'
-    rows = execute(SQL_INSERT_USER, (user_id, email, company_id, pwd_hash, is_admin, subscription_plan), returning=True)
+    rows = execute(SQL_INSERT_USER, (user_id, email, company_id, pwd_hash, 1 if is_admin else 0, subscription_plan), returning=True)
     if not rows:
         raise HTTPException(status_code=500, detail='Failed to create user')
     row = rows[0]
