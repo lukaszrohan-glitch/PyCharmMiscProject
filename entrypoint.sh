@@ -10,6 +10,23 @@ elif echo "$DATABASE_URL" | grep -qE '^\$\{|^\$'; then
   exit 1
 elif echo "$DATABASE_URL" | grep -qi postgres; then
   DB_URL_DISPLAY=$(echo "$DATABASE_URL" | sed 's/:.*@/@/g')
+  echo ""
+  echo "=== Database Connection Diagnostics ==="
+  python3 << 'DIAGEOF'
+import os
+from urllib.parse import urlparse
+url = os.environ.get('DATABASE_URL', '')
+if url:
+    p = urlparse(url)
+    print(f"URL Host:     {p.hostname}")
+    print(f"URL Port:     {p.port}")
+    print(f"URL Database: {p.path}")
+    print(f"URL User:     {p.username}")
+    print("")
+    print(f"Full DATABASE_URL: {url}")
+DIAGEOF
+  echo "=== Starting Connection Wait (timeout: 300s) ==="
+  echo ""
   echo "Waiting for PostgreSQL database at $DB_URL_DISPLAY..."
   
   ATTEMPTS=0
@@ -61,7 +78,7 @@ try:
         user=user,
         password=password,
         database=database,
-        connect_timeout=5,
+        connect_timeout=10,
         sslmode='allow'
     )
     conn.close()
