@@ -4,6 +4,18 @@ APP_MODULE=${APP_MODULE:-main:app}
 PORT=${PORT:-8000}
 
 if [ -z "$DATABASE_URL" ]; then
+  if [ -n "$DATABASE_PRIVATE_URL" ]; then
+    export DATABASE_URL="$DATABASE_PRIVATE_URL"
+    echo "Using DATABASE_PRIVATE_URL (no egress fees)"
+  elif [ -n "$DATABASE_PUBLIC_URL" ]; then
+    export DATABASE_URL="$DATABASE_PUBLIC_URL"
+    echo "WARNING: Using DATABASE_PUBLIC_URL - this may incur egress fees. Consider switching to DATABASE_PRIVATE_URL."
+  else
+    echo "WARNING: DATABASE_URL not set, using SQLite fallback"
+  fi
+fi
+
+if [ -z "$DATABASE_URL" ]; then
   echo "WARNING: DATABASE_URL not set, using SQLite fallback"
 elif echo "$DATABASE_URL" | grep -qE '^\$\{|^\$'; then
   echo "ERROR: DATABASE_URL appears to be a template string (not substituted). Check Railway environment variables."
@@ -22,8 +34,13 @@ if url:
     print(f"URL Port:     {p.port}")
     print(f"URL Database: {p.path}")
     print(f"URL User:     {p.username}")
+    print(f"URL Password: {'***' if p.password else '(none)'}")
+    if 'sslmode' in url:
+        import re
+        sslmode = re.search(r'sslmode=([^&\s]+)', url)
+        print(f"URL SSL Mode: {sslmode.group(1) if sslmode else 'not set'}")
     print("")
-    print(f"Full DATABASE_URL: {url}")
+    print(f"Masked CONNECTION_URL: {p.scheme}://{p.username}:***@{p.hostname}:{p.port}{p.path}")
 DIAGEOF
   echo "=== Starting Connection Wait (timeout: 300s) ==="
   echo ""

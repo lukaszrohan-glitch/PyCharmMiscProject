@@ -1,6 +1,15 @@
-# Dockerfile for SMB Tool backend (FastAPI)
-# Base image
-FROM python:3.11-slim AS builder
+# Dockerfile for SMB Tool (FastAPI + React SPA)
+# Node.js build stage for frontend
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /frontend
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend . 
+RUN npm run build
+
+# Python builder stage
+FROM python:3.11-slim AS python-builder
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -27,8 +36,8 @@ RUN pip install -r requirements.txt
 # Final stage
 FROM python:3.11-slim
 
-# Copy virtual environment from builder
-COPY --from=builder /opt/venv /opt/venv
+# Copy virtual environment from python-builder
+COPY --from=python-builder /opt/venv /opt/venv
 
 # Set environment variables
 ENV PATH="/opt/venv/bin:$PATH" \
@@ -40,17 +49,17 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends libpq5 curl bash \
     && rm -rf /var/lib/apt/lists/* \
     && useradd -m -s /bin/bash app \
-    && mkdir /app \
-    && chown app:app /app
+    && mkdir -p /app/frontend \
+    && chown -R app:app /app
 
 # Set working directory
 WORKDIR /app
 
-# Switch to non-root user
-USER app
-
 # Copy application code
 COPY --chown=app:app . .
+
+# Copy frontend dist from frontend-builder
+COPY --chown=app:app --from=frontend-builder /frontend/dist ./frontend/dist
 
 # Create necessary directories with proper permissions
 RUN mkdir -p /app/logs && chmod 755 /app/logs

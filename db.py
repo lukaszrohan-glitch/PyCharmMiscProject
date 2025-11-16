@@ -57,9 +57,12 @@ def _create_pool() -> Any:
             raise RuntimeError("psycopg2 not available. Install psycopg2-binary or set DATABASE_URL to empty for sqlite fallback.")
         dsn = DATABASE_URL
         
-        if PG_SSLMODE and dsn and "sslmode=" not in dsn:
+        if not dsn:
+            raise RuntimeError("DATABASE_URL is empty but PG_* environment variables are set. Please set DATABASE_URL.")
+        
+        if PG_SSLMODE and "sslmode=" not in dsn:
             dsn = _append_sslmode_to_url(dsn, PG_SSLMODE)
-        elif dsn and "sslmode=" not in dsn:
+        elif "sslmode=" not in dsn:
             dsn = _append_sslmode_to_url(dsn, "require")
         
         connect_timeout = int(os.getenv("DB_CONNECT_TIMEOUT", "10"))
@@ -67,7 +70,6 @@ def _create_pool() -> Any:
         
         return SimpleConnectionPool(MINCONN, MAXCONN, dsn=dsn_with_timeout)
 
-    # sqlite fallback (development): use a simple connection per call
     return None
 
 
