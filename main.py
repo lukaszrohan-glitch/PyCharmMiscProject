@@ -14,8 +14,12 @@ logger = logging.getLogger(__name__)
 
 from db import fetch_all, fetch_one, execute
 from schemas import (
-    Order, Finance,
-    OrderCreate, OrderLineCreate, TimesheetCreate, InventoryCreate,
+    Order, Finance, OrderCreate, OrderUpdate, OrderLineCreate,
+    Product, ProductCreate, ProductUpdate,
+    Customer, CustomerCreate, CustomerUpdate,
+    Employee, EmployeeCreate, EmployeeUpdate,
+    Timesheet, TimesheetCreate, TimesheetUpdate,
+    Inventory, InventoryCreate, InventoryUpdate,
     UserLogin, PasswordChange, UserCreateAdmin, SubscriptionPlanCreate,
     PasswordResetRequest, PasswordReset
 )
@@ -133,6 +137,14 @@ def orders_list():
         raise HTTPException(status_code=500, detail="Failed to fetch orders")
 
 
+@app.get("/api/orders/{order_id}", response_model=Optional[Order])
+def order_get(order_id: str):
+    try:
+        return fetch_one("SELECT order_id, customer_id, status, due_date FROM orders WHERE order_id = %s", (order_id,))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
 @app.get("/api/finance/{order_id}", response_model=Optional[Finance])
 def finance_one(order_id: str):
     try:
@@ -162,7 +174,7 @@ def planned_time(order_id: str):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@app.get("/api/products")
+@app.get("/api/products", response_model=List[Product])
 def products_list():
     try:
         return fetch_all(SQL_PRODUCTS)
@@ -170,10 +182,74 @@ def products_list():
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@app.get("/api/customers")
+@app.get("/api/products/{product_id}", response_model=Optional[Product])
+def product_get(product_id: str):
+    try:
+        return fetch_one("SELECT product_id, name, unit, std_cost, price, vat_rate FROM products WHERE product_id = %s", (product_id,))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.get("/api/customers", response_model=List[Customer])
 def customers_list():
     try:
         return fetch_all(SQL_CUSTOMERS)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.get("/api/customers/{customer_id}", response_model=Optional[Customer])
+def customer_get(customer_id: str):
+    try:
+        return fetch_one("SELECT customer_id, name, nip, address, email FROM customers WHERE customer_id = %s", (customer_id,))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.get("/api/employees", response_model=List[Employee])
+def employees_list():
+    try:
+        return fetch_all("SELECT emp_id, name, role, hourly_rate FROM employees ORDER BY emp_id")
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.get("/api/employees/{emp_id}", response_model=Optional[Employee])
+def employee_get(emp_id: str):
+    try:
+        return fetch_one("SELECT emp_id, name, role, hourly_rate FROM employees WHERE emp_id = %s", (emp_id,))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.get("/api/timesheets", response_model=List[Timesheet])
+def timesheets_list():
+    try:
+        return fetch_all("SELECT ts_id, emp_id, ts_date, order_id, operation_no, hours, notes FROM timesheets ORDER BY ts_date DESC")
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.get("/api/timesheets/{ts_id}", response_model=Optional[Timesheet])
+def timesheet_get(ts_id: int):
+    try:
+        return fetch_one("SELECT ts_id, emp_id, ts_date, order_id, operation_no, hours, notes FROM timesheets WHERE ts_id = %s", (ts_id,))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.get("/api/inventory", response_model=List[Inventory])
+def inventory_list():
+    try:
+        return fetch_all("SELECT txn_id, txn_date, product_id, qty_change, reason, lot, location FROM inventory ORDER BY txn_date DESC")
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.get("/api/inventory/{txn_id}", response_model=Optional[Inventory])
+def inventory_get(txn_id: str):
+    try:
+        return fetch_one("SELECT txn_id, txn_date, product_id, qty_change, reason, lot, location FROM inventory WHERE txn_id = %s", (txn_id,))
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
@@ -245,6 +321,380 @@ def create_inventory_txn(payload: InventoryCreate, _ok: bool = Depends(check_api
         if not rows:
             raise HTTPException(status_code=500, detail="Failed to create inventory transaction")
         return rows[0]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.put("/api/orders/{order_id}", response_model=Order)
+def update_order(order_id: str, payload: OrderUpdate, _ok: bool = Depends(check_api_key)):
+    try:
+        updates = []
+        params = []
+        if payload.customer_id is not None:
+            updates.append("customer_id = %s")
+            params.append(payload.customer_id)
+        if payload.status is not None:
+            updates.append("status = %s")
+            params.append(payload.status.value if hasattr(payload.status, 'value') else payload.status)
+        if payload.due_date is not None:
+            updates.append("due_date = %s")
+            params.append(payload.due_date)
+        if not updates:
+            raise HTTPException(status_code=400, detail="No fields to update")
+        params.append(order_id)
+        sql = f"UPDATE orders SET {', '.join(updates)} WHERE order_id = %s RETURNING order_id, customer_id, status, due_date"
+        rows = execute(sql, params, returning=True)
+        if not rows:
+            raise HTTPException(status_code=404, detail="Order not found")
+        return rows[0]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.delete("/api/orders/{order_id}")
+def delete_order(order_id: str, _ok: bool = Depends(check_api_key)):
+    try:
+        execute("DELETE FROM orders WHERE order_id = %s", (order_id,))
+        return {"deleted": True}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.post("/api/products", response_model=Product, status_code=201)
+def create_product(payload: ProductCreate, _ok: bool = Depends(check_api_key)):
+    try:
+        rows = execute(
+            "INSERT INTO products (product_id, name, unit, std_cost, price, vat_rate) VALUES (%s, %s, %s, %s, %s, %s) RETURNING product_id, name, unit, std_cost, price, vat_rate",
+            (payload.product_id, payload.name, payload.unit, payload.std_cost, payload.price, payload.vat_rate),
+            returning=True
+        )
+        if not rows:
+            raise HTTPException(status_code=409, detail="Product already exists")
+        return rows[0]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.put("/api/products/{product_id}", response_model=Product)
+def update_product(product_id: str, payload: ProductUpdate, _ok: bool = Depends(check_api_key)):
+    try:
+        updates = []
+        params = []
+        if payload.name is not None:
+            updates.append("name = %s")
+            params.append(payload.name)
+        if payload.unit is not None:
+            updates.append("unit = %s")
+            params.append(payload.unit)
+        if payload.std_cost is not None:
+            updates.append("std_cost = %s")
+            params.append(payload.std_cost)
+        if payload.price is not None:
+            updates.append("price = %s")
+            params.append(payload.price)
+        if payload.vat_rate is not None:
+            updates.append("vat_rate = %s")
+            params.append(payload.vat_rate)
+        if not updates:
+            raise HTTPException(status_code=400, detail="No fields to update")
+        params.append(product_id)
+        sql = f"UPDATE products SET {', '.join(updates)} WHERE product_id = %s RETURNING product_id, name, unit, std_cost, price, vat_rate"
+        rows = execute(sql, params, returning=True)
+        if not rows:
+            raise HTTPException(status_code=404, detail="Product not found")
+        return rows[0]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.delete("/api/products/{product_id}")
+def delete_product(product_id: str, _ok: bool = Depends(check_api_key)):
+    try:
+        execute("DELETE FROM products WHERE product_id = %s", (product_id,))
+        return {"deleted": True}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.post("/api/customers", response_model=Customer, status_code=201)
+def create_customer(payload: CustomerCreate, _ok: bool = Depends(check_api_key)):
+    try:
+        rows = execute(
+            "INSERT INTO customers (customer_id, name, nip, address, email) VALUES (%s, %s, %s, %s, %s) RETURNING customer_id, name, nip, address, email",
+            (payload.customer_id, payload.name, payload.nip, payload.address, payload.email),
+            returning=True
+        )
+        if not rows:
+            raise HTTPException(status_code=409, detail="Customer already exists")
+        return rows[0]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.put("/api/customers/{customer_id}", response_model=Customer)
+def update_customer(customer_id: str, payload: CustomerUpdate, _ok: bool = Depends(check_api_key)):
+    try:
+        updates = []
+        params = []
+        if payload.name is not None:
+            updates.append("name = %s")
+            params.append(payload.name)
+        if payload.nip is not None:
+            updates.append("nip = %s")
+            params.append(payload.nip)
+        if payload.address is not None:
+            updates.append("address = %s")
+            params.append(payload.address)
+        if payload.email is not None:
+            updates.append("email = %s")
+            params.append(payload.email)
+        if not updates:
+            raise HTTPException(status_code=400, detail="No fields to update")
+        params.append(customer_id)
+        sql = f"UPDATE customers SET {', '.join(updates)} WHERE customer_id = %s RETURNING customer_id, name, nip, address, email"
+        rows = execute(sql, params, returning=True)
+        if not rows:
+            raise HTTPException(status_code=404, detail="Customer not found")
+        return rows[0]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.delete("/api/customers/{customer_id}")
+def delete_customer(customer_id: str, _ok: bool = Depends(check_api_key)):
+    try:
+        execute("DELETE FROM customers WHERE customer_id = %s", (customer_id,))
+        return {"deleted": True}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.post("/api/employees", response_model=Employee, status_code=201)
+def create_employee(payload: EmployeeCreate, _ok: bool = Depends(check_api_key)):
+    try:
+        rows = execute(
+            "INSERT INTO employees (emp_id, name, role, hourly_rate) VALUES (%s, %s, %s, %s) RETURNING emp_id, name, role, hourly_rate",
+            (payload.emp_id, payload.name, payload.role, payload.hourly_rate),
+            returning=True
+        )
+        if not rows:
+            raise HTTPException(status_code=409, detail="Employee already exists")
+        return rows[0]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.put("/api/employees/{emp_id}", response_model=Employee)
+def update_employee(emp_id: str, payload: EmployeeUpdate, _ok: bool = Depends(check_api_key)):
+    try:
+        updates = []
+        params = []
+        if payload.name is not None:
+            updates.append("name = %s")
+            params.append(payload.name)
+        if payload.role is not None:
+            updates.append("role = %s")
+            params.append(payload.role)
+        if payload.hourly_rate is not None:
+            updates.append("hourly_rate = %s")
+            params.append(payload.hourly_rate)
+        if not updates:
+            raise HTTPException(status_code=400, detail="No fields to update")
+        params.append(emp_id)
+        sql = f"UPDATE employees SET {', '.join(updates)} WHERE emp_id = %s RETURNING emp_id, name, role, hourly_rate"
+        rows = execute(sql, params, returning=True)
+        if not rows:
+            raise HTTPException(status_code=404, detail="Employee not found")
+        return rows[0]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.delete("/api/employees/{emp_id}")
+def delete_employee(emp_id: str, _ok: bool = Depends(check_api_key)):
+    try:
+        execute("DELETE FROM employees WHERE emp_id = %s", (emp_id,))
+        return {"deleted": True}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.put("/api/timesheets/{ts_id}", response_model=Timesheet)
+def update_timesheet(ts_id: int, payload: TimesheetUpdate, _ok: bool = Depends(check_api_key)):
+    try:
+        updates = []
+        params = []
+        if payload.emp_id is not None:
+            updates.append("emp_id = %s")
+            params.append(payload.emp_id)
+        if payload.ts_date is not None:
+            updates.append("ts_date = %s")
+            params.append(payload.ts_date)
+        if payload.order_id is not None:
+            updates.append("order_id = %s")
+            params.append(payload.order_id)
+        if payload.operation_no is not None:
+            updates.append("operation_no = %s")
+            params.append(payload.operation_no)
+        if payload.hours is not None:
+            updates.append("hours = %s")
+            params.append(payload.hours)
+        if payload.notes is not None:
+            updates.append("notes = %s")
+            params.append(payload.notes)
+        if not updates:
+            raise HTTPException(status_code=400, detail="No fields to update")
+        params.append(ts_id)
+        sql = f"UPDATE timesheets SET {', '.join(updates)} WHERE ts_id = %s RETURNING ts_id, emp_id, ts_date, order_id, operation_no, hours, notes"
+        rows = execute(sql, params, returning=True)
+        if not rows:
+            raise HTTPException(status_code=404, detail="Timesheet not found")
+        return rows[0]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.delete("/api/timesheets/{ts_id}")
+def delete_timesheet(ts_id: int, _ok: bool = Depends(check_api_key)):
+    try:
+        execute("DELETE FROM timesheets WHERE ts_id = %s", (ts_id,))
+        return {"deleted": True}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.put("/api/inventory/{txn_id}", response_model=Inventory)
+def update_inventory(txn_id: str, payload: InventoryUpdate, _ok: bool = Depends(check_api_key)):
+    try:
+        updates = []
+        params = []
+        if payload.txn_date is not None:
+            updates.append("txn_date = %s")
+            params.append(payload.txn_date)
+        if payload.product_id is not None:
+            updates.append("product_id = %s")
+            params.append(payload.product_id)
+        if payload.qty_change is not None:
+            updates.append("qty_change = %s")
+            params.append(payload.qty_change)
+        if payload.reason is not None:
+            updates.append("reason = %s")
+            params.append(payload.reason)
+        if payload.lot is not None:
+            updates.append("lot = %s")
+            params.append(payload.lot)
+        if payload.location is not None:
+            updates.append("location = %s")
+            params.append(payload.location)
+        if not updates:
+            raise HTTPException(status_code=400, detail="No fields to update")
+        params.append(txn_id)
+        sql = f"UPDATE inventory SET {', '.join(updates)} WHERE txn_id = %s RETURNING txn_id, txn_date, product_id, qty_change, reason, lot, location"
+        rows = execute(sql, params, returning=True)
+        if not rows:
+            raise HTTPException(status_code=404, detail="Inventory transaction not found")
+        return rows[0]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.delete("/api/inventory/{txn_id}")
+def delete_inventory(txn_id: str, _ok: bool = Depends(check_api_key)):
+    try:
+        execute("DELETE FROM inventory WHERE txn_id = %s", (txn_id,))
+        return {"deleted": True}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.post('/api/import/csv')
+def import_csv(file: str = None, entity_type: str = None, data: List[Dict] = None, _ok: bool = Depends(check_api_key)):
+    try:
+        if not entity_type or not data:
+            raise HTTPException(status_code=400, detail="Missing entity_type or data")
+        
+        entity_type = entity_type.lower()
+        imported = 0
+        
+        if entity_type == 'orders':
+            for row in data:
+                execute(
+                    "INSERT INTO orders (order_id, customer_id, status, due_date) VALUES (%s, %s, %s, %s) ON CONFLICT (order_id) DO NOTHING",
+                    (row.get('order_id'), row.get('customer_id'), row.get('status', 'Planned'), row.get('due_date')),
+                    returning=False
+                )
+                imported += 1
+        
+        elif entity_type == 'products':
+            for row in data:
+                execute(
+                    "INSERT INTO products (product_id, name, unit, std_cost, price, vat_rate) VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (product_id) DO NOTHING",
+                    (row.get('product_id'), row.get('name'), row.get('unit', 'pcs'), row.get('std_cost', 0), row.get('price', 0), row.get('vat_rate', 23)),
+                    returning=False
+                )
+                imported += 1
+        
+        elif entity_type == 'customers':
+            for row in data:
+                execute(
+                    "INSERT INTO customers (customer_id, name, nip, address, email) VALUES (%s, %s, %s, %s, %s) ON CONFLICT (customer_id) DO NOTHING",
+                    (row.get('customer_id'), row.get('name'), row.get('nip'), row.get('address'), row.get('email')),
+                    returning=False
+                )
+                imported += 1
+        
+        elif entity_type == 'employees':
+            for row in data:
+                execute(
+                    "INSERT INTO employees (emp_id, name, role, hourly_rate) VALUES (%s, %s, %s, %s) ON CONFLICT (emp_id) DO NOTHING",
+                    (row.get('emp_id'), row.get('name'), row.get('role'), row.get('hourly_rate', 0)),
+                    returning=False
+                )
+                imported += 1
+        
+        elif entity_type == 'timesheets':
+            for row in data:
+                execute(
+                    "INSERT INTO timesheets (emp_id, ts_date, order_id, operation_no, hours, notes) VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING",
+                    (row.get('emp_id'), row.get('ts_date'), row.get('order_id'), row.get('operation_no'), row.get('hours'), row.get('notes')),
+                    returning=False
+                )
+                imported += 1
+        
+        elif entity_type == 'inventory':
+            for row in data:
+                execute(
+                    "INSERT INTO inventory (txn_id, txn_date, product_id, qty_change, reason, lot, location) VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT (txn_id) DO NOTHING",
+                    (row.get('txn_id'), row.get('txn_date'), row.get('product_id'), row.get('qty_change'), row.get('reason'), row.get('lot'), row.get('location')),
+                    returning=False
+                )
+                imported += 1
+        
+        else:
+            raise HTTPException(status_code=400, detail=f"Unknown entity_type: {entity_type}")
+        
+        return {"imported": imported, "entity_type": entity_type}
+    
     except HTTPException:
         raise
     except Exception as exc:
