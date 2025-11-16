@@ -100,13 +100,34 @@ CREATE TABLE IF NOT EXISTS api_keys (
 CREATE TABLE IF NOT EXISTS api_key_audit (
   audit_id bigserial PRIMARY KEY,
   api_key_id bigint REFERENCES api_keys(id) ON DELETE SET NULL,
-  event_type text NOT NULL, -- created, rotated, used, deleted
-  event_by text, -- admin user or system
+  event_type text NOT NULL,
+  event_by text,
   event_time timestamptz NOT NULL DEFAULT now(),
   details jsonb
 );
 
+-- Users tables (created by user_mgmt.py on app startup, but define here for init)
+CREATE TABLE IF NOT EXISTS users (
+  user_id TEXT PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  company_id TEXT,
+  password_hash TEXT NOT NULL,
+  is_admin INTEGER NOT NULL DEFAULT 0,
+  active INTEGER NOT NULL DEFAULT 1,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  subscription_plan TEXT DEFAULT 'free',
+  failed_login_attempts INTEGER DEFAULT 0,
+  last_failed_login timestamptz,
+  password_changed_at timestamptz DEFAULT now()
+);
 
+CREATE TABLE IF NOT EXISTS subscription_plans (
+  plan_id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  max_orders INTEGER,
+  max_users INTEGER,
+  features TEXT
+);
 
 -- minimal seed
 INSERT INTO customers(customer_id, name, nip, address, email) VALUES ('CUST-ALFA', 'Alfa Sp. z o.o.', '1234567890', 'Warszawa', 'biuro@alfa.pl') ON CONFLICT DO NOTHING;
@@ -120,7 +141,13 @@ INSERT INTO inventory(txn_id, txn_date, product_id, qty_change, reason) VALUES (
 INSERT INTO inventory(txn_id, txn_date, product_id, qty_change, reason) VALUES ('TXN-WO-ISS-1', CURRENT_DATE, 'P-101', -100, 'WO') ON CONFLICT DO NOTHING;
 INSERT INTO inventory(txn_id, txn_date, product_id, qty_change, reason) VALUES ('TXN-WO-RCPT-1', CURRENT_DATE, 'P-100', 50, 'WO') ON CONFLICT DO NOTHING;
 INSERT INTO timesheets(emp_id, ts_date, order_id, operation_no, hours, notes) VALUES ('E-01', CURRENT_DATE, 'ORD-0001', 10, 6.5, 'Seria 50 szt.') ON CONFLICT DO NOTHING;
-INSERT INTO api_keys (key_text, label, created_at, active) VALUES ('changeme123', 'default-dev-key', now(), true) ON CONFLICT DO NOTHING;
+INSERT INTO api_keys (key_text, label, created_at, active) VALUES ('changeme123', 'default-dev-key', now(), 1) ON CONFLICT DO NOTHING;
+
+INSERT INTO subscription_plans(plan_id, name, max_orders, max_users, features) VALUES 
+  ('free', 'Free Plan', 10, 1, 'Basic features'),
+  ('pro', 'Pro Plan', 100, 5, 'Advanced features'),
+  ('enterprise', 'Enterprise Plan', NULL, NULL, 'All features')
+ON CONFLICT DO NOTHING;
 
 
 
