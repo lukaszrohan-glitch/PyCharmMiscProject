@@ -1,189 +1,265 @@
 import React, { useState } from 'react'
-import { login, setToken } from '../services/api.js'
+import { useI18n } from '../i18n'
+import { changePassword } from '../services/api'
+import { useToast } from './Toast'
 
-export default function Login({ onLogin, lang }) {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [err, setErr] = useState(null)
+export default function Settings({ profile, onClose, onOpenAdmin, onLogout, lang }) {
+  const [oldPassword, setOldPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const toast = useToast()
+  const { t } = useI18n()
 
-  const t = lang === 'pl'
-    ? {
-        title: 'Logowanie',
-        email: 'E-mail',
-        password: 'Hasło',
-        btn: 'Zaloguj',
-        err: 'Błąd logowania. Sprawdź dane i spróbuj ponownie.'
-      }
-    : {
-        title: 'Login',
-        email: 'Email',
-        password: 'Password',
-        btn: 'Sign in',
-        err: 'Login error. Check your credentials and try again.'
-      }
+  const isStrongPassword = (pwd) =>
+    /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/.test(pwd)
 
-  async function submit(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (loading) return
 
-    setErr(null)
+    if (!oldPassword || !newPassword) {
+      toast.show(t('password_both_required'), 'error')
+      return
+    }
+
+    if (oldPassword === newPassword) {
+      toast.show(t('password_same_error'), 'error')
+      return
+    }
+
+    if (!isStrongPassword(newPassword)) {
+      toast.show(t('password_requirements'), 'error')
+      return
+    }
+
     setLoading(true)
-
     try {
-      const data = await login(email.trim(), password)
-
-      if (data && data.tokens && data.tokens.access_token) {
-        // Uwaga: najlepiej używać httpOnly cookie po stronie backendu,
-        // zamiast trzymać token w JS. Tu zostawiamy istniejące zachowanie.
-        setToken(data.tokens.access_token)
-        onLogin({ user: data.user, token: data.tokens.access_token })
-      } else if (data && data.token) {
-        setToken(data.token)
-        onLogin(data)
-      } else {
-        throw new Error('UNEXPECTED_RESPONSE')
-      }
-    } catch (ex) {
-      console.error(ex)
-      setErr(t.err)
+      await changePassword(oldPassword, newPassword)
+      toast.show(t('password_changed'), 'success')
+      setOldPassword('')
+      setNewPassword('')
+      onClose()
+    } catch (err) {
+      console.error(err)
+      toast.show(t('password_change_failed'), 'error')
     } finally {
       setLoading(false)
     }
   }
 
-  const isDisabled = loading || !email.trim() || !password
+  const handleLogoutClick = () => {
+    if (loading) return
+    onClose()
+    onLogout()
+  }
 
   return (
-    <div className="login-screen">
-      <div className="login-card">
-        <h2 className="login-title">{t.title}</h2>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>{t('settings')}</h2>
+          <button className="close-btn" onClick={onClose}>×</button>
+        </div>
 
-        {err && <div className="error">{err}</div>}
+        <div className="user-info">
+          <h3>{t('profile')}</h3>
+          <div className="info-grid">
+            <div>
+              <label>{t('email')}:</label>
+              <div>{profile?.email}</div>
+            </div>
+            <div>
+              <label>{t('company')}:</label>
+              <div>{profile?.company_id || '-'}</div>
+            </div>
+            <div>
+              <label>{t('subscription')}:</label>
+              <div>{profile?.subscription_plan || 'free'}</div>
+            </div>
+            <div>
+              <label>{t('role')}:</label>
+              <div>{profile?.is_admin ? t('admin') : t('user')}</div>
+            </div>
+          </div>
+        </div>
 
-        <form onSubmit={submit} className="login-form">
-          <label className="login-label" htmlFor="email">
-            {t.email}
-          </label>
-          <input
-            id="email"
-            name="email"
-            className="login-input"
-            type="email"
-            placeholder={t.email}
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-            autoComplete="username"
-            autoCapitalize="none"
-            autoCorrect="off"
-          />
-
-          <label
-            className="login-label"
-            style={{ marginTop: 8 }}
-            htmlFor="password"
-          >
-            {t.password}
-          </label>
-          <input
-            id="password"
-            name="password"
-            className="login-input"
-            type="password"
-            placeholder={t.password}
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-            autoComplete="current-password"
-          />
-
-          <button
-            className="login-btn"
-            type="submit"
-            disabled={isDisabled}
-          >
-            {loading ? '…' : t.btn}
-          </button>
+        <form onSubmit={handleSubmit} className="change-password">
+          <h3>{t('change_password')}</h3>
+          <div className="form-group">
+            <label htmlFor="old-password">{t('current_password')}</label>
+            <input
+              id="old-password"
+              type="password"
+              value={oldPassword}
+              onChange={e => setOldPassword(e.target.value)}
+              required
+              minLength={8}
+              autoComplete="current-password"
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="new-password">{t('new_password')}</label>
+            <input
+              id="new-password"
+              type="password"
+              value={newPassword}
+              onChange={e => setNewPassword(e.target.value)}
+              required
+              minLength={8}
+              pattern="^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$"
+              title={t('password_requirements')}
+              autoComplete="new-password"
+            />
+            <small className="help-text">{t('password_hint')}</small>
+          </div>
+          <div className="form-actions">
+            <button
+              type="submit"
+              disabled={loading || !oldPassword || !newPassword}
+            >
+              {loading ? t('changing') : t('change_password')}
+            </button>
+          </div>
         </form>
 
-        <div className="login-help">
-          {lang === 'pl'
-            ? 'Użyj danych administratora otrzymanych od zespołu.'
-            : 'Use the admin credentials provided to you.'}
+        <div className="account-actions">
+          <button
+            type="button"
+            className="logout-btn"
+            onClick={handleLogoutClick}
+            disabled={loading}
+          >
+            {t('logout')}
+          </button>
         </div>
+
+        {profile?.is_admin && (
+          <div className="admin-section">
+            <h3>{t('admin_tools')}</h3>
+            <div className="admin-actions">
+              <button onClick={onOpenAdmin}>{t('admin_panel')}</button>
+            </div>
+          </div>
+        )}
       </div>
 
       <style jsx>{`
-        .login-screen {
-          min-height: 100vh;
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0,0,0,0.5);
           display: flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(180deg, #0f172a, #111827);
-          color: #e5e7eb;
-          padding: 16px;
+          z-index: 100;
         }
-        .login-card {
+
+        .modal-content {
+          background: var(--background);
+          border-radius: 0.5rem;
+          padding: 1.5rem;
           width: 100%;
-          max-width: 420px;
-          background: #0b1220;
-          border: 1px solid #1f2937;
-          border-radius: 12px;
-          padding: 24px;
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+          max-width: 500px;
+          max-height: 90vh;
+          overflow-y: auto;
+          box-shadow: 0 20px 25px -5px var(--shadow);
         }
-        .login-title {
-          margin: 0 0 12px 0;
-          font-size: 1.5rem;
-        }
-        .login-form {
+
+        .modal-header {
           display: flex;
-          flex-direction: column;
-          gap: 6px;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1.5rem;
         }
-        .login-label {
-          font-size: 0.9rem;
-          color: #9ca3af;
-        }
-        .login-input {
-          background: #0a1020;
-          border: 1px solid #334155;
-          color: #e5e7eb;
-          padding: 10px 12px;
-          border-radius: 8px;
-        }
-        .login-input:focus {
-          outline: none;
-          border-color: #60a5fa;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-        }
-        .login-btn {
-          margin-top: 14px;
-          padding: 10px 14px;
-          background: #2563eb;
-          color: white;
+
+        .close-btn {
+          background: none;
           border: none;
-          border-radius: 8px;
+          font-size: 1.5rem;
+          color: var(--text-secondary);
+          cursor: pointer;
+          padding: 0.5rem;
+          margin: -0.5rem;
+        }
+
+        .user-info h3 {
+          margin-top: 0;
+        }
+
+        .info-grid {
+          display: grid;
+          gap: 1rem;
+          margin: 1rem 0 2rem;
+        }
+
+        .info-grid label {
+          color: var(--text-secondary);
+          font-size: 0.875rem;
+        }
+
+        .form-group {
+          margin-bottom: 1rem;
+        }
+
+        .form-group label {
+          display: block;
+          margin-bottom: 0.5rem;
+          color: var(--text);
+        }
+
+        .help-text {
+          display: block;
+          margin-top: 0.25rem;
+          color: var(--text-secondary);
+          font-size: 0.875rem;
+        }
+
+        .form-actions {
+          margin-top: 2rem;
+        }
+
+        .account-actions {
+          margin-top: 1.5rem;
+          border-top: 1px solid var(--border);
+          padding-top: 1rem;
+          display: flex;
+          justify-content: flex-end;
+        }
+
+        .logout-btn {
+          background: #b91c1c;
+          color: #fff;
+          border: none;
+          border-radius: 0.375rem;
+          padding: 0.5rem 1rem;
           cursor: pointer;
         }
-        .login-btn[disabled] {
+
+        .logout-btn:disabled {
           opacity: 0.7;
           cursor: not-allowed;
         }
-        .error {
-          background: #7f1d1d;
-          border: 1px solid #fecaca;
-          color: #fee2e2;
-          padding: 8px 10px;
-          border-radius: 8px;
-          margin-bottom: 8px;
-          font-size: 0.9rem;
+
+        .admin-section {
+          margin-top: 2rem;
+          padding-top: 1rem;
+          border-top: 1px solid var(--border);
         }
-        .login-help {
-          margin-top: 10px;
-          font-size: 0.85rem;
-          color: #9ca3af;
+
+        .admin-actions {
+          display: grid;
+          gap: 0.5rem;
+          margin-top: 1rem;
+        }
+
+        @media (max-width: 640px) {
+          .modal-content {
+            margin: 1rem;
+            max-height: calc(100vh - 2rem);
+          }
         }
       `}</style>
     </div>
