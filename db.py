@@ -56,18 +56,18 @@ def _create_pool() -> Any:
         if not PSYCOPG2_AVAILABLE:
             raise RuntimeError("psycopg2 not available. Install psycopg2-binary or set DATABASE_URL to empty for sqlite fallback.")
         dsn = DATABASE_URL
-        
+
         if not dsn:
             raise RuntimeError("DATABASE_URL is empty but PG_* environment variables are set. Please set DATABASE_URL.")
-        
+
         if PG_SSLMODE and "sslmode=" not in dsn:
             dsn = _append_sslmode_to_url(dsn, PG_SSLMODE)
         elif "sslmode=" not in dsn:
             dsn = _append_sslmode_to_url(dsn, "require")
-        
+
         connect_timeout = int(os.getenv("DB_CONNECT_TIMEOUT", "10"))
         dsn_with_timeout = f"{dsn}?connect_timeout={connect_timeout}" if "?" not in dsn else f"{dsn}&connect_timeout={connect_timeout}"
-        
+
         return SimpleConnectionPool(MINCONN, MAXCONN, dsn=dsn_with_timeout)
 
     return None
@@ -201,7 +201,10 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
       is_admin BOOLEAN NOT NULL DEFAULT 0,
       active BOOLEAN NOT NULL DEFAULT 1,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      subscription_plan TEXT DEFAULT 'free'
+      subscription_plan TEXT DEFAULT 'free',
+      failed_login_attempts INTEGER DEFAULT 0,
+      last_failed_login TEXT,
+      password_changed_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
     CREATE TABLE IF NOT EXISTS subscription_plans (
       plan_id TEXT PRIMARY KEY,
@@ -212,13 +215,34 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
     );
     """)
     # Insert minimal seed data if missing
-    cur.execute("INSERT OR IGNORE INTO customers(customer_id, name, nip, address, email) VALUES (?,?,?,?,?)", ('CUST-ALFA', 'Alfa Sp. z o.o.', '1234567890', 'Warszawa', 'biuro@alfa.pl'))
-    cur.execute("INSERT OR IGNORE INTO products(product_id, name, std_cost, price) VALUES (?,?,?,?)", ('P-100', 'Gadzet A', 10, 30))
-    cur.execute("INSERT OR IGNORE INTO products(product_id, name, std_cost, price) VALUES (?,?,?,?)", ('P-101', 'Komponent X', 2, 5))
-    cur.execute("INSERT OR IGNORE INTO employees(emp_id, name, role, hourly_rate) VALUES (?,?,?,?)", ('E-01', 'Jan Kowalski', 'Operator', 45.00))
-    cur.execute("INSERT OR IGNORE INTO orders(order_id, order_date, customer_id, status, due_date) VALUES (?,?,?,?,?)", ('ORD-0001', None, 'CUST-ALFA', 'Planned', None))
-    cur.execute("INSERT OR IGNORE INTO order_lines(order_id, line_no, product_id, qty, unit_price, discount_pct) VALUES (?,?,?,?,?,?)", ('ORD-0001', 1, 'P-100', 50, 30, 0.05))
-    cur.execute("INSERT OR IGNORE INTO inventory(txn_id, txn_date, product_id, qty_change, reason) VALUES (?,?,?,?,?)", ('TXN-PO-1', None, 'P-101', 500, 'PO'))
+    cur.execute(
+        "INSERT OR IGNORE INTO customers(customer_id, name, nip, address, email) VALUES (?,?,?,?,?)",
+        ('CUST-ALFA', 'Alfa Sp. z o.o.', '1234567890', 'Warszawa', 'biuro@alfa.pl')
+    )
+    cur.execute(
+        "INSERT OR IGNORE INTO products(product_id, name, std_cost, price) VALUES (?,?,?,?)",
+        ('P-100', 'Gadzet A', 10, 30)
+    )
+    cur.execute(
+        "INSERT OR IGNORE INTO products(product_id, name, std_cost, price) VALUES (?,?,?,?)",
+        ('P-101', 'Komponent X', 2, 5)
+    )
+    cur.execute(
+        "INSERT OR IGNORE INTO employees(emp_id, name, role, hourly_rate) VALUES (?,?,?,?)",
+        ('E-01', 'Jan Kowalski', 'Operator', 45.00)
+    )
+    cur.execute(
+        "INSERT OR IGNORE INTO orders(order_id, order_date, customer_id, status, due_date) VALUES (?,?,?,?,?)",
+        ('ORD-0001', None, 'CUST-ALFA', 'Planned', None)
+    )
+    cur.execute(
+        "INSERT OR IGNORE INTO order_lines(order_id, line_no, product_id, qty, unit_price, discount_pct) VALUES (?,?,?,?,?,?)",
+        ('ORD-0001', 1, 'P-100', 50, 30, 0.05)
+    )
+    cur.execute(
+        "INSERT OR IGNORE INTO inventory(txn_id, txn_date, product_id, qty_change, reason) VALUES (?,?,?,?,?)",
+        ('TXN-PO-1', None, 'P-101', 500, 'PO')
+    )
     conn.commit()
 
     cur.executescript("""
@@ -227,8 +251,22 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
       o.order_id,
       COALESCE(SUM(ol.qty * ol.unit_price * (1 - ol.discount_pct)), 0) AS revenue,
       COALESCE(SUM(ol.qty * p.std_cost), 0) AS material_cost,
-      COALESCE((SELECT SUM(t.hours * e.hourly_rate) FROM timesheets t JOIN employees e ON t.emp_id = e.emp_id WHERE t.order_id = o.order_id), 0) AS labor_cost,
-      COALESCE(SUM(ol.qty * ol.unit_price * (1 - ol.discount_pct)), 0) - COALESCE(SUM(ol.qty * p.std_cost), 0) - COALESCE((SELECT SUM(t.hours * e.hourly_rate) FROM timesheets t JOIN employees e ON t.emp_id = e.emp_id WHERE t.order_id = o.order_id), 0) AS gross_margin,
+      COALESCE(
+        (SELECT SUM(t.hours * e.hourly_rate)
+         FROM timesheets t
+         JOIN employees e ON t.emp_id = e.emp_id
+         WHERE t.order_id = o.order_id),
+        0
+      ) AS labor_cost,
+      COALESCE(SUM(ol.qty * ol.unit_price * (1 - ol.discount_pct)), 0)
+      - COALESCE(SUM(ol.qty * p.std_cost), 0)
+      - COALESCE(
+        (SELECT SUM(t.hours * e.hourly_rate)
+         FROM timesheets t
+         JOIN employees e ON t.emp_id = e.emp_id
+         WHERE t.order_id = o.order_id),
+        0
+      ) AS gross_margin,
       datetime('now') AS last_updated
     FROM orders o
     LEFT JOIN order_lines ol ON o.order_id = ol.order_id
@@ -241,10 +279,21 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
       ol.order_id,
       ol.product_id AS component_id,
       ol.qty AS required_qty,
-      COALESCE((SELECT SUM(i.qty_change) FROM inventory i WHERE i.product_id = ol.product_id), 0) AS qty_on_hand,
-      CASE WHEN COALESCE((SELECT SUM(i.qty_change) FROM inventory i WHERE i.product_id = ol.product_id), 0) < ol.qty
-           THEN ol.qty - COALESCE((SELECT SUM(i.qty_change) FROM inventory i WHERE i.product_id = ol.product_id), 0)
-           ELSE 0 END AS shortage_qty
+      COALESCE(
+        (SELECT SUM(i.qty_change) FROM inventory i WHERE i.product_id = ol.product_id),
+        0
+      ) AS qty_on_hand,
+      CASE
+        WHEN COALESCE(
+          (SELECT SUM(i.qty_change) FROM inventory i WHERE i.product_id = ol.product_id),
+          0
+        ) < ol.qty
+        THEN ol.qty - COALESCE(
+          (SELECT SUM(i.qty_change) FROM inventory i WHERE i.product_id = ol.product_id),
+          0
+        )
+        ELSE 0
+      END AS shortage_qty
     FROM order_lines ol;
     """)
     cur.executescript("""
@@ -253,22 +302,50 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
       o.order_id,
       COALESCE(SUM(ol.qty) * 0.1, 0) AS planned_hours,
       COALESCE(SUM(CASE WHEN t.hours IS NOT NULL THEN t.hours ELSE 0 END), 0) AS completed_hours,
-      MAX(COALESCE(SUM(ol.qty) * 0.1, 0) - COALESCE(SUM(CASE WHEN t.hours IS NOT NULL THEN t.hours ELSE 0 END), 0), 0) AS remaining_hours,
-      CASE WHEN COALESCE(SUM(ol.qty) * 0.1, 0) > 0 
-           THEN ROUND(100.0 * COALESCE(SUM(CASE WHEN t.hours IS NOT NULL THEN t.hours ELSE 0 END), 0) / COALESCE(SUM(ol.qty) * 0.1, 0), 2)
-           ELSE 0 END AS efficiency
+      MAX(
+        COALESCE(SUM(ol.qty) * 0.1, 0)
+        - COALESCE(SUM(CASE WHEN t.hours IS NOT NULL THEN t.hours ELSE 0 END), 0),
+        0
+      ) AS remaining_hours,
+      CASE
+        WHEN COALESCE(SUM(ol.qty) * 0.1, 0) > 0
+        THEN ROUND(
+          100.0 * COALESCE(SUM(CASE WHEN t.hours IS NOT NULL THEN t.hours ELSE 0 END), 0)
+          / COALESCE(SUM(ol.qty) * 0.1, 0),
+          2
+        )
+        ELSE 0
+      END AS efficiency
     FROM orders o
     LEFT JOIN order_lines ol ON o.order_id = ol.order_id
     LEFT JOIN timesheets t ON o.order_id = t.order_id
     GROUP BY o.order_id;
     """)
     # Insert minimal seed data for development views
-    cur.execute("INSERT OR IGNORE INTO orders(order_id, order_date, customer_id, status, due_date) VALUES (?,?,?,?,?)", ('ORD-0002', None, 'CUST-ALFA', 'Planned', None))
-    cur.execute("INSERT OR IGNORE INTO order_lines(order_id, line_no, product_id, qty, unit_price, discount_pct) VALUES (?,?,?,?,?,?)", ('ORD-0002', 1, 'P-100', 20, 30, 0.05))
-    cur.execute("INSERT OR IGNORE INTO order_lines(order_id, line_no, product_id, qty, unit_price, discount_pct) VALUES (?,?,?,?,?,?)", ('ORD-0002', 2, 'P-101', 10, 5, 0))
-    cur.execute("INSERT OR IGNORE INTO timesheets(emp_id, ts_date, order_id, operation_no, hours) VALUES (?,?,?,?,?)", ('E-01', None, 'ORD-0002', 1, 2))
-    cur.execute("INSERT OR IGNORE INTO inventory(txn_id, txn_date, product_id, qty_change, reason) VALUES (?,?,?,?,?)", ('TXN-PO-2', None, 'P-100', 200, 'PO'))
-    cur.execute("INSERT OR IGNORE INTO inventory(txn_id, txn_date, product_id, qty_change, reason) VALUES (?,?,?,?,?)", ('TXN-PO-3', None, 'P-101', 50, 'PO'))
+    cur.execute(
+        "INSERT OR IGNORE INTO orders(order_id, order_date, customer_id, status, due_date) VALUES (?,?,?,?,?)",
+        ('ORD-0002', None, 'CUST-ALFA', 'Planned', None)
+    )
+    cur.execute(
+        "INSERT OR IGNORE INTO order_lines(order_id, line_no, product_id, qty, unit_price, discount_pct) VALUES (?,?,?,?,?,?)",
+        ('ORD-0002', 1, 'P-100', 20, 30, 0.05)
+    )
+    cur.execute(
+        "INSERT OR IGNORE INTO order_lines(order_id, line_no, product_id, qty, unit_price, discount_pct) VALUES (?,?,?,?,?,?)",
+        ('ORD-0002', 2, 'P-101', 10, 5, 0)
+    )
+    cur.execute(
+        "INSERT OR IGNORE INTO timesheets(emp_id, ts_date, order_id, operation_no, hours) VALUES (?,?,?,?,?)",
+        ('E-01', None, 'ORD-0002', 1, 2)
+    )
+    cur.execute(
+        "INSERT OR IGNORE INTO inventory(txn_id, txn_date, product_id, qty_change, reason) VALUES (?,?,?,?,?)",
+        ('TXN-PO-2', None, 'P-100', 200, 'PO')
+    )
+    cur.execute(
+        "INSERT OR IGNORE INTO inventory(txn_id, txn_date, product_id, qty_change, reason) VALUES (?,?,?,?,?)",
+        ('TXN-PO-3', None, 'P-101', 50, 'PO')
+    )
     conn.commit()
 
 
@@ -311,6 +388,7 @@ def execute(sql: str, params: Optional[Tuple] = None, returning: bool = False):
         with get_conn() as conn:
             cur = conn.cursor()
             sql_exec = sql.replace('%s', '?') if params else sql
+            # SQLite nie wspiera RETURNING w tej formie – ucinamy, jeśli jest
             sql_exec = sql_exec.split('RETURNING')[0].rstrip() if 'RETURNING' in sql_exec else sql_exec
             cur.execute(sql_exec, params or ())
             if returning:

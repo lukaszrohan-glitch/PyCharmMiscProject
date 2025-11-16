@@ -65,7 +65,9 @@ class OrderLineCreate(BaseModel):
     product_id: str
     qty: condecimal(max_digits=18, decimal_places=4) = Field(..., gt=0)
     unit_price: condecimal(max_digits=18, decimal_places=4) = Field(..., ge=0)
-    discount_pct: condecimal(max_digits=6, decimal_places=4) = Field(Decimal("0"), ge=0, le=Decimal("0.9"))
+    discount_pct: condecimal(max_digits=6, decimal_places=4) = Field(
+        Decimal("0"), ge=0, le=Decimal("0.9")
+    )
     graphic_id: Optional[str] = None
 
     @field_validator("discount_pct", mode="before")
@@ -112,7 +114,7 @@ class UserCreateAdmin(BaseModel):
     email: str = Field(..., min_length=5)
     company_id: Optional[str] = None
     is_admin: bool = False
-    subscription_plan: Optional[str] = 'free'
+    subscription_plan: Optional[str] = "free"
     password: Optional[str] = None  # optional initial password supplied by admin
 
 
@@ -155,20 +157,20 @@ class Product(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     product_id: str
     name: str
-    unit: str = 'pcs'
-    std_cost: Optional[Decimal] = Decimal('0')
-    price: Optional[Decimal] = Decimal('0')
-    vat_rate: Optional[Decimal] = Decimal('23')
+    unit: str = "pcs"
+    std_cost: Optional[Decimal] = Decimal("0")
+    price: Optional[Decimal] = Decimal("0")
+    vat_rate: Optional[Decimal] = Decimal("23")
 
 
 class ProductCreate(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     product_id: str = Field(..., min_length=1)
     name: str = Field(..., min_length=1)
-    unit: str = 'pcs'
-    std_cost: Optional[Decimal] = Decimal('0')
-    price: Optional[Decimal] = Decimal('0')
-    vat_rate: Optional[Decimal] = Decimal('23')
+    unit: str = "pcs"
+    std_cost: Optional[Decimal] = Decimal("0")
+    price: Optional[Decimal] = Decimal("0")
+    vat_rate: Optional[Decimal] = Decimal("23")
 
 
 class ProductUpdate(BaseModel):
@@ -211,7 +213,7 @@ class Employee(BaseModel):
     emp_id: str
     name: str
     role: Optional[str] = None
-    hourly_rate: Optional[Decimal] = Decimal('0')
+    hourly_rate: Optional[Decimal] = Decimal("0")
 
 
 class EmployeeCreate(BaseModel):
@@ -219,7 +221,7 @@ class EmployeeCreate(BaseModel):
     emp_id: str = Field(..., min_length=1)
     name: str = Field(..., min_length=1)
     role: Optional[str] = None
-    hourly_rate: Optional[Decimal] = Decimal('0')
+    hourly_rate: Optional[Decimal] = Decimal("0")
 
 
 class EmployeeUpdate(BaseModel):
@@ -256,7 +258,7 @@ class Inventory(BaseModel):
     txn_date: date
     product_id: str
     qty_change: Decimal
-    reason: str
+    reason: InventoryReason
     lot: Optional[str] = None
     location: Optional[str] = None
 
@@ -266,6 +268,6 @@ class InventoryUpdate(BaseModel):
     txn_date: Optional[date] = None
     product_id: Optional[str] = None
     qty_change: Optional[Decimal] = None
-    reason: Optional[str] = None
+    reason: Optional[InventoryReason] = None
     lot: Optional[str] = None
     location: Optional[str] = None

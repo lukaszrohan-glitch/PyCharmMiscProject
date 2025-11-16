@@ -1,8 +1,10 @@
 #!/bin/bash
 set -e
+
 APP_MODULE=${APP_MODULE:-main:app}
 PORT=${PORT:-8000}
 
+# Ustalanie DATABASE_URL z priorytetem: PRIVATE -> PUBLIC -> brak (SQLite)
 if [ -z "$DATABASE_URL" ]; then
   if [ -n "$DATABASE_PRIVATE_URL" ]; then
     export DATABASE_URL="$DATABASE_PRIVATE_URL"
@@ -10,11 +12,10 @@ if [ -z "$DATABASE_URL" ]; then
   elif [ -n "$DATABASE_PUBLIC_URL" ]; then
     export DATABASE_URL="$DATABASE_PUBLIC_URL"
     echo "WARNING: Using DATABASE_PUBLIC_URL - this may incur egress fees. Consider switching to DATABASE_PRIVATE_URL."
-  else
-    echo "WARNING: DATABASE_URL not set, using SQLite fallback"
   fi
 fi
 
+# Walidacja DATABASE_URL + diagnostyka
 if [ -z "$DATABASE_URL" ]; then
   echo "WARNING: DATABASE_URL not set, using SQLite fallback"
 elif echo "$DATABASE_URL" | grep -qE '^\$\{|^\$'; then
@@ -27,6 +28,7 @@ elif echo "$DATABASE_URL" | grep -qi postgres; then
   python3 << 'DIAGEOF'
 import os
 from urllib.parse import urlparse
+
 url = os.environ.get('DATABASE_URL', '')
 if url:
     p = urlparse(url)
@@ -42,53 +44,53 @@ if url:
     print("")
     print(f"Masked CONNECTION_URL: {p.scheme}://{p.username}:***@{p.hostname}:{p.port}{p.path}")
 DIAGEOF
+
   echo "=== Starting Connection Wait (timeout: 300s) ==="
   echo ""
   echo "Waiting for PostgreSQL database at $DB_URL_DISPLAY..."
-  
+
   ATTEMPTS=0
   MAX_ATTEMPTS=300
   WAIT_TIME=1
-  
+
   while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
-    python3 - <<'PYEOF'
+    python3 << 'PYEOF'
 import os
 import sys
+from urllib.parse import urlparse
+
+database_url = os.environ.get('DATABASE_URL', '')
+if not database_url:
+    print("[DB Check] No DATABASE_URL", file=sys.stderr)
+    sys.exit(0)
 
 try:
-    database_url = os.environ.get('DATABASE_URL', '')
-    if not database_url:
-        print("[DB Check] No DATABASE_URL", file=sys.stderr)
-        sys.exit(0)
-    
-    try:
-        import psycopg2
-    except ImportError:
-        print("[DB Check] psycopg2 not available, trying socket check", file=sys.stderr)
-        import socket
-        from urllib.parse import urlparse
-        parsed = urlparse(database_url)
-        host = parsed.hostname or 'localhost'
-        port = parsed.port or 5432
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(3)
-            s.connect((host, int(port)))
-            s.close()
-            sys.exit(0)
-        except:
-            sys.exit(1)
-    
-    from urllib.parse import urlparse
+    import psycopg2
+    HAS_PSYCOPG2 = True
+except ImportError:
+    HAS_PSYCOPG2 = False
+
+try:
     parsed = urlparse(database_url)
     host = parsed.hostname or 'localhost'
     port = parsed.port or 5432
+
+    if not HAS_PSYCOPG2:
+        # Fallback: zwykły socket check
+        print("[DB Check] psycopg2 not available, doing socket check only", file=sys.stderr)
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(3)
+        s.connect((host, int(port)))
+        s.close()
+        sys.exit(0)
+
     user = parsed.username or 'postgres'
     password = parsed.password or ''
     database = parsed.path.lstrip('/') or 'postgres'
-    
+
     print(f"[DB Check] Attempting connection to {host}:{port}/{database}", file=sys.stderr)
-    
+
     conn = psycopg2.connect(
         host=host,
         port=port,
@@ -101,37 +103,34 @@ try:
     conn.close()
     print("[DB Check] Connection successful", file=sys.stderr)
     sys.exit(0)
-    
-except psycopg2.OperationalError as e:
-    error_msg = str(e)
-    if 'FATAL' in error_msg or 'does not exist' in error_msg or 'password authentication' in error_msg:
-        print(f"[DB Check] Authentication/DB error (acceptable): {error_msg}", file=sys.stderr)
-        sys.exit(0)
-    print(f"[DB Check] Connection error: {error_msg}", file=sys.stderr)
-    sys.exit(1)
-    
+
 except Exception as e:
-    print(f"[DB Check] Unexpected error: {type(e).__name__}: {str(e)}", file=sys.stderr)
+    msg = str(e)
+    # Typowe błędy auth/nazwy bazy – akceptujemy, aplikacja wystartuje
+    if any(x in msg for x in ("FATAL", "does not exist", "password authentication")):
+        print(f"[DB Check] Authentication/DB error (acceptable): {msg}", file=sys.stderr)
+        sys.exit(0)
+    print(f"[DB Check] Connection error: {type(e).__name__}: {msg}", file=sys.stderr)
     sys.exit(1)
 PYEOF
-    
+
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 0 ]; then
       echo "✓ Database is reachable (after $ATTEMPTS attempts)"
       break
     fi
-    
+
     ATTEMPTS=$((ATTEMPTS+1))
     if [ $((ATTEMPTS % 30)) -eq 0 ]; then
       echo "Still waiting for database... ($ATTEMPTS/$MAX_ATTEMPTS seconds)"
     fi
-    
+
     sleep $WAIT_TIME
     if [ $WAIT_TIME -lt 10 ]; then
       WAIT_TIME=$((WAIT_TIME + 1))
     fi
   done
-  
+
   if [ $ATTEMPTS -ge $MAX_ATTEMPTS ]; then
     echo "ERROR: Database not reachable after ${MAX_ATTEMPTS}s at $DB_URL_DISPLAY"
     echo "Check that:"
@@ -142,6 +141,7 @@ PYEOF
   fi
 fi
 
+# Alembic migrations (jeśli mamy config i DATABASE_URL)
 if [ -f alembic.ini ] && [ -n "$DATABASE_URL" ] && ! echo "$DATABASE_URL" | grep -qE '^\$\{|^\$'; then
   echo "Running Alembic migrations..."
   if ! alembic upgrade head; then

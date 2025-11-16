@@ -1,202 +1,168 @@
 import React, { useState } from 'react'
-import { useI18n } from '../i18n'
-import { changePassword } from '../services/api'
-import { useToast } from './Toast'
+import { login } from '../services/api'
 
-export default function Settings({ profile, onClose, onOpenAdmin, onLogout, lang }) {
-  const [oldPassword, setOldPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
+export default function Login({ onLogin, lang, setLang }) {
+  const [email, setEmail] = useState('admin@arkuszowniasmb.pl')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const toast = useToast()
-  const { t } = useI18n()
+  const [error, setError] = useState('')
 
-  const isStrongPassword = (pwd) =>
-    /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/.test(pwd)
+  const t = lang === 'pl' ? {
+    appName: 'Arkuszownia SMB',
+    tagline: 'System Zarzadzania Produkcja',
+    login: 'Zaloguj się',
+    email: 'Email',
+    password: 'Hasło',
+    signIn: 'Zaloguj się',
+    loading: 'Logowanie...',
+    invalidCredentials: 'Błędny email lub hasło',
+    error: 'Błąd logowania'
+  } : {
+    appName: 'Arkuszownia SMB',
+    tagline: 'Manufacturing Management System',
+    login: 'Sign In',
+    email: 'Email',
+    password: 'Password',
+    signIn: 'Sign In',
+    loading: 'Signing in...',
+    invalidCredentials: 'Invalid email or password',
+    error: 'Login error'
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (loading) return
 
-    if (!oldPassword || !newPassword) {
-      toast.show(t('password_both_required'), 'error')
-      return
-    }
-
-    if (oldPassword === newPassword) {
-      toast.show(t('password_same_error'), 'error')
-      return
-    }
-
-    if (!isStrongPassword(newPassword)) {
-      toast.show(t('password_requirements'), 'error')
-      return
-    }
-
+    setError('')
     setLoading(true)
+
     try {
-      await changePassword(oldPassword, newPassword)
-      toast.show(t('password_changed'), 'success')
-      setOldPassword('')
-      setNewPassword('')
-      onClose()
+      const response = await login(email, password)
+      if (response && response.user) {
+        onLogin({ user: response.user, token: response.access_token || response.token })
+      } else {
+        setError(t.invalidCredentials)
+      }
     } catch (err) {
-      console.error(err)
-      toast.show(t('password_change_failed'), 'error')
+      console.error('Login error:', err)
+      setError(err.message || t.error)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleLogoutClick = () => {
-    if (loading) return
-    onClose()
-    onLogout()
-  }
-
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{t('settings')}</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
+    <div className="login-container">
+      <div className="login-box">
+        <div className="logo-section">
+          <h1>{t.appName}</h1>
+          <p>{t.tagline}</p>
         </div>
 
-        <div className="user-info">
-          <h3>{t('profile')}</h3>
-          <div className="info-grid">
-            <div>
-              <label>{t('email')}:</label>
-              <div>{profile?.email}</div>
-            </div>
-            <div>
-              <label>{t('company')}:</label>
-              <div>{profile?.company_id || '-'}</div>
-            </div>
-            <div>
-              <label>{t('subscription')}:</label>
-              <div>{profile?.subscription_plan || 'free'}</div>
-            </div>
-            <div>
-              <label>{t('role')}:</label>
-              <div>{profile?.is_admin ? t('admin') : t('user')}</div>
-            </div>
-          </div>
-        </div>
+        <form onSubmit={handleSubmit}>
+          <h2>{t.login}</h2>
 
-        <form onSubmit={handleSubmit} className="change-password">
-          <h3>{t('change_password')}</h3>
+          {error && <div className="error-message">{error}</div>}
+
           <div className="form-group">
-            <label htmlFor="old-password">{t('current_password')}</label>
+            <label htmlFor="email">{t.email}</label>
             <input
-              id="old-password"
-              type="password"
-              value={oldPassword}
-              onChange={e => setOldPassword(e.target.value)}
+              id="email"
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="admin@arkuszowniasmb.pl"
               required
-              minLength={8}
-              autoComplete="current-password"
+              disabled={loading}
             />
           </div>
+
           <div className="form-group">
-            <label htmlFor="new-password">{t('new_password')}</label>
+            <label htmlFor="password">{t.password}</label>
             <input
-              id="new-password"
+              id="password"
               type="password"
-              value={newPassword}
-              onChange={e => setNewPassword(e.target.value)}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder={t.password}
               required
-              minLength={8}
-              pattern="^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$"
-              title={t('password_requirements')}
-              autoComplete="new-password"
+              disabled={loading}
             />
-            <small className="help-text">{t('password_hint')}</small>
           </div>
-          <div className="form-actions">
-            <button
-              type="submit"
-              disabled={loading || !oldPassword || !newPassword}
-            >
-              {loading ? t('changing') : t('change_password')}
-            </button>
-          </div>
+
+          <button type="submit" disabled={loading || !email || !password}>
+            {loading ? t.loading : t.signIn}
+          </button>
         </form>
 
-        <div className="account-actions">
+        <div className="lang-switch">
           <button
-            type="button"
-            className="logout-btn"
-            onClick={handleLogoutClick}
-            disabled={loading}
+            className={lang === 'pl' ? 'lang-active' : 'lang-btn'}
+            onClick={() => setLang('pl')}
           >
-            {t('logout')}
+            PL
+          </button>
+          <button
+            className={lang === 'en' ? 'lang-active' : 'lang-btn'}
+            onClick={() => setLang('en')}
+          >
+            EN
           </button>
         </div>
-
-        {profile?.is_admin && (
-          <div className="admin-section">
-            <h3>{t('admin_tools')}</h3>
-            <div className="admin-actions">
-              <button onClick={onOpenAdmin}>{t('admin_panel')}</button>
-            </div>
-          </div>
-        )}
       </div>
 
       <style jsx>{`
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0,0,0,0.5);
+        .login-container {
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 100;
+          min-height: 100vh;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
 
-        .modal-content {
-          background: var(--background);
-          border-radius: 0.5rem;
-          padding: 1.5rem;
+        .login-box {
+          background: white;
+          border-radius: 8px;
+          padding: 2rem;
           width: 100%;
-          max-width: 500px;
-          max-height: 90vh;
-          overflow-y: auto;
-          box-shadow: 0 20px 25px -5px var(--shadow);
+          max-width: 400px;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
         }
 
-        .modal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
+        .logo-section {
+          text-align: center;
+          margin-bottom: 2rem;
+        }
+
+        .logo-section h1 {
+          margin: 0;
+          color: #333;
+          font-size: 1.5rem;
+        }
+
+        .logo-section p {
+          margin: 0.5rem 0 0;
+          color: #666;
+          font-size: 0.875rem;
+        }
+
+        form {
           margin-bottom: 1.5rem;
         }
 
-        .close-btn {
-          background: none;
-          border: none;
-          font-size: 1.5rem;
-          color: var(--text-secondary);
-          cursor: pointer;
-          padding: 0.5rem;
-          margin: -0.5rem;
+        form h2 {
+          margin: 0 0 1.5rem;
+          color: #333;
+          font-size: 1.25rem;
         }
 
-        .user-info h3 {
-          margin-top: 0;
-        }
-
-        .info-grid {
-          display: grid;
-          gap: 1rem;
-          margin: 1rem 0 2rem;
-        }
-
-        .info-grid label {
-          color: var(--text-secondary);
+        .error-message {
+          background: #fee;
+          color: #c33;
+          padding: 0.75rem;
+          border-radius: 4px;
+          margin-bottom: 1rem;
           font-size: 0.875rem;
         }
 
@@ -207,58 +173,84 @@ export default function Settings({ profile, onClose, onOpenAdmin, onLogout, lang
         .form-group label {
           display: block;
           margin-bottom: 0.5rem;
-          color: var(--text);
-        }
-
-        .help-text {
-          display: block;
-          margin-top: 0.25rem;
-          color: var(--text-secondary);
+          color: #333;
           font-size: 0.875rem;
+          font-weight: 500;
         }
 
-        .form-actions {
-          margin-top: 2rem;
+        .form-group input {
+          width: 100%;
+          padding: 0.75rem;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 1rem;
+          box-sizing: border-box;
+          transition: border-color 0.3s;
         }
 
-        .account-actions {
-          margin-top: 1.5rem;
-          border-top: 1px solid var(--border);
-          padding-top: 1rem;
-          display: flex;
-          justify-content: flex-end;
+        .form-group input:focus {
+          outline: none;
+          border-color: #667eea;
+          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
-        .logout-btn {
-          background: #b91c1c;
-          color: #fff;
+        .form-group input:disabled {
+          background: #f5f5f5;
+          cursor: not-allowed;
+        }
+
+        button[type="submit"] {
+          width: 100%;
+          padding: 0.75rem;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
           border: none;
-          border-radius: 0.375rem;
-          padding: 0.5rem 1rem;
+          border-radius: 4px;
+          font-size: 1rem;
+          font-weight: 600;
           cursor: pointer;
+          transition: opacity 0.3s;
         }
 
-        .logout-btn:disabled {
+        button[type="submit"]:hover:not(:disabled) {
+          opacity: 0.9;
+        }
+
+        button[type="submit"]:disabled {
           opacity: 0.7;
           cursor: not-allowed;
         }
 
-        .admin-section {
-          margin-top: 2rem;
-          padding-top: 1rem;
-          border-top: 1px solid var(--border);
+        .lang-switch {
+          display: flex;
+          gap: 0.5rem;
+          justify-content: center;
         }
 
-        .admin-actions {
-          display: grid;
-          gap: 0.5rem;
-          margin-top: 1rem;
+        .lang-btn, .lang-active {
+          padding: 0.5rem 1rem;
+          border: 1px solid #ddd;
+          background: white;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 0.875rem;
+          transition: all 0.3s;
+        }
+
+        .lang-btn:hover {
+          border-color: #667eea;
+          color: #667eea;
+        }
+
+        .lang-active {
+          background: #667eea;
+          color: white;
+          border-color: #667eea;
         }
 
         @media (max-width: 640px) {
-          .modal-content {
+          .login-box {
             margin: 1rem;
-            max-height: calc(100vh - 2rem);
           }
         }
       `}</style>

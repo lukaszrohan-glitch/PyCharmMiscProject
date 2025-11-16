@@ -14,12 +14,13 @@ _default_secret = os.urandom(32).hex() if not os.getenv('JWT_SECRET') else None
 JWT_SECRET = os.getenv('JWT_SECRET', _default_secret)
 JWT_ALG = 'HS256'
 JWT_EXP_MINUTES = int(os.getenv('JWT_EXP_MINUTES', '120'))
-# Added missing refresh token lifetime constant (was causing NameError)
 JWT_REFRESH_DAYS = int(os.getenv('JWT_REFRESH_DAYS', '7'))
+
 MAX_LOGIN_ATTEMPTS = 5
 LOGIN_LOCKOUT_MINUTES = 15
 
 # --- Table creation (Postgres path) ---
+
 SQL_CREATE_USERS = """
 CREATE TABLE IF NOT EXISTS users (
   user_id TEXT PRIMARY KEY,
@@ -47,22 +48,88 @@ CREATE TABLE IF NOT EXISTS subscription_plans (
 """
 
 # --- Queries ---
-SQL_GET_USER_BY_EMAIL = "SELECT user_id, email, company_id, password_hash, is_admin, active, subscription_plan FROM users WHERE email = %s LIMIT 1;"
-SQL_GET_USER_BY_ID = "SELECT user_id, email, company_id, password_hash, is_admin, active, subscription_plan FROM users WHERE user_id = %s LIMIT 1;"
-SQL_INSERT_USER = "INSERT INTO users (user_id, email, company_id, password_hash, is_admin, subscription_plan) VALUES (%s, %s, %s, %s, %s, %s) RETURNING user_id, email, company_id, is_admin, subscription_plan;"
-SQL_LIST_USERS = "SELECT user_id, email, company_id, is_admin, active, subscription_plan FROM users ORDER BY created_at DESC;"
-SQL_UPDATE_PASSWORD = "UPDATE users SET password_hash = %s WHERE user_id = %s RETURNING user_id;"
-SQL_INSERT_PLAN = "INSERT INTO subscription_plans (plan_id, name, max_orders, max_users, features) VALUES (%s, %s, %s, %s, %s) RETURNING plan_id, name, max_orders, max_users, features;"
-SQL_LIST_PLANS = "SELECT plan_id, name, max_orders, max_users, features FROM subscription_plans ORDER BY name;"
+
+SQL_GET_USER_BY_EMAIL = """
+SELECT user_id,
+       email,
+       company_id,
+       password_hash,
+       is_admin,
+       active,
+       subscription_plan,
+       failed_login_attempts,
+       last_failed_login
+FROM users
+WHERE email = %s
+LIMIT 1;
+"""
+
+SQL_GET_USER_BY_ID = """
+SELECT user_id,
+       email,
+       company_id,
+       password_hash,
+       is_admin,
+       active,
+       subscription_plan,
+       failed_login_attempts,
+       last_failed_login
+FROM users
+WHERE user_id = %s
+LIMIT 1;
+"""
+
+SQL_INSERT_USER = """
+INSERT INTO users (
+  user_id, email, company_id, password_hash, is_admin, subscription_plan
+)
+VALUES (%s, %s, %s, %s, %s, %s)
+RETURNING user_id, email, company_id, is_admin, subscription_plan;
+"""
+
+SQL_LIST_USERS = """
+SELECT user_id, email, company_id, is_admin, active, subscription_plan
+FROM users
+ORDER BY created_at DESC;
+"""
+
+SQL_UPDATE_PASSWORD = """
+UPDATE users
+SET password_hash = %s,
+    password_changed_at = CURRENT_TIMESTAMP,
+    failed_login_attempts = 0,
+    last_failed_login = NULL
+WHERE user_id = %s
+RETURNING user_id;
+"""
+
+SQL_INSERT_PLAN = """
+INSERT INTO subscription_plans (
+  plan_id, name, max_orders, max_users, features
+)
+VALUES (%s, %s, %s, %s, %s)
+RETURNING plan_id, name, max_orders, max_users, features;
+"""
+
+SQL_LIST_PLANS = """
+SELECT plan_id, name, max_orders, max_users, features
+FROM subscription_plans
+ORDER BY name;
+"""
 
 # --- Util ---
 
 def ensure_user_tables():
+    """
+    Tworzy tabele users / subscription_plans (SQLite lub Postgres),
+    oraz zapewnia istnienie użytkownika admina.
+    """
     try:
         from db import _get_pool
         pool = _get_pool()
-        
+
         if pool is None:
+            # SQLite / fallback
             sql_users = """
 CREATE TABLE IF NOT EXISTS users (
   user_id TEXT PRIMARY KEY,
@@ -88,24 +155,29 @@ CREATE TABLE IF NOT EXISTS subscription_plans (
 );
 """
         else:
+            # Postgres
             sql_users = SQL_CREATE_USERS
             sql_plans = SQL_CREATE_PLANS
-        
+
         execute(sql_users)
         execute(sql_plans)
-        
+
         admin_email = os.getenv('ADMIN_EMAIL', 'admin@arkuszowniasmb.pl')
         admin_password = os.getenv('ADMIN_PASSWORD', 'SMB#Admin2025!')
         row = fetch_one(SQL_GET_USER_BY_EMAIL, (admin_email,))
         if not row:
             user_id = 'admin'
             pwd_hash = hasher.hash(admin_password)
-            execute(SQL_INSERT_USER, (user_id, admin_email, None, pwd_hash, 1, 'enterprise'), returning=True)
+            execute(
+                SQL_INSERT_USER,
+                (user_id, admin_email, None, pwd_hash, 1, 'enterprise'),
+                returning=True
+            )
             print(f"Admin user created: {admin_email}")
         else:
             if os.getenv('ADMIN_PASSWORD'):
                 pwd_hash = hasher.hash(admin_password)
-                execute(SQL_UPDATE_PASSWORD, (pwd_hash, row['user_id']))
+                execute(SQL_UPDATE_PASSWORD, (pwd_hash, row['user_id']), returning=True)
                 print(f"Admin password updated for: {admin_email}")
             else:
                 print(f"Admin user already exists: {admin_email}")
@@ -156,7 +228,8 @@ def login_user(email: str, password: str) -> Dict:
     if not hasher.verify(password, user['password_hash']):
         # Update failed attempts
         execute(
-            "UPDATE users SET failed_login_attempts = COALESCE(failed_login_attempts, 0) + 1, last_failed_login = CURRENT_TIMESTAMP WHERE user_id = %s",
+            "UPDATE users SET failed_login_attempts = COALESCE(failed_login_attempts, 0) + 1, "
+            "last_failed_login = CURRENT_TIMESTAMP WHERE user_id = %s",
             (user['user_id'],)
         )
         raise HTTPException(status_code=401, detail='Invalid credentials')
@@ -170,14 +243,19 @@ def login_user(email: str, password: str) -> Dict:
     tokens = _make_token(user)
     return {
         'tokens': tokens,
-        'user': {k: user[k] for k in ['user_id','email','company_id','is_admin','subscription_plan']}
+        'user': {
+            k: user[k]
+            for k in ['user_id', 'email', 'company_id', 'is_admin', 'subscription_plan']
+        }
     }
 
 
-def decode_token(auth_header: Optional[str]) -> Dict:
-    if not auth_header or not auth_header.startswith('Bearer '):
+def decode_token(token: Optional[str]) -> Dict:
+    """
+    Oczekuje CZYSTEGO JWT (bez 'Bearer ').
+    """
+    if not token:
         raise HTTPException(status_code=401, detail='Missing token')
-    token = auth_header.split(' ',1)[1]
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
         # Additional validation
@@ -191,7 +269,10 @@ def decode_token(auth_header: Optional[str]) -> Dict:
 
 
 def get_current_user(authorization: Optional[str] = Header(None)):
-    payload = decode_token(authorization)
+    if not authorization or not authorization.startswith('Bearer '):
+        raise HTTPException(status_code=401, detail='Missing token')
+    token = authorization.split(' ', 1)[1]
+    payload = decode_token(token)
     user = fetch_one(SQL_GET_USER_BY_ID, (payload['sub'],))
     if not user:
         raise HTTPException(status_code=401, detail='User not found')
@@ -205,7 +286,13 @@ def require_admin(user=Depends(get_current_user)):
 
 # --- CRUD ops ---
 
-def create_user(email: str, company_id: Optional[str], is_admin: bool, subscription_plan: Optional[str], initial_password: Optional[str] = None) -> Dict:
+def create_user(
+    email: str,
+    company_id: Optional[str],
+    is_admin: bool,
+    subscription_plan: Optional[str],
+    initial_password: Optional[str] = None
+) -> Dict:
     # If caller supplies a password use it (trim to 72 bytes for hash libs that warn)
     raw_password = initial_password.strip() if initial_password else secrets.token_hex(8)
     if len(raw_password) > 72:
@@ -214,7 +301,11 @@ def create_user(email: str, company_id: Optional[str], is_admin: bool, subscript
         raise HTTPException(status_code=400, detail='Password too short (min 8 chars)')
     pwd_hash = hasher.hash(raw_password)
     user_id = f'U-{secrets.token_hex(3)}'
-    rows = execute(SQL_INSERT_USER, (user_id, email, company_id, pwd_hash, 1 if is_admin else 0, subscription_plan), returning=True)
+    rows = execute(
+        SQL_INSERT_USER,
+        (user_id, email, company_id, pwd_hash, 1 if is_admin else 0, subscription_plan),
+        returning=True
+    )
     if not rows:
         raise HTTPException(status_code=500, detail='Failed to create user')
     row = rows[0]
@@ -230,14 +321,30 @@ def change_password(user_id: str, old_password: str, new_password: str):
     user = fetch_one(SQL_GET_USER_BY_ID, (user_id,))
     if not user or not hasher.verify(old_password, user['password_hash']):
         raise HTTPException(status_code=401, detail='Old password mismatch')
+
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail='Password too short (min 8 chars)')
+
     new_hash = hasher.hash(new_password)
-    execute(SQL_UPDATE_PASSWORD, (new_hash, user_id), returning=True)
+    rows = execute(SQL_UPDATE_PASSWORD, (new_hash, user_id), returning=True)
+    if not rows:
+        raise HTTPException(status_code=500, detail='Failed to change password')
     return {'changed': True}
 
 
-def create_plan(plan_id: str, name: str, max_orders: Optional[int], max_users: Optional[int], features: Optional[List[str]]):
+def create_plan(
+    plan_id: str,
+    name: str,
+    max_orders: Optional[int],
+    max_users: Optional[int],
+    features: Optional[List[str]]
+):
     feat_str = ','.join(features) if features else None
-    rows = execute(SQL_INSERT_PLAN, (plan_id, name, max_orders, max_users, feat_str), returning=True)
+    rows = execute(
+        SQL_INSERT_PLAN,
+        (plan_id, name, max_orders, max_users, feat_str),
+        returning=True
+    )
     return rows[0] if rows else None
 
 
@@ -251,14 +358,20 @@ def list_plans():
 
 def request_password_reset(email: str) -> Dict:
     user = fetch_one(SQL_GET_USER_BY_EMAIL, (email,))
+    # Nie zdradzamy, czy email istnieje
     if not user:
         return {'message': 'If email exists, reset link has been sent'}
-    
+
     reset_token = jwt.encode(
-        {'sub': user['user_id'], 'type': 'reset', 'exp': datetime.utcnow() + timedelta(hours=24)},
+        {
+            'sub': user['user_id'],
+            'type': 'reset',
+            'exp': datetime.utcnow() + timedelta(hours=24)
+        },
         JWT_SECRET,
         algorithm=JWT_ALG
     )
+    # Tu normalnie wysyłka maila – teraz tylko zwracamy token
     return {'reset_token': reset_token, 'message': 'Reset token generated'}
 
 
@@ -270,10 +383,12 @@ def reset_password_with_token(token: str, new_password: str) -> Dict:
         user_id = payload['sub']
     except JWTError:
         raise HTTPException(status_code=400, detail='Invalid or expired reset token')
-    
+
     if len(new_password) < 8:
         raise HTTPException(status_code=400, detail='Password too short (min 8 chars)')
-    
+
     new_hash = hasher.hash(new_password)
-    execute(SQL_UPDATE_PASSWORD, (new_hash, user_id))
+    rows = execute(SQL_UPDATE_PASSWORD, (new_hash, user_id), returning=True)
+    if not rows:
+        raise HTTPException(status_code=500, detail='Failed to change password')
     return {'changed': True}
