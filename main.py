@@ -55,9 +55,17 @@ app.add_middleware(
 API_KEYS = [k.strip() for k in os.getenv("API_KEYS", "").split(",") if k.strip()]
 
 
-# modify check_api_key to log usage
-def check_api_key(x_api_key: Optional[str] = Header(None), api_key: Optional[str] = None):
+def check_api_key(x_api_key: Optional[str] = Header(None), api_key: Optional[str] = None, authorization: Optional[str] = Header(None)):
     key = x_api_key or api_key
+
+    if authorization and authorization.startswith('Bearer '):
+        try:
+            from user_mgmt import decode_token
+            payload = decode_token(authorization)
+            return True
+        except Exception as e:
+            logger.debug(f"JWT token validation failed: {e}")
+            pass
 
     if not API_KEYS:
         try:

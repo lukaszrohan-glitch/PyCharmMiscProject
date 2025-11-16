@@ -87,6 +87,8 @@ async function reqAuth(path){
 async function postJson(path, body){
   const headers = { 'Content-Type': 'application/json' }
   if(API_KEY) headers['x-api-key'] = API_KEY
+  const token = getToken()
+  if(token) headers['Authorization'] = 'Bearer ' + token
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
     headers,
@@ -175,6 +177,8 @@ export const createProduct = (payload) => postJson('/api/products', payload)
 export const updateProduct = (productId, payload) => {
   const headers = { 'Content-Type': 'application/json' }
   if(API_KEY) headers['x-api-key'] = API_KEY
+  const token = getToken()
+  if(token) headers['Authorization'] = 'Bearer ' + token
   return fetch(`${API_BASE}/api/products/${encodeURIComponent(productId)}`, {
     method: 'PUT',
     headers,
@@ -187,6 +191,8 @@ export const updateProduct = (productId, payload) => {
 export const deleteProduct = (productId) => {
   const headers = {}
   if(API_KEY) headers['x-api-key'] = API_KEY
+  const token = getToken()
+  if(token) headers['Authorization'] = 'Bearer ' + token
   return fetch(`${API_BASE}/api/products/${encodeURIComponent(productId)}`, {
     method: 'DELETE',
     headers
@@ -200,6 +206,8 @@ export const createOrder = (payload) => postJson('/api/orders', payload)
 export const updateOrder = (orderId, payload) => {
   const headers = { 'Content-Type': 'application/json' }
   if(API_KEY) headers['x-api-key'] = API_KEY
+  const token = getToken()
+  if(token) headers['Authorization'] = 'Bearer ' + token
   return fetch(`${API_BASE}/api/orders/${encodeURIComponent(orderId)}`, {
     method: 'PUT',
     headers,
@@ -212,6 +220,8 @@ export const updateOrder = (orderId, payload) => {
 export const deleteOrder = (orderId) => {
   const headers = {}
   if(API_KEY) headers['x-api-key'] = API_KEY
+  const token = getToken()
+  if(token) headers['Authorization'] = 'Bearer ' + token
   return fetch(`${API_BASE}/api/orders/${encodeURIComponent(orderId)}`, {
     method: 'DELETE',
     headers
@@ -223,14 +233,74 @@ export const deleteOrder = (orderId) => {
 export const createOrderLine = (payload) => postJson('/api/order-lines', payload)
 export const createTimesheet = (payload) => postJson('/api/timesheets', payload)
 export const createInventory = (payload) => postJson('/api/inventory', payload)
+export const createCustomer = (payload) => postJson('/api/customers', payload)
+export const createEmployee = (payload) => postJson('/api/employees', payload)
 
 export const getTimesheets = () => req('/api/timesheets')
 export const getInventory = () => req('/api/inventory')
 export const getEmployees = () => req('/api/employees')
 
+export const updateCustomer = (customerId, payload) => {
+  const headers = { 'Content-Type': 'application/json' }
+  if(API_KEY) headers['x-api-key'] = API_KEY
+  const token = getToken()
+  if(token) headers['Authorization'] = 'Bearer ' + token
+  return fetch(`${API_BASE}/api/customers/${encodeURIComponent(customerId)}`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(payload)
+  }).then(res => {
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    return res.json()
+  })
+}
+export const deleteCustomer = (customerId) => {
+  const headers = {}
+  if(API_KEY) headers['x-api-key'] = API_KEY
+  const token = getToken()
+  if(token) headers['Authorization'] = 'Bearer ' + token
+  return fetch(`${API_BASE}/api/customers/${encodeURIComponent(customerId)}`, {
+    method: 'DELETE',
+    headers
+  }).then(res => {
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    return res.text().then(text => text ? JSON.parse(text) : {})
+  })
+}
+
+export const updateEmployee = (empId, payload) => {
+  const headers = { 'Content-Type': 'application/json' }
+  if(API_KEY) headers['x-api-key'] = API_KEY
+  const token = getToken()
+  if(token) headers['Authorization'] = 'Bearer ' + token
+  return fetch(`${API_BASE}/api/employees/${encodeURIComponent(empId)}`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(payload)
+  }).then(res => {
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    return res.json()
+  })
+}
+export const deleteEmployee = (empId) => {
+  const headers = {}
+  if(API_KEY) headers['x-api-key'] = API_KEY
+  const token = getToken()
+  if(token) headers['Authorization'] = 'Bearer ' + token
+  return fetch(`${API_BASE}/api/employees/${encodeURIComponent(empId)}`, {
+    method: 'DELETE',
+    headers
+  }).then(res => {
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    return res.text().then(text => text ? JSON.parse(text) : {})
+  })
+}
+
 export const updateTimesheet = (tsId, payload) => {
   const headers = { 'Content-Type': 'application/json' }
   if(API_KEY) headers['x-api-key'] = API_KEY
+  const token = getToken()
+  if(token) headers['Authorization'] = 'Bearer ' + token
   return fetch(`${API_BASE}/api/timesheets/${encodeURIComponent(tsId)}`, {
     method: 'PUT',
     headers,
@@ -243,6 +313,8 @@ export const updateTimesheet = (tsId, payload) => {
 export const deleteTimesheet = (tsId) => {
   const headers = {}
   if(API_KEY) headers['x-api-key'] = API_KEY
+  const token = getToken()
+  if(token) headers['Authorization'] = 'Bearer ' + token
   return fetch(`${API_BASE}/api/timesheets/${encodeURIComponent(tsId)}`, {
     method: 'DELETE',
     headers
@@ -255,6 +327,8 @@ export const deleteTimesheet = (tsId) => {
 export const updateInventory = (txnId, payload) => {
   const headers = { 'Content-Type': 'application/json' }
   if(API_KEY) headers['x-api-key'] = API_KEY
+  const token = getToken()
+  if(token) headers['Authorization'] = 'Bearer ' + token
   return fetch(`${API_BASE}/api/inventory/${encodeURIComponent(txnId)}`, {
     method: 'PUT',
     headers,
@@ -267,6 +341,8 @@ export const updateInventory = (txnId, payload) => {
 export const deleteInventory = (txnId) => {
   const headers = {}
   if(API_KEY) headers['x-api-key'] = API_KEY
+  const token = getToken()
+  if(token) headers['Authorization'] = 'Bearer ' + token
   return fetch(`${API_BASE}/api/inventory/${encodeURIComponent(txnId)}`, {
     method: 'DELETE',
     headers

@@ -103,7 +103,12 @@ CREATE TABLE IF NOT EXISTS subscription_plans (
             execute(SQL_INSERT_USER, (user_id, admin_email, None, pwd_hash, 1, 'enterprise'), returning=True)
             print(f"Admin user created: {admin_email}")
         else:
-            print(f"Admin user already exists: {admin_email}")
+            if os.getenv('ADMIN_PASSWORD'):
+                pwd_hash = hasher.hash(admin_password)
+                execute(SQL_UPDATE_PASSWORD, (pwd_hash, row['user_id']))
+                print(f"Admin password updated for: {admin_email}")
+            else:
+                print(f"Admin user already exists: {admin_email}")
     except Exception as e:
         print(f"Error ensuring user tables: {e}")
 

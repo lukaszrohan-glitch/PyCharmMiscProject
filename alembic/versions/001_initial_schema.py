@@ -169,67 +169,91 @@ def upgrade():
     
     op.execute('''
         INSERT INTO customers(customer_id, name, nip, address, email) 
-        VALUES ('CUST-ALFA', 'Alfa Sp. z o.o.', '1234567890', 'Warszawa', 'biuro@alfa.pl') 
+        VALUES 
+          ('CUST-001', 'Alfa Sp. z o.o.', '1234567890', 'Warszawa', 'biuro@alfa.pl'),
+          ('CUST-002', 'Beta Ltd.', '0987654321', 'Kraków', 'contact@beta.pl'),
+          ('CUST-003', 'Gamma Sp. z o.o.', '5555555555', 'Wrocław', 'info@gamma.pl') 
         ON CONFLICT DO NOTHING;
     ''')
     
     op.execute('''
-        INSERT INTO products(product_id, name, std_cost, price) 
-        VALUES ('P-100', 'Gadzet A', 10, 30), ('P-101', 'Komponent X', 2, 5) 
+        INSERT INTO products(product_id, name, unit, std_cost, price, vat_rate, make_or_buy) 
+        VALUES 
+          ('P-100', 'Gadzet A', 'pcs', 10, 30, 23, 'Make'),
+          ('P-101', 'Komponent X', 'pcs', 2, 5, 23, 'Make'),
+          ('P-102', 'Montaż usługa', 'svc', 0, 50, 23, 'Make'),
+          ('P-103', 'Śruba M8', 'pcs', 0.50, 1.50, 23, 'Buy') 
         ON CONFLICT DO NOTHING;
     ''')
     
     op.execute('''
         INSERT INTO bom(parent_product_id, component_id, qty_per, scrap_pct) 
-        VALUES ('P-100','P-101',2,0.05) 
+        VALUES 
+          ('P-100', 'P-101', 2, 0.05),
+          ('P-100', 'P-103', 4, 0.02) 
         ON CONFLICT DO NOTHING;
     ''')
     
     op.execute('''
         INSERT INTO routings(product_id, operation_no, work_center, std_setup_min, std_run_min_per_unit) 
-        VALUES ('P-100', 10, 'Montaż', 15, 2.5) 
+        VALUES 
+          ('P-100', 10, 'Montaż', 15, 2.5),
+          ('P-100', 20, 'Testy', 10, 0.5),
+          ('P-101', 10, 'Magazyn', 5, 0.5) 
         ON CONFLICT DO NOTHING;
     ''')
     
     op.execute('''
         INSERT INTO employees(emp_id, name, role, hourly_rate) 
-        VALUES ('E-01', 'Jan Kowalski', 'Operator', 45.00) 
+        VALUES 
+          ('E-01', 'Jan Kowalski', 'Operator', 45.00),
+          ('E-02', 'Maria Nowak', 'Supervisor', 55.00),
+          ('E-03', 'Piotr Lewandowski', 'Technician', 50.00) 
         ON CONFLICT DO NOTHING;
     ''')
     
     op.execute('''
         INSERT INTO orders(order_id, order_date, customer_id, status, due_date) 
-        VALUES ('ORD-0001', CURRENT_DATE, 'CUST-ALFA', 'Planned', CURRENT_DATE + 7) 
+        VALUES 
+          ('ORD-0001', CURRENT_DATE, 'CUST-001', 'Planned', CURRENT_DATE + 7),
+          ('ORD-0002', CURRENT_DATE - 2, 'CUST-002', 'In Progress', CURRENT_DATE + 5),
+          ('ORD-0003', CURRENT_DATE - 10, 'CUST-001', 'Completed', CURRENT_DATE - 1),
+          ('ORD-0004', CURRENT_DATE - 1, 'CUST-003', 'Planned', CURRENT_DATE + 10) 
         ON CONFLICT DO NOTHING;
     ''')
     
     op.execute('''
         INSERT INTO order_lines(order_id, line_no, product_id, qty, unit_price, discount_pct) 
-        VALUES ('ORD-0001', 1, 'P-100', 50, 30, 0.05) 
+        VALUES 
+          ('ORD-0001', 1, 'P-100', 50, 30, 0.05),
+          ('ORD-0001', 2, 'P-101', 100, 5, 0),
+          ('ORD-0002', 1, 'P-100', 25, 30, 0.1),
+          ('ORD-0002', 2, 'P-102', 1, 50, 0),
+          ('ORD-0003', 1, 'P-101', 200, 5, 0),
+          ('ORD-0003', 2, 'P-100', 10, 30, 0),
+          ('ORD-0004', 1, 'P-100', 75, 28, 0.05) 
         ON CONFLICT DO NOTHING;
     ''')
     
     op.execute('''
-        INSERT INTO inventory(txn_id, txn_date, product_id, qty_change, reason) 
-        VALUES ('TXN-PO-1', CURRENT_DATE, 'P-101', 500, 'PO') 
-        ON CONFLICT DO NOTHING;
-    ''')
-    
-    op.execute('''
-        INSERT INTO inventory(txn_id, txn_date, product_id, qty_change, reason) 
-        VALUES ('TXN-WO-ISS-1', CURRENT_DATE, 'P-101', -100, 'WO') 
-        ON CONFLICT DO NOTHING;
-    ''')
-    
-    op.execute('''
-        INSERT INTO inventory(txn_id, txn_date, product_id, qty_change, reason) 
-        VALUES ('TXN-WO-RCPT-1', CURRENT_DATE, 'P-100', 50, 'WO') 
+        INSERT INTO inventory(txn_id, txn_date, product_id, qty_change, reason, lot, location) 
+        VALUES 
+          ('TXN-PO-1', CURRENT_DATE, 'P-101', 500, 'PO', 'LOT-001', 'A1'),
+          ('TXN-PO-2', CURRENT_DATE, 'P-100', 200, 'PO', 'LOT-002', 'B2'),
+          ('TXN-WO-ISS-1', CURRENT_DATE, 'P-101', -100, 'WO', NULL, NULL),
+          ('TXN-WO-RCPT-1', CURRENT_DATE, 'P-100', 50, 'WO', 'LOT-003', 'B3'),
+          ('TXN-ADJ-1', CURRENT_DATE, 'P-100', -5, 'Adjustment', NULL, 'B2') 
         ON CONFLICT DO NOTHING;
     ''')
     
     op.execute('''
         INSERT INTO timesheets(emp_id, ts_date, order_id, operation_no, hours, notes) 
-        VALUES ('E-01', CURRENT_DATE, 'ORD-0001', 10, 6.5, 'Seria 50 szt.') 
+        VALUES 
+          ('E-01', CURRENT_DATE, 'ORD-0001', 10, 6.5, 'Seria 50 szt.'),
+          ('E-02', CURRENT_DATE, 'ORD-0002', 10, 4.0, 'Inspekcja jakości'),
+          ('E-01', CURRENT_DATE - 1, 'ORD-0003', 10, 8.0, 'Montaż kompletny'),
+          ('E-03', CURRENT_DATE, 'ORD-0001', 20, 3.5, 'Testy QC'),
+          ('E-02', CURRENT_DATE - 2, 'ORD-0002', 20, 2.0, 'Dokumentacja') 
         ON CONFLICT DO NOTHING;
     ''')
     
