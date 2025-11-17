@@ -4,6 +4,21 @@
 
 This document provides step-by-step instructions for deploying Arkuszownia SMB to Railway.app without cloudflared, tunnels, or complex infrastructure.
 
+## Quick Commands (Build/Start)
+
+- Build command (Service → Settings → Build):
+  ```bash
+  pip install -r requirements.txt && cd frontend && npm ci && npm run build
+  ```
+- Start command (Service → Settings → Start):
+  ```bash
+  alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000
+  ```
+- Alternatively, Railway will use the provided `Procfile`:
+  ```
+  web: alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
+  ```
+
 ## Architecture Overview
 
 - **One Service: "app"** - Runs FastAPI backend + serves React frontend as static files
