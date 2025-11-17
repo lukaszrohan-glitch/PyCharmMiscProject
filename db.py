@@ -8,11 +8,16 @@ from config import settings
 
 # Optional Postgres drivers (prefer psycopg v3; fallback to psycopg2 if present)
 PSYCOPG3_AVAILABLE = False
+PSYCOPG3_POOL = False
 PSYCOPG2_AVAILABLE = False
 try:
     import psycopg  # type: ignore
     from psycopg.rows import dict_row  # type: ignore
-    from psycopg_pool import ConnectionPool  # type: ignore
+    try:
+        from psycopg_pool import ConnectionPool  # type: ignore
+        PSYCOPG3_POOL = True
+    except Exception:
+        PSYCOPG3_POOL = False
     PSYCOPG3_AVAILABLE = True
 except Exception:
     try:
@@ -31,7 +36,7 @@ MAXCONN = settings.DB_POOL_MAX
 DATABASE_URL = settings.DATABASE_URL
 PG_SSLMODE = settings.PG_SSLMODE
 
-POOL = None  # type: ignore  # For PG: psycopg3 ConnectionPool or psycopg2 SimpleConnectionPool; for sqlite: None
+POOL = None  # type: ignore  # For PG: psycopg3 pool / DSN / psycopg2 pool; for sqlite: None
 
 SQLITE_INIT_DONE = False
 SQLITE_DB_PATH = os.path.join(os.getcwd(), "_dev_db.sqlite")
@@ -75,8 +80,10 @@ def _create_pool() -> Any:
         dsn_with_timeout = f"{dsn}?connect_timeout={connect_timeout}" if "?" not in dsn else f"{dsn}&connect_timeout={connect_timeout}"
 
         if PSYCOPG3_AVAILABLE:
-            # psycopg v3 pool
-            return ConnectionPool(dsn_with_timeout, min_size=MINCONN, max_size=MAXCONN)
+            # psycopg v3: prefer pool when available, else return DSN to connect per-use
+            if PSYCOPG3_POOL:
+                return ConnectionPool(dsn_with_timeout, min_size=MINCONN, max_size=MAXCONN)
+            return {"driver": "psycopg3", "dsn": dsn_with_timeout}
         if PSYCOPG2_AVAILABLE:
             return SimpleConnectionPool(MINCONN, MAXCONN, dsn=dsn_with_timeout)
         raise RuntimeError("No Postgres driver available. Install psycopg[binary] or psycopg2-binary.")
@@ -114,7 +121,14 @@ def get_conn() -> Iterator[Any]:
             conn.close()
     else:
         # Postgres
-        if PSYCOPG3_AVAILABLE and hasattr(pool, "connection"):
+        if PSYCOPG3_AVAILABLE and isinstance(pool, dict) and pool.get("driver") == "psycopg3":
+            # No pool available: connect on demand
+            conn = psycopg.connect(pool.get("dsn"))  # type: ignore
+            try:
+                yield conn
+            finally:
+                conn.close()
+        elif PSYCOPG3_AVAILABLE and hasattr(pool, "connection"):
             # psycopg3 ConnectionPool
             with pool.connection() as conn:
                 yield conn
