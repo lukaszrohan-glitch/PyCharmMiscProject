@@ -32,6 +32,31 @@ CREATE TABLE IF NOT EXISTS api_key_audit (
 );
 """
 
+# Postgres-compatible DDL (avoid sqlite-only AUTOINCREMENT syntax in PG logs)
+SQL_CREATE_API_KEYS_TABLE_PG = """
+CREATE TABLE IF NOT EXISTS api_keys (
+  id SERIAL PRIMARY KEY,
+  key_text text,
+  key_hash text,
+  salt text,
+  label text,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  last_used TIMESTAMP
+);
+"""
+
+SQL_CREATE_API_KEY_AUDIT_TABLE_PG = """
+CREATE TABLE IF NOT EXISTS api_key_audit (
+  audit_id SERIAL PRIMARY KEY,
+  api_key_id INTEGER REFERENCES api_keys(id),
+  event_type text NOT NULL,
+  event_by text,
+  event_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  details text
+);
+"""
+
 SQL_INSERT_API_KEY = """
 INSERT INTO api_keys (key_text, key_hash, salt, label, created_at, active)
 VALUES (%s, %s, %s, %s, COALESCE(%s, CURRENT_TIMESTAMP), COALESCE(%s, 1))
@@ -84,9 +109,17 @@ def ensure_table():
     For sqlite fallback the tables are created by the sqlite init in `db._init_sqlite_schema`.
     """
     try:
-        # Create both tables if not present (Postgres)
-        execute(SQL_CREATE_API_KEYS_TABLE)
-        execute(SQL_CREATE_API_KEY_AUDIT_TABLE)
+        # Choose dialect-specific DDL to avoid noisy errors in PG logs
+        from db import _get_pool
+        pool = _get_pool()
+        if pool is None:
+            # sqlite fallback (also created during DB init, but keep idempotent)
+            execute(SQL_CREATE_API_KEYS_TABLE)
+            execute(SQL_CREATE_API_KEY_AUDIT_TABLE)
+        else:
+            # Postgres DDL
+            execute(SQL_CREATE_API_KEYS_TABLE_PG)
+            execute(SQL_CREATE_API_KEY_AUDIT_TABLE_PG)
     except Exception:
         # If DB is not available or SQL dialect mismatch, ignore and rely on sqlite init
         pass
