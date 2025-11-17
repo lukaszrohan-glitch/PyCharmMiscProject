@@ -10,7 +10,8 @@
   --warning: #f59e0b;
   --warning-dark: #d97706;
   --text: #111827;
-  --text-secondary: #6b7280;
+  /* Darken secondary text for better contrast on white backgrounds */
+  --text-secondary: #374151;
   --background: #ffffff;
   --surface: #f3f4f6;
   --surface-hover: #e5e7eb;

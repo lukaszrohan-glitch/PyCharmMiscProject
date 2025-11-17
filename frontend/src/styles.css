@@ -10,7 +10,8 @@
   --bg-light: #f7fafc;
   --bg-white: #ffffff;
   --text-dark: #2d3748;
-  --text-muted: #718096;
+  /* Darken muted text for better contrast on light backgrounds */
+  --text-muted: #374151;
   --border-light: #e2e8f0;
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -1579,7 +1580,7 @@ input::placeholder {
 .empty-message {
   padding: 40px 20px;
   text-align: center;
-  color: var(--text-muted);
+  color: var(--text-dark);
   font-size: 16px;
 }
 
@@ -1595,7 +1596,7 @@ input::placeholder {
 .loading {
   padding: 40px 20px;
   text-align: center;
-  color: var(--text-muted);
+  color: var(--text-dark);
   font-size: 16px;
 }
 
