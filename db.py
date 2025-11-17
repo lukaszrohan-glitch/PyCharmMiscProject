@@ -6,19 +6,22 @@ from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from typing import TYPE_CHECKING
 from config import settings
 
-# Import psycopg2 types only for type checkers
-if TYPE_CHECKING:
-    from psycopg2.pool import SimpleConnectionPool  # type: ignore
-    from psycopg2.extras import RealDictCursor  # type: ignore
-
-# Try to import psycopg2 at runtime, but don't fail import entirely
+# Optional Postgres drivers (prefer psycopg v3; fallback to psycopg2 if present)
+PSYCOPG3_AVAILABLE = False
+PSYCOPG2_AVAILABLE = False
 try:
-    import psycopg2  # type: ignore
-    from psycopg2.pool import SimpleConnectionPool
-    from psycopg2.extras import RealDictCursor
-    PSYCOPG2_AVAILABLE = True
+    import psycopg  # type: ignore
+    from psycopg.rows import dict_row  # type: ignore
+    from psycopg_pool import ConnectionPool  # type: ignore
+    PSYCOPG3_AVAILABLE = True
 except Exception:
-    PSYCOPG2_AVAILABLE = False
+    try:
+        import psycopg2  # type: ignore
+        from psycopg2.pool import SimpleConnectionPool  # type: ignore
+        from psycopg2.extras import RealDictCursor  # type: ignore
+        PSYCOPG2_AVAILABLE = True
+    except Exception:
+        pass
 
 # sqlite fallback
 import sqlite3
@@ -28,7 +31,7 @@ MAXCONN = settings.DB_POOL_MAX
 DATABASE_URL = settings.DATABASE_URL
 PG_SSLMODE = settings.PG_SSLMODE
 
-POOL = None  # type: ignore
+POOL = None  # type: ignore  # For PG: psycopg3 ConnectionPool or psycopg2 SimpleConnectionPool; for sqlite: None
 
 SQLITE_INIT_DONE = False
 SQLITE_DB_PATH = os.path.join(os.getcwd(), "_dev_db.sqlite")
@@ -58,8 +61,6 @@ def _create_pool() -> Any:
         return None
     # If DATABASE_URL or PG_* configured, require psycopg2
     if DATABASE_URL or os.getenv("PG_HOST") or os.getenv("PG_DB") or os.getenv("PG_USER"):
-        if not PSYCOPG2_AVAILABLE:
-            raise RuntimeError("psycopg2 not available. Install psycopg2-binary or set DATABASE_URL to empty for sqlite fallback.")
         dsn = DATABASE_URL
 
         if not dsn:
@@ -73,7 +74,12 @@ def _create_pool() -> Any:
         connect_timeout = settings.DB_CONNECT_TIMEOUT
         dsn_with_timeout = f"{dsn}?connect_timeout={connect_timeout}" if "?" not in dsn else f"{dsn}&connect_timeout={connect_timeout}"
 
-        return SimpleConnectionPool(MINCONN, MAXCONN, dsn=dsn_with_timeout)
+        if PSYCOPG3_AVAILABLE:
+            # psycopg v3 pool
+            return ConnectionPool(dsn_with_timeout, min_size=MINCONN, max_size=MAXCONN)
+        if PSYCOPG2_AVAILABLE:
+            return SimpleConnectionPool(MINCONN, MAXCONN, dsn=dsn_with_timeout)
+        raise RuntimeError("No Postgres driver available. Install psycopg[binary] or psycopg2-binary.")
 
     return None
 
@@ -107,11 +113,18 @@ def get_conn() -> Iterator[Any]:
         finally:
             conn.close()
     else:
-        conn = pool.getconn()
-        try:
-            yield conn
-        finally:
-            pool.putconn(conn)
+        # Postgres
+        if PSYCOPG3_AVAILABLE and hasattr(pool, "connection"):
+            # psycopg3 ConnectionPool
+            with pool.connection() as conn:
+                yield conn
+        else:
+            # psycopg2 SimpleConnectionPool
+            conn = pool.getconn()
+            try:
+                yield conn
+            finally:
+                pool.putconn(conn)
 
 
 def _init_sqlite_schema(conn: sqlite3.Connection):
@@ -381,9 +394,16 @@ def fetch_all(sql: str, params: Optional[Tuple] = None) -> List[dict]:
             # convert sqlite3.Row to dict
             return [dict(r) for r in rows]
     else:
-        with get_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(sql, params or ())
-            return cur.fetchall()
+        with get_conn() as conn:
+            if PSYCOPG3_AVAILABLE:
+                with conn.cursor(row_factory=dict_row) as cur:  # type: ignore
+                    cur.execute(sql, params or ())
+                    return cur.fetchall()
+            else:
+                from psycopg2.extras import RealDictCursor  # type: ignore
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:  # type: ignore
+                    cur.execute(sql, params or ())
+                    return cur.fetchall()
 
 
 def fetch_one(sql: str, params: Optional[Tuple] = None) -> Optional[dict]:
@@ -396,9 +416,16 @@ def fetch_one(sql: str, params: Optional[Tuple] = None) -> Optional[dict]:
             row = cur.fetchone()
             return dict(row) if row is not None else None
     else:
-        with get_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(sql, params or ())
-            return cur.fetchone()
+        with get_conn() as conn:
+            if PSYCOPG3_AVAILABLE:
+                with conn.cursor(row_factory=dict_row) as cur:  # type: ignore
+                    cur.execute(sql, params or ())
+                    return cur.fetchone()
+            else:
+                from psycopg2.extras import RealDictCursor  # type: ignore
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:  # type: ignore
+                    cur.execute(sql, params or ())
+                    return cur.fetchone()
 
 
 def execute(sql: str, params: Optional[Tuple] = None, returning: bool = False):
@@ -487,11 +514,23 @@ def execute(sql: str, params: Optional[Tuple] = None, returning: bool = False):
             conn.commit()
             return None
     else:
-        with get_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(sql, params or ())
-            if returning:
-                rows = cur.fetchall()
-                conn.commit()
-                return rows
-            conn.commit()
-            return None
+        with get_conn() as conn:
+            if PSYCOPG3_AVAILABLE:
+                with conn.cursor(row_factory=dict_row) as cur:  # type: ignore
+                    cur.execute(sql, params or ())
+                    if returning:
+                        rows = cur.fetchall()
+                        conn.commit()
+                        return rows
+                    conn.commit()
+                    return None
+            else:
+                from psycopg2.extras import RealDictCursor  # type: ignore
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:  # type: ignore
+                    cur.execute(sql, params or ())
+                    if returning:
+                        rows = cur.fetchall()
+                        conn.commit()
+                        return rows
+                    conn.commit()
+                    return None
