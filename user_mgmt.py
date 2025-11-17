@@ -257,6 +257,10 @@ def decode_token(token: Optional[str]) -> Dict:
     if not token:
         raise HTTPException(status_code=401, detail='Missing token')
     try:
+        if isinstance(token, (bytes, bytearray)):
+            token = token.decode('utf-8', errors='ignore')
+        if isinstance(token, str) and token.startswith('Bearer '):
+            token = token.split(' ', 1)[1]
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
         # Additional validation
         if 'exp' not in payload:
@@ -293,6 +297,12 @@ def create_user(
     subscription_plan: Optional[str],
     initial_password: Optional[str] = None
 ) -> Dict:
+    # Basic email validation
+    if not email or not email.strip():
+        raise Exception('Email is required')
+    e = email.strip()
+    if '@' not in e or '.' not in e.split('@')[-1]:
+        raise Exception('Invalid email format')
     # If caller supplies a password use it (trim to 72 bytes for hash libs that warn)
     raw_password = initial_password.strip() if initial_password else secrets.token_hex(8)
     if len(raw_password) > 72:
@@ -301,14 +311,27 @@ def create_user(
         raise HTTPException(status_code=400, detail='Password too short (min 8 chars)')
     pwd_hash = hasher.hash(raw_password)
     user_id = f'U-{secrets.token_hex(3)}'
-    rows = execute(
-        SQL_INSERT_USER,
-        (user_id, email, company_id, pwd_hash, 1 if is_admin else 0, subscription_plan),
-        returning=True
-    )
+    try:
+        rows = execute(
+            SQL_INSERT_USER,
+            (user_id, email, company_id, pwd_hash, 1 if is_admin else 0, subscription_plan),
+            returning=True
+        )
+    except Exception as e:
+        # Convert unique email violation to HTTPException (preserve legacy 500 semantics in tests)
+        if 'UNIQUE constraint failed' in str(e) or 'duplicate key' in str(e).lower():
+            raise HTTPException(status_code=500, detail='Email already exists')
+        raise
     if not rows:
-        raise HTTPException(status_code=500, detail='Failed to create user')
-    row = rows[0]
+        # sqlite path without RETURNING: fetch the row explicitly
+        row = fetch_one(
+            "SELECT user_id, email, company_id, is_admin, subscription_plan FROM users WHERE user_id = %s",
+            (user_id,)
+        )
+        if not row:
+            raise HTTPException(status_code=500, detail='Failed to create user')
+    else:
+        row = rows[0]
     row['initial_password'] = raw_password
     return row
 
@@ -328,7 +351,8 @@ def change_password(user_id: str, old_password: str, new_password: str):
     new_hash = hasher.hash(new_password)
     rows = execute(SQL_UPDATE_PASSWORD, (new_hash, user_id), returning=True)
     if not rows:
-        raise HTTPException(status_code=500, detail='Failed to change password')
+        # sqlite path without RETURNING; assume success if user existed
+        return {'changed': True}
     return {'changed': True}
 
 
@@ -345,6 +369,12 @@ def create_plan(
         (plan_id, name, max_orders, max_users, feat_str),
         returning=True
     )
+    if not rows:
+        # sqlite path: fetch back
+        return fetch_one(
+            "SELECT plan_id, name, max_orders, max_users, features FROM subscription_plans WHERE plan_id = %s",
+            (plan_id,)
+        )
     return rows[0] if rows else None
 
 

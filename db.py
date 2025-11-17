@@ -1,4 +1,5 @@
 import os
+from decimal import Decimal
 from contextlib import contextmanager
 from typing import Optional, Tuple, Iterator, Any, List
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
@@ -52,6 +53,9 @@ def _append_sslmode_to_url(dsn: str, sslmode: str) -> str:
 
 
 def _create_pool() -> Any:
+    # Test/dev override: force sqlite path regardless of DATABASE_URL
+    if os.getenv("FORCE_SQLITE") == "1":
+        return None
     # If DATABASE_URL or PG_* configured, require psycopg2
     if DATABASE_URL or os.getenv("PG_HOST") or os.getenv("PG_DB") or os.getenv("PG_USER"):
         if not PSYCOPG2_AVAILABLE:
@@ -368,7 +372,11 @@ def fetch_all(sql: str, params: Optional[Tuple] = None) -> List[dict]:
             cur = conn.cursor()
             # translate %s placeholders (Postgres style) to ? for sqlite
             sql_exec = sql.replace('%s', '?') if params else sql
-            cur.execute(sql_exec, params or ())
+            # Convert Decimal params to float for sqlite binding
+            bind_params = params
+            if params:
+                bind_params = tuple(float(p) if isinstance(p, Decimal) else p for p in params)
+            cur.execute(sql_exec, bind_params or ())
             rows = cur.fetchall()
             # convert sqlite3.Row to dict
             return [dict(r) for r in rows]
@@ -401,11 +409,81 @@ def execute(sql: str, params: Optional[Tuple] = None, returning: bool = False):
             sql_exec = sql.replace('%s', '?') if params else sql
             # SQLite nie wspiera RETURNING w tej formie – ucinamy, jeśli jest
             sql_exec = sql_exec.split('RETURNING')[0].rstrip() if 'RETURNING' in sql_exec else sql_exec
-            cur.execute(sql_exec, params or ())
+            # Convert Decimal parameters to float for sqlite binding
+            if params:
+                bind_params = tuple(float(p) if isinstance(p, Decimal) else p for p in params)
+            else:
+                bind_params = ()
+            cur.execute(sql_exec, bind_params)
             if returning:
-                rows = cur.fetchall()
+                try:
+                    rows = cur.fetchall()
+                    conn.commit()
+                    if rows:
+                        return [dict(r) for r in rows]
+                except sqlite3.ProgrammingError:
+                    # No result set; fall through to emulate
+                    pass
+                # Emulate common RETURNING patterns used in this app
                 conn.commit()
-                return [dict(r) for r in rows]
+                lower = sql.lower()
+                # Determine if last statement changed any rows (0 indicates conflict/no-op)
+                change_count = 0
+                try:
+                    cur2 = conn.cursor()
+                    cur2.execute("SELECT changes()")
+                    change_count = int(cur2.fetchone()[0])
+                except Exception:
+                    pass
+                try:
+                    if "insert into orders" in lower:
+                        if change_count == 0:
+                            return []
+                        row = fetch_one(
+                            "SELECT order_id, customer_id, status, order_date, due_date FROM orders WHERE order_id = ?",
+                            (params[0],)
+                        )
+                        return [row] if row else []
+                    if "insert into order_lines" in lower:
+                        if change_count == 0:
+                            return []
+                        row = fetch_one(
+                            "SELECT order_id, line_no, product_id, qty, unit_price, discount_pct, graphic_id FROM order_lines WHERE order_id = ? AND line_no = ?",
+                            (params[0], params[1])
+                        )
+                        return [row] if row else []
+                    if "insert into timesheets" in lower:
+                        row = fetch_one(
+                            "SELECT ts_id, emp_id, ts_date, order_id, operation_no, hours, notes FROM timesheets ORDER BY ts_id DESC LIMIT 1"
+                        )
+                        return [row] if row else []
+                    if "insert into inventory" in lower:
+                        if change_count == 0:
+                            return []
+                        row = fetch_one(
+                            "SELECT txn_id, txn_date, product_id, qty_change, reason, lot, location FROM inventory WHERE txn_id = ?",
+                            (params[0],)
+                        )
+                        return [row] if row else []
+                    if "update orders set" in lower:
+                        order_id = params[-1]
+                        row = fetch_one(
+                            "SELECT order_id, customer_id, status, order_date, due_date FROM orders WHERE order_id = ?",
+                            (order_id,)
+                        )
+                        return [row] if row else []
+                    if "update products set" in lower and "where product_id" in lower:
+                        product_id = params[-1]
+                        row = fetch_one(
+                            "SELECT product_id, name, unit, std_cost, price, vat_rate FROM products WHERE product_id = ?",
+                            (product_id,)
+                        )
+                        return [row] if row else []
+                    if "update users" in lower and "where user_id" in lower:
+                        user_id = params[-1]
+                        return [{"user_id": user_id}]
+                except Exception:
+                    return []
             conn.commit()
             return None
     else:

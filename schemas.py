@@ -75,7 +75,11 @@ class OrderLineCreate(BaseModel):
     def normalize_discount(cls, v):
         if v is None:
             return Decimal("0")
-        return Decimal(v)
+        try:
+            d = Decimal(str(v))
+            return d.quantize(Decimal("0.0001"))
+        except Exception:
+            return Decimal("0")
 
 
 class TimesheetCreate(BaseModel):

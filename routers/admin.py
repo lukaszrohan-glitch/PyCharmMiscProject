@@ -147,6 +147,39 @@ def admin_purge_audit(days: int = 30, _ok: bool = Depends(check_admin_key)):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
+# ---- Legacy paths without "/api" prefix for admin-key endpoints ----
+# Keep compatibility with older clients and tests expecting "/admin/..." paths.
+
+@router.get("/admin/api-keys", summary="List API keys (legacy x-admin-key)")
+def legacy_admin_list_keys(_ok: bool = Depends(check_admin_key)):
+    return admin_list_keys(_ok)
+
+
+@router.post("/admin/api-keys", summary="Create API key (legacy x-admin-key)")
+def legacy_admin_create_key(payload: Dict[str, str], _ok: bool = Depends(check_admin_key)):
+    return admin_create_key(payload, _ok)
+
+
+@router.delete("/admin/api-keys/{key_id}", summary="Delete API key (legacy x-admin-key)")
+def legacy_admin_delete_key(key_id: int, _ok: bool = Depends(check_admin_key)):
+    return admin_delete_key(key_id, _ok)
+
+
+@router.post("/admin/api-keys/{key_id}/rotate", summary="Rotate API key (legacy x-admin-key)")
+def legacy_admin_rotate_key(key_id: int, _ok: bool = Depends(check_admin_key)):
+    return admin_rotate_key(key_id, _ok)
+
+
+@router.get("/admin/api-key-audit", summary="List API key audit events (legacy)")
+def legacy_admin_api_key_audit(_ok: bool = Depends(check_admin_key)):
+    return admin_api_key_audit(_ok)
+
+
+@router.delete("/admin/api-key-audit", summary="Purge API key audit events (legacy)")
+def legacy_admin_purge_audit(days: int = 30, _ok: bool = Depends(check_admin_key)):
+    return admin_purge_audit(days, _ok)
+
+
 # ---- Import endpoint: JSON and CSV upload ----
 @router.post("/api/import/csv", summary="Import data from JSON or CSV upload")
 async def import_csv(

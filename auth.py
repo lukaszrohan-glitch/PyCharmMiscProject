@@ -44,15 +44,15 @@ INSERT INTO api_key_audit (api_key_id, event_type, event_by, details) VALUES (%s
 """
 
 SQL_LIST_API_KEYS = """
-SELECT id, key_text, label, created_at, active FROM api_keys ORDER BY created_at DESC;
+SELECT id, key_text, label, created_at, active, last_used FROM api_keys ORDER BY created_at DESC;
 """
 
 SQL_GET_API_KEY_BY_KEYTEXT = """
-SELECT id, key_text, key_hash, salt, label, created_at, active FROM api_keys WHERE key_text = %s AND active = 1 LIMIT 1;
+SELECT id, key_text, key_hash, salt, label, created_at, active, last_used FROM api_keys WHERE key_text = %s AND active = 1 LIMIT 1;
 """
 
 SQL_GET_API_KEY_BY_HASH = """
-SELECT id, key_text, key_hash, salt, label, created_at, active FROM api_keys WHERE active = 1;
+SELECT id, key_text, key_hash, salt, label, created_at, active, last_used FROM api_keys WHERE active = 1;
 """
 
 SQL_DELETE_API_KEY_BY_ID = """
@@ -169,13 +169,29 @@ def get_api_key(key_text_or_plain: str):
 
 
 def delete_api_key_by_id(key_id: int):
-    rows = execute(SQL_DELETE_API_KEY_BY_ID, (key_id,), returning=True)
-    return rows[0] if rows else None
+    try:
+        from db import _get_pool
+        pool = _get_pool()
+        if pool is None:
+            # sqlite: emulate RETURNING by selecting first
+            existing = fetch_one("SELECT id FROM api_keys WHERE id = ?", (key_id,))
+            if not existing:
+                return None
+            execute("DELETE FROM api_keys WHERE id = ?", (key_id,), returning=False)
+            return existing
+        else:
+            rows = execute(SQL_DELETE_API_KEY_BY_ID, (key_id,), returning=True)
+            return rows[0] if rows else None
+    except Exception:
+        return None
 
 
 def delete_api_key_by_keytext(key_text: str):
-    rows = execute(SQL_DELETE_API_KEY_BY_KEYTEXT, (key_text,), returning=True)
-    return rows[0] if rows else None
+    # Resolve by plaintext via verification, then delete by id for portability
+    found = get_api_key(key_text)
+    if not found:
+        return None
+    return delete_api_key_by_id(found.get('id'))
 
 
 def rotate_api_key(key_id: int, by: Optional[str] = None) -> Dict[str, Any]:
@@ -214,6 +230,11 @@ def log_api_key_event(api_key_id: Optional[int], event_type: str, event_by: Opti
 
 def mark_last_used(api_key_id: int):
     try:
-        execute(SQL_UPDATE_LAST_USED, (api_key_id,))
+        # Don't rely on RETURNING for sqlite path
+        from db import _get_pool
+        if _get_pool() is None:
+            execute("UPDATE api_keys SET last_used = datetime('now') WHERE id = ?", (api_key_id,), returning=False)
+        else:
+            execute(SQL_UPDATE_LAST_USED, (api_key_id,))
     except Exception:
         pass

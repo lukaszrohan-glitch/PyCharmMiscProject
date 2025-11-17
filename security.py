@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import Optional
 
 from fastapi import Header, HTTPException
 
 from config import settings
+import os
 import auth
 
 logger = logging.getLogger(__name__)
@@ -40,8 +42,9 @@ def check_api_key(
     if not key:
         raise HTTPException(status_code=401, detail="Invalid or missing API key")
 
-    # Env keys first
-    env_keys = settings.api_keys_list()
+    # Env keys first (allow runtime override via environment)
+    env_keys_raw = os.getenv('API_KEYS') or settings.API_KEYS
+    env_keys = [k.strip() for k in env_keys_raw.split(',')] if env_keys_raw else []
     if env_keys and key in env_keys:
         return True
 
@@ -64,10 +67,10 @@ def check_api_key(
 
 
 def check_admin_key(x_admin_key: Optional[str] = Header(None)):
-    admin_key = settings.ADMIN_KEY
+    # Read from environment at call time to allow tests or runtime overrides
+    admin_key = os.getenv('ADMIN_KEY') or settings.ADMIN_KEY
     if not admin_key:
         raise HTTPException(status_code=401, detail="Admin key not configured")
     if x_admin_key != admin_key:
         raise HTTPException(status_code=401, detail="Invalid admin key")
     return True
-
