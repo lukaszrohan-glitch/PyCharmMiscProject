@@ -14,6 +14,17 @@ router = APIRouter(tags=["Orders"])
 
 
 @router.get("/api/orders", response_model=List[Order], summary="List orders")
+def _normalize_status(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return value
+    mapping = {
+        'in progress': 'InProd',
+        'completed': 'Done',
+    }
+    v = str(value).strip()
+    return mapping.get(v.lower(), v)
+
+
 def orders_list(
     limit: Optional[int] = Query(None, ge=1, le=1000),
     offset: Optional[int] = Query(None, ge=0),
@@ -28,6 +39,9 @@ def orders_list(
             sql += " OFFSET %s"
             params.append(offset)
         rows = fetch_all(sql, tuple(params) if params else None)
+        for r in rows or []:
+            if 'status' in r:
+                r['status'] = _normalize_status(r.get('status'))
         return rows if rows else []
     except Exception as exc:
         raise HTTPException(status_code=500, detail="Failed to fetch orders") from exc
@@ -36,10 +50,13 @@ def orders_list(
 @router.get("/api/orders/{order_id}", response_model=Optional[Order], summary="Get order by ID")
 def order_get(order_id: str):
     try:
-        return fetch_one(
+        row = fetch_one(
             "SELECT order_id, customer_id, status, order_date, due_date FROM orders WHERE order_id = %s",
             (order_id,),
         )
+        if row and 'status' in row:
+            row['status'] = _normalize_status(row.get('status'))
+        return row
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
@@ -130,4 +147,3 @@ def delete_order(order_id: str, _ok: bool = Depends(check_api_key)):
         return {"deleted": True}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
-
