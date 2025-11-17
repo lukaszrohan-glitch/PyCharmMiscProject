@@ -1,0 +1,19 @@
+{
+  "_comment": "Staging variables template. Import into Railway > Variables (staging service) and adjust values.",
+  "variables": {
+    "JWT_SECRET": "STAGING_LONG_RANDOM_SECRET_32+",
+    "ADMIN_EMAIL": "staging-admin@yourcompany.com",
+    "ADMIN_PASSWORD": "Staging#Admin2025!",
+    "ADMIN_KEY": "staging-admin-key-REPLACE",
+    "API_KEYS": "",
+    "CORS_ORIGINS": "https://your-app-staging.up.railway.app,https://staging.yourcompany.com",
+    "DB_CONNECT_TIMEOUT": "10"
+  },
+  "notes": [
+    "Link your staging service to a separate Postgres plugin for isolation.",
+    "Use a different domain for staging and include it in CORS_ORIGINS.",
+    "You can remove ADMIN_PASSWORD after first login.",
+    "Rotate ADMIN_KEY periodically."
+  ]
+}
+

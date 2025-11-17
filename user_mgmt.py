@@ -8,13 +8,13 @@ from jose import jwt, JWTError
 from passlib.hash import pbkdf2_sha256 as hasher
 
 from db import fetch_one, fetch_all, execute
+from config import settings
 
-# Use a strong secret key in production - must be at least 32 bytes for HS256
-_default_secret = os.urandom(32).hex() if not os.getenv('JWT_SECRET') else None
-JWT_SECRET = os.getenv('JWT_SECRET', _default_secret)
+# JWT settings
+JWT_SECRET = settings.JWT_SECRET
 JWT_ALG = 'HS256'
-JWT_EXP_MINUTES = int(os.getenv('JWT_EXP_MINUTES', '120'))
-JWT_REFRESH_DAYS = int(os.getenv('JWT_REFRESH_DAYS', '7'))
+JWT_EXP_MINUTES = settings.JWT_EXP_MINUTES
+JWT_REFRESH_DAYS = settings.JWT_REFRESH_DAYS
 
 MAX_LOGIN_ATTEMPTS = 5
 LOGIN_LOCKOUT_MINUTES = 15

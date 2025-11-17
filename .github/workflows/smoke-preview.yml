@@ -1,0 +1,62 @@
+name: Smoke Preview (Railway)
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Base URL of the deployed preview (e.g., https://xyz.up.railway.app)"
+        required: false
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: smoke-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Smoke Test Preview
+    runs-on: ubuntu-latest
+    env:
+      # Prefer manual input, then secret; fail if neither present
+      BASE_URL: ${{ github.event.inputs.base_url || secrets.RAILWAY_PREVIEW_URL }}
+      ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+    steps:
+      - name: Validate BASE_URL
+        run: |
+          if [ -z "${BASE_URL}" ]; then
+            echo "BASE_URL not provided. Set workflow input 'base_url' or secret 'RAILWAY_PREVIEW_URL'." >&2
+            exit 1
+          fi
+          echo "BASE_URL=${BASE_URL}"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Make smoke script executable
+        run: chmod +x scripts/smoke.sh
+
+      - name: Wait for readiness (max 5 min)
+        shell: bash
+        run: |
+          set -euo pipefail
+          END=$((SECONDS + 300))
+          echo "Waiting for ${BASE_URL}/readyz ..."
+          while [ $SECONDS -lt $END ]; do
+            if curl -fsS "${BASE_URL}/readyz" >/dev/null; then
+              echo "Service is ready."; break
+            fi
+            sleep 5
+          done
+          if ! curl -fsS "${BASE_URL}/readyz" >/dev/null; then
+            echo "Service did not become ready in time." >&2
+            exit 1
+          fi
+
+      - name: Run smoke.sh
+        shell: bash
+        run: |
+          ./scripts/smoke.sh "${BASE_URL}"
+

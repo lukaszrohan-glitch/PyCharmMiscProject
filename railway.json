@@ -12,13 +12,13 @@
     "healthchecks": {
       "liveness": {
         "type": "http",
-        "httpPath": "/healthz",
+        "httpPath": "/readyz",
         "initialDelaySeconds": 30,
         "periodSeconds": 10
       },
       "readiness": {
         "type": "http",
-        "httpPath": "/healthz",
+        "httpPath": "/readyz",
         "initialDelaySeconds": 30,
         "periodSeconds": 5
       }

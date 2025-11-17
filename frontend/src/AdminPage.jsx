@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react'
 import { adminListKeys, adminCreateKey, adminDeleteKey, adminRotateKey, setAdminKey } from './services/api'
 import { useToast } from './components/Toast'
 import { useI18n } from './i18n.jsx'
+import AdminImport from './components/AdminImport'
+import AdminAudit from './components/AdminAudit'
+import Approvals from './components/Approvals'
 
 export default function AdminPage({ onClose }){
   const { t } = useI18n()
@@ -115,6 +118,16 @@ export default function AdminPage({ onClose }){
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div style={{marginTop:16}}>
+        <AdminImport />
+      </div>
+      <div style={{marginTop:16}}>
+        <AdminAudit />
+      </div>
+      <div style={{marginTop:16}}>
+        <Approvals />
       </div>
     </div>
   )

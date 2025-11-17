@@ -81,8 +81,16 @@ CREATE TABLE IF NOT EXISTS timesheets (
   order_id text REFERENCES orders(order_id) ON DELETE SET NULL,
   operation_no integer,
   hours numeric(10,2) NOT NULL,
-  notes text
+  notes text,
+  approved boolean NOT NULL DEFAULT FALSE,
+  approved_by text,
+  approved_at timestamptz
 );
+
+-- Approvals columns for existing deployments
+ALTER TABLE timesheets ADD COLUMN IF NOT EXISTS approved boolean NOT NULL DEFAULT FALSE;
+ALTER TABLE timesheets ADD COLUMN IF NOT EXISTS approved_by text;
+ALTER TABLE timesheets ADD COLUMN IF NOT EXISTS approved_at timestamptz;
 
 -- API keys table (for admin-managed API keys)
 CREATE TABLE IF NOT EXISTS api_keys (
@@ -100,6 +108,15 @@ CREATE TABLE IF NOT EXISTS api_keys (
 CREATE TABLE IF NOT EXISTS api_key_audit (
   audit_id bigserial PRIMARY KEY,
   api_key_id bigint REFERENCES api_keys(id) ON DELETE SET NULL,
+  event_type text NOT NULL,
+  event_by text,
+  event_time timestamptz NOT NULL DEFAULT now(),
+  details jsonb
+);
+
+-- General admin audit table
+CREATE TABLE IF NOT EXISTS admin_audit (
+  audit_id bigserial PRIMARY KEY,
   event_type text NOT NULL,
   event_by text,
   event_time timestamptz NOT NULL DEFAULT now(),
@@ -182,3 +199,15 @@ SELECT o.order_id,
 FROM orders o
 LEFT JOIN order_lines ol ON o.order_id = ol.order_id
 GROUP BY o.order_id;
+
+-- -------------------------------------------------------------
+-- Helpful indexes (idempotent) to improve query performance
+-- -------------------------------------------------------------
+CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_date ON orders(order_date DESC);
+CREATE INDEX IF NOT EXISTS idx_order_lines_product ON order_lines(product_id);
+CREATE INDEX IF NOT EXISTS idx_timesheets_emp ON timesheets(emp_id);
+CREATE INDEX IF NOT EXISTS idx_timesheets_order ON timesheets(order_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_product ON inventory(product_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_date ON inventory(txn_date);

@@ -166,6 +166,8 @@ export const adminCreateUser = (payload) => postAdmin('/api/admin/users', payloa
 export const adminListUsers = () => reqAdmin('/api/admin/users')
 export const adminCreatePlan = (payload) => postAdmin('/api/admin/subscription-plans', payload)
 export const adminListPlans = () => reqAdmin('/api/admin/subscription-plans')
+// Admin audit (JWT)
+export const adminListAdminAudit = (limit = 100) => reqAuth(`/api/admin/audit?limit=${encodeURIComponent(limit)}`)
 export const getOrders = ()=> req('/api/orders')
 export const getFinance = (orderId)=> req(`/api/finance/${encodeURIComponent(orderId)}`)
 export const getShortages = ()=> req('/api/shortages')
@@ -237,6 +239,41 @@ export const createCustomer = (payload) => postJson('/api/customers', payload)
 export const createEmployee = (payload) => postJson('/api/employees', payload)
 
 export const getTimesheets = () => req('/api/timesheets')
+export const getTimesheetsFiltered = ({ fromDate, toDate, empId, approved } = {}) => {
+  const params = []
+  if (fromDate) params.push(`from=${encodeURIComponent(fromDate)}`)
+  if (toDate) params.push(`to=${encodeURIComponent(toDate)}`)
+  if (empId) params.push(`emp_id=${encodeURIComponent(empId)}`)
+  if (approved !== undefined && approved !== null) params.push(`approved=${approved ? 'true' : 'false'}`)
+  const qs = params.length ? `?${params.join('&')}` : ''
+  return req(`/api/timesheets${qs}`)
+}
+export const getPendingTimesheets = ({ fromDate, toDate, empId } = {}) => {
+  const params = []
+  if (fromDate) params.push(`from=${encodeURIComponent(fromDate)}`)
+  if (toDate) params.push(`to=${encodeURIComponent(toDate)}`)
+  if (empId) params.push(`emp_id=${encodeURIComponent(empId)}`)
+  const qs = params.length ? `?${params.join('&')}` : ''
+  return reqAuth(`/api/timesheets/pending${qs}`)
+}
+export const getTimesheetWeeklySummary = ({ fromDate, toDate, empId, approved } = {}) => {
+  const params = []
+  if (fromDate) params.push(`from=${encodeURIComponent(fromDate)}`)
+  if (toDate) params.push(`to=${encodeURIComponent(toDate)}`)
+  if (empId) params.push(`emp_id=${encodeURIComponent(empId)}`)
+  if (approved !== undefined && approved !== null) params.push(`approved=${approved ? 'true' : 'false'}`)
+  const qs = params.length ? `?${params.join('&')}` : ''
+  return req(`/api/timesheets/weekly-summary${qs}`)
+}
+export const getTimesheetSummary = ({ fromDate, toDate, empId, approved } = {}) => {
+  const params = []
+  if (fromDate) params.push(`from=${encodeURIComponent(fromDate)}`)
+  if (toDate) params.push(`to=${encodeURIComponent(toDate)}`)
+  if (empId) params.push(`emp_id=${encodeURIComponent(empId)}`)
+  if (approved !== undefined && approved !== null) params.push(`approved=${approved ? 'true' : 'false'}`)
+  const qs = params.length ? `?${params.join('&')}` : ''
+  return req(`/api/timesheets/summary${qs}`)
+}
 export const getInventory = () => req('/api/inventory')
 export const getEmployees = () => req('/api/employees')
 
@@ -324,6 +361,42 @@ export const deleteTimesheet = (tsId) => {
   })
 }
 
+export const approveTimesheet = (tsId) => postAuth(`/api/timesheets/${encodeURIComponent(tsId)}/approve`, {})
+export const unapproveTimesheet = (tsId) => postAuth(`/api/timesheets/${encodeURIComponent(tsId)}/unapprove`, {})
+
+export const exportTimesheetsCSV = async ({ fromDate, toDate, empId, pending } = {}) => {
+  const params = []
+  if (fromDate) params.push(`from=${encodeURIComponent(fromDate)}`)
+  if (toDate) params.push(`to=${encodeURIComponent(toDate)}`)
+  if (empId) params.push(`emp_id=${encodeURIComponent(empId)}`)
+  if (pending) params.push('pending=true')
+  const qs = params.length ? `?${params.join('&')}` : ''
+  const url = `${API_BASE}/api/timesheets/export.csv${qs}`
+  const headers = {}
+  const token = getToken()
+  if (token) headers['Authorization'] = 'Bearer ' + token
+  const res = await fetch(url, { headers })
+  if(!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+  const blob = await res.blob()
+  return blob
+}
+
+export const exportTimesheetsSummaryCSV = async ({ fromDate, toDate, empId } = {}) => {
+  const params = []
+  if (fromDate) params.push(`from=${encodeURIComponent(fromDate)}`)
+  if (toDate) params.push(`to=${encodeURIComponent(toDate)}`)
+  if (empId) params.push(`emp_id=${encodeURIComponent(empId)}`)
+  const qs = params.length ? `?${params.join('&')}` : ''
+  const url = `${API_BASE}/api/timesheets/export-summary.csv${qs}`
+  const headers = {}
+  const token = getToken()
+  if (token) headers['Authorization'] = 'Bearer ' + token
+  const res = await fetch(url, { headers })
+  if(!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+  const blob = await res.blob()
+  return blob
+}
+
 export const updateInventory = (txnId, payload) => {
   const headers = { 'Content-Type': 'application/json' }
   if(API_KEY) headers['x-api-key'] = API_KEY
@@ -362,3 +435,25 @@ export const adminRotateKey = (keyId) => postAdmin(`/api/admin/api-keys/${encode
 export const requestPasswordReset = (email) => postAuth('/api/auth/request-reset', { email })
 export const resetPasswordWithToken = (token, new_password) => postAuth('/api/auth/reset', { token, new_password })
 export const inviteUserAdmin = (payload) => postAuth('/api/admin/users', payload)
+
+// Admin import: CSV upload via multipart/form-data (JWT required)
+export const adminImportCSV = async (entityType, file) => {
+  const headers = {}
+  const token = getToken()
+  if (token) headers['Authorization'] = 'Bearer ' + token
+  const fd = new FormData()
+  fd.append('entity_type', entityType)
+  fd.append('file', file)
+  const res = await fetch(`${API_BASE}/api/import/csv`, {
+    method: 'POST',
+    headers,
+    body: fd
+  })
+  const txt = await res.text()
+  if(!res.ok){
+    let msg = txt
+    try{ msg = JSON.parse(txt) }catch{}
+    throw new Error((msg && msg.detail) ? msg.detail : `${res.status} ${res.statusText} - ${txt}`)
+  }
+  try{ return JSON.parse(txt) }catch{ return txt }
+}

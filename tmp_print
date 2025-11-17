@@ -3,7 +3,6 @@ from contextlib import contextmanager
 from typing import Optional, Tuple, Iterator, Any, List
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from typing import TYPE_CHECKING
-from config import settings
 
 # Import psycopg2 types only for type checkers
 if TYPE_CHECKING:
@@ -22,10 +21,10 @@ except Exception:
 # sqlite fallback
 import sqlite3
 
-MINCONN = settings.DB_POOL_MIN
-MAXCONN = settings.DB_POOL_MAX
-DATABASE_URL = settings.DATABASE_URL
-PG_SSLMODE = settings.PG_SSLMODE
+MINCONN = int(os.getenv("DB_POOL_MIN", "1"))
+MAXCONN = int(os.getenv("DB_POOL_MAX", "10"))
+DATABASE_URL = os.getenv("DATABASE_URL")
+PG_SSLMODE = os.getenv("PG_SSLMODE")
 
 POOL = None  # type: ignore
 
@@ -66,7 +65,7 @@ def _create_pool() -> Any:
         elif "sslmode=" not in dsn:
             dsn = _append_sslmode_to_url(dsn, "require")
 
-        connect_timeout = settings.DB_CONNECT_TIMEOUT
+        connect_timeout = int(os.getenv("DB_CONNECT_TIMEOUT", "10"))
         dsn_with_timeout = f"{dsn}?connect_timeout={connect_timeout}" if "?" not in dsn else f"{dsn}&connect_timeout={connect_timeout}"
 
         return SimpleConnectionPool(MINCONN, MAXCONN, dsn=dsn_with_timeout)
@@ -115,7 +114,7 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
     We won't fully implement all Postgres types; keep it simple.
     """
     cur = conn.cursor()
-    # Create customers, products, orders, order_lines, employees, timesheets, inventory, api_keys, api_key_audit, admin_audit
+    # Create customers, products, orders, order_lines, employees, timesheets, inventory, api_keys, api_key_audit
     cur.executescript("""
     CREATE TABLE IF NOT EXISTS customers (
       customer_id TEXT PRIMARY KEY,
@@ -165,10 +164,7 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
       order_id TEXT,
       operation_no INTEGER,
       hours REAL NOT NULL,
-      notes TEXT,
-      approved BOOLEAN NOT NULL DEFAULT 0,
-      approved_by TEXT,
-      approved_at TEXT
+      notes TEXT
     );
     CREATE TABLE IF NOT EXISTS inventory (
       txn_id TEXT PRIMARY KEY,
@@ -192,13 +188,6 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
     CREATE TABLE IF NOT EXISTS api_key_audit (
       audit_id INTEGER PRIMARY KEY AUTOINCREMENT,
       api_key_id INTEGER,
-      event_type TEXT NOT NULL,
-      event_by TEXT,
-      event_time TEXT,
-      details TEXT
-    );
-    CREATE TABLE IF NOT EXISTS admin_audit (
-      audit_id INTEGER PRIMARY KEY AUTOINCREMENT,
       event_type TEXT NOT NULL,
       event_by TEXT,
       event_time TEXT,
@@ -417,3 +406,5 @@ def execute(sql: str, params: Optional[Tuple] = None, returning: bool = False):
                 return rows
             conn.commit()
             return None
+
+

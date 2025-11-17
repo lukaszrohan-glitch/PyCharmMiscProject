@@ -43,7 +43,7 @@ SQL_INSERT_ORDER = """
 INSERT INTO orders (order_id, order_date, customer_id, status, due_date)
 VALUES (%s, CURRENT_DATE, %s, %s, %s)
 ON CONFLICT (order_id) DO NOTHING
-RETURNING order_id, customer_id, status, due_date;
+RETURNING order_id, customer_id, status, order_date, due_date;
 """
 
 SQL_INSERT_ORDER_LINE = """

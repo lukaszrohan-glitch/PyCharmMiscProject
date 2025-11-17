@@ -26,6 +26,7 @@ class Order(BaseModel):
     order_id: str
     customer_id: str
     status: OrderStatus
+    order_date: Optional[date] = None
     due_date: Optional[date] = None
 
 

@@ -1,0 +1,17 @@
+{
+  "_comment": "Import this into Railway > Variables via Bulk Edit or JSON import and then adjust values",
+  "variables": {
+    "JWT_SECRET": "CHANGE_ME_TO_A_LONG_RANDOM_32+_CHARS",
+    "ADMIN_EMAIL": "admin@yourcompany.com",
+    "ADMIN_PASSWORD": "ChangeMe#2025!",
+    "ADMIN_KEY": "admin-key-CHANGE_ME",
+    "API_KEYS": "",
+    "CORS_ORIGINS": "https://<your-app>.up.railway.app"
+  },
+  "notes": [
+    "If your Postgres plugin exposes DATABASE_PRIVATE_URL, set it on the service to avoid egress",
+    "Railway usually injects DATABASE_URL automatically when the service is linked to the Postgres plugin",
+    "You can remove ADMIN_PASSWORD after first login to avoid resetting password on each deploy"
+  ]
+}
+

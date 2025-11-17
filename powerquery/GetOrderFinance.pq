@@ -1,14 +1,53 @@
 let
-    GetOrderFinance = (apiBase as text, apiKey as text, orderId as text) =>
+    GetOrderFinance = (optional apiBase as nullable text, optional apiKey as nullable text, orderId as text, optional includeDiagnostics as nullable logical) as table =>
         let
-            url = Text.TrimEnd(apiBase, "/") & "/api/finance/" & orderId,
-            headers = [#"x-api-key" = apiKey, #"Accept" = "application/json"],
-            raw = Web.Contents(url, [Headers = headers, Timeout = #duration(0,0,1,0)]),
-            json = Json.Document(raw),
-            rec = if Type.Is(Value.Type(json), Record.Type) then json else null,
-            table = if rec = null then #table({}, {}) else Record.ToTable(rec)
+            // Determine base URL; default to local dev backend if not provided
+            base = if apiBase = null or Text.Trim(apiBase) = "" then "http://localhost:8000" else Text.TrimEnd(apiBase, "/"),
+
+            // Always send Accept; include x-api-key only when present
+            headers = if apiKey = null or Text.Trim(apiKey) = "" then [Accept = "application/json"] else [#"x-api-key" = apiKey, Accept = "application/json"],
+
+            // Escape orderId for safety if possible
+            safeOrderId = try Uri.EscapeDataString(orderId) otherwise orderId,
+            path = "api/finance/" & safeOrderId,
+
+            // Use RelativePath and handle common HTTP statuses; capture errors for diagnostics
+            respTry = try Web.Contents(
+                base,
+                [
+                    RelativePath = path,
+                    Headers = headers,
+                    Timeout = #duration(0,0,1,0),
+                    ManualStatusHandling = {400,401,403,404,408,429,500,502,503}
+                ]
+            ),
+            response = if respTry[HasError] then null else respTry[Value],
+            meta = if response <> null then try Value.Metadata(response) otherwise null else null,
+            status = if respTry[HasError] then -1 else if meta <> null and Record.HasFields(meta, "Response.Status") then meta[Response.Status] else 200,
+            statusText = if respTry[HasError] then (try Error.Message(respTry[Error]) otherwise "Request failed") else if meta <> null and Record.HasFields(meta, "Response.StatusText") then meta[Response.StatusText] else null,
+            // Optional diagnostics row on non-200
+            diag = #table({"status", "reason", "endpoint"}, {{ status, statusText, path }}),
+
+            // Parse JSON safely
+            body = if response <> null then try Json.Document(response) otherwise null else null,
+
+            // Expect a record payload for finance details
+            rec = if body <> null and Value.Is(body, type record) then body else null,
+
+            // Convert record to one-row table and apply strong types
+            table = if rec = null then #table({}, {}) else Table.FromRecords({rec}),
+            typePairs = {
+                {"order_id", type text},
+                {"revenue", Currency.Type},
+                {"material_cost", Currency.Type},
+                {"labor_cost", Currency.Type},
+                {"gross_margin", Currency.Type}
+            },
+            presentPairs = List.Select(typePairs, (p) => Table.HasColumns(table, {p{0}})),
+            typed = if List.Count(presentPairs) = 0 then table else Table.TransformColumnTypes(table, presentPairs),
+            result = if (includeDiagnostics <> null and includeDiagnostics = true and status <> 200) then diag else typed
         in
-            table
+            result
 in
     GetOrderFinance
 

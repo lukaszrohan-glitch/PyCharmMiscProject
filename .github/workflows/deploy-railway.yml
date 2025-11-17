@@ -1,0 +1,89 @@
+name: Deploy to Railway
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Base URL to smoke after deploy (e.g., https://app.up.railway.app)"
+        required: false
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: deploy-railway-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Railway Deploy
+    runs-on: ubuntu-latest
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+      RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+      RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }}
+    steps:
+      - name: Validate secrets
+        run: |
+          test -n "$RAILWAY_TOKEN" || { echo "Missing secret RAILWAY_TOKEN" >&2; exit 1; }
+          test -n "$RAILWAY_PROJECT_ID" || { echo "Missing secret RAILWAY_PROJECT_ID" >&2; exit 1; }
+          test -n "$RAILWAY_SERVICE_ID" || { echo "Missing secret RAILWAY_SERVICE_ID" >&2; exit 1; }
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: Link project/service
+        run: |
+          railway link --project "$RAILWAY_PROJECT_ID"
+          if [ -n "$RAILWAY_ENVIRONMENT_ID" ]; then
+            railway environment --environment "$RAILWAY_ENVIRONMENT_ID"
+          fi
+          railway service --service "$RAILWAY_SERVICE_ID"
+
+      - name: Deploy (railway up)
+        run: |
+          railway up --service "$RAILWAY_SERVICE_ID" --ci
+
+  smoke:
+    name: Smoke After Deploy
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: ${{ github.event.inputs.base_url || secrets.RAILWAY_PROD_URL }}
+      ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+    steps:
+      - name: Ensure BASE_URL is set
+        run: |
+          if [ -z "$BASE_URL" ]; then
+            echo "BASE_URL not provided. Set input 'base_url' or secret 'RAILWAY_PROD_URL'. Skipping smoke."; echo "skip" > skip; fi
+
+      - name: Checkout repository
+        if: ${{ !hashFiles('skip') }}
+        uses: actions/checkout@v4
+
+      - name: Make smoke script executable
+        if: ${{ !hashFiles('skip') }}
+        run: chmod +x scripts/smoke.sh
+
+      - name: Wait for readiness (max 10 min)
+        if: ${{ !hashFiles('skip') }}
+        run: |
+          set -euo pipefail
+          END=$((SECONDS + 600))
+          while [ $SECONDS -lt $END ]; do
+            if curl -fsS "$BASE_URL/readyz" >/dev/null; then
+              echo "Service is ready."; break
+            fi
+            sleep 5
+          done
+          curl -fsS "$BASE_URL/readyz" >/dev/null
+
+      - name: Run smoke
+        if: ${{ !hashFiles('skip') }}
+        run: ./scripts/smoke.sh "$BASE_URL"
+
