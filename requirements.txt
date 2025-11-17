@@ -3,7 +3,7 @@ uvicorn[standard]==0.30.0
 aiofiles==23.2.1
 # Postgres driver is optional; use requirements-postgres.txt if needed
 # Switch to psycopg v3 with bundled binary wheels (better cross-platform support)
-psycopg[binary]==3.1.18
+psycopg[binary]>=3.2
 httpx==0.24.1
 pydantic>=2.7,<3
 pydantic-settings==2.4.0
