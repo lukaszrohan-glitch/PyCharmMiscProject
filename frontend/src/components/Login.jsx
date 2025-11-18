@@ -3,7 +3,7 @@ import { useAuth } from '../auth/AuthProvider'
 
 export default function Login({ lang, setLang }) {
   const { loginWithCredentials } = useAuth()
-  const [email, setEmail] = useState('admin@arkuszowniasmb.pl')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')

@@ -126,7 +126,11 @@ export async function getProfile() {
   try {
     return await request('/api/users/me', { method: 'GET' })
   } catch (_) {
-    return request('/api/user/profile', { method: 'GET' })
+    try {
+      return await request('/api/user/profile', { method: 'GET' })
+    } catch {
+      return null
+    }
   }
 }
 export const changePassword = (old_password, new_password) => postAuth('/api/auth/change-password', { old_password, new_password })

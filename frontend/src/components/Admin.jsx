@@ -72,8 +72,8 @@ export default function Admin({ lang }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.is_admin]);
 
-  const isStrongPassword = (pwd) =>
-    /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(pwd);
+  // Align front-end validation with backend: minimum 8 characters
+  const isStrongPassword = (pwd) => typeof pwd === 'string' && pwd.length >= 8;
 
   const authenticate = async () => {
     // If logged-in user is an admin, prefer JWT and skip admin key

@@ -17,11 +17,11 @@ export function AuthProvider({ children }) {
     (async () => {
       try {
         const me = await api.getProfile()
-        setProfile(me)
+        // Don't clear token on transient errors; only set profile if available
+        setProfile(me || null)
       } catch (e) {
-        console.error('Auth bootstrap failed:', e)
-        api.setToken(null)
-        setProfile(null)
+        // Keep token; backend may be unreachable temporarily
+        console.warn('Auth bootstrap: profile unavailable, keeping token')
       } finally {
         setChecking(false)
       }
@@ -86,4 +86,3 @@ export function useAuth() {
   }
   return ctx
 }
-
