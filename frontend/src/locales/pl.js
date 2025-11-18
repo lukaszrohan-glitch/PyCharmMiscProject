@@ -1,6 +1,6 @@
 export default {
   // General
-  'app_title': 'ArkuszowniaSMB',
+'app_title': 'Synterra',
   'loading': 'Ładowanie...',
   'error': 'Błąd',
   'success': 'Sukces',

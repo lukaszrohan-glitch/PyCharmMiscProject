@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import { adminListUsers, adminCreateUser, setAdminKey } from '../services/api';
+import { useEffect, useState } from 'react';
+import { adminListUsers, adminCreateUser, setAdminKey, getToken } from '../services/api';
+import { useAuth } from '../auth/AuthProvider';
 
 export default function Admin({ lang }) {
+  const { profile } = useAuth();
   const [users, setUsers] = useState([]);
   const [adminKey, setAdminKeyInput] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
@@ -63,10 +65,36 @@ export default function Admin({ lang }) {
     return translations[key]?.[lang] || key;
   };
 
+  useEffect(() => {
+    if (profile?.is_admin && !isAuthed && !loading) {
+      authenticate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.is_admin]);
+
   const isStrongPassword = (pwd) =>
     /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(pwd);
 
   const authenticate = async () => {
+    // If logged-in user is an admin, prefer JWT and skip admin key
+    if (profile?.is_admin) {
+      setError('');
+      setSuccess('');
+      setLoading(true);
+      try {
+        const result = await adminListUsers();
+        setUsers(result || []);
+        setIsAuthed(true);
+        setSuccess(' ' + t('authenticate'));
+      } catch (err) {
+        console.error(err);
+        setIsAuthed(false);
+        setError(' ' + t('error_generic'));
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
     const trimmedKey = adminKey.trim();
     if (!trimmedKey) {
       setError('❌ ' + t('error_auth_failed'));
@@ -143,15 +171,14 @@ export default function Admin({ lang }) {
 
     try {
       const base = import.meta.env.VITE_API_BASE || window.location.origin;
-      const res = await fetch(
-        `${base}/api/admin/users/${encodeURIComponent(userId)}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'x-admin-key': adminKey.trim()
-          }
-        }
-      );
+      const headers = {};
+      const tok = getToken();
+      if (profile?.is_admin && tok) headers['Authorization'] = 'Bearer ' + tok;
+      else headers['x-admin-key'] = adminKey.trim();
+      const res = await fetch(`${base}/api/admin/users/${encodeURIComponent(userId)}`, {
+        method: 'DELETE',
+        headers
+      });
 
       if (!res.ok) {
         throw new Error(`HTTP_${res.status}`);
@@ -170,7 +197,7 @@ export default function Admin({ lang }) {
     }
   };
 
-  if (!isAuthed) {
+  if (!isAuthed && !profile?.is_admin) {
     return (
       <div className="api-key-auth">
         <div className="auth-card">

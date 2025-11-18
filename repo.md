@@ -1,4 +1,4 @@
-# Arkuszownia SMB - Repository Overview
+# Synterra - Repository Overview
 
 **Manufacturing Management System for Small and Medium-Sized Enterprises**
 
@@ -8,11 +8,11 @@ A comprehensive SPA application for managing manufacturing operations, including
 
 ## Project Overview
 
-Arkuszownia SMB is a full-stack manufacturing management system designed for SMBs. It provides real-time order tracking, inventory management, employee timesheets, and financial analytics.
+Synterra is a full-stack manufacturing management system designed for SMBs. It provides real-time order tracking, inventory management, employee timesheets, and financial analytics.
 
 - **Language**: Python (Backend), JavaScript/React (Frontend)
 - **Status**: Production-ready
-- **License**: Proprietary - Arkuszownia SMB
+- **License**: Proprietary - Synterra
 - **Support**: admin@arkuszowniasmb.pl
 
 ---

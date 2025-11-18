@@ -4,9 +4,12 @@ import styles from './Header.module.css';
 export default function Header({ lang, setLang, currentView, setCurrentView, profile, onSettings, onLogout }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const [isDark, setIsDark] = useState(() => {
+    try { return document.documentElement.classList.contains('dark'); } catch { return false; }
+  });
 
   const t = lang === 'pl' ? {
-    appName: 'Arkuszownia SMB',
+    appName: 'Synterra',
     tagline: 'System Zarzadzania Produkcja',
     menu: 'Menu',
     dashboard: 'Panel glowny',
@@ -18,7 +21,7 @@ export default function Header({ lang, setLang, currentView, setCurrentView, pro
     logout: 'Wyloguj',
     search: 'Szukaj...'
   } : {
-    appName: 'Arkuszownia SMB',
+    appName: 'Synterra',
     tagline: 'Manufacturing Management System',
     menu: 'Menu',
     dashboard: 'Dashboard',
@@ -92,6 +95,19 @@ export default function Header({ lang, setLang, currentView, setCurrentView, pro
                 EN
               </button>
             </div>
+
+            <button
+              className={styles.themeToggle}
+              onClick={() => {
+                const next = isDark ? 'light' : 'dark';
+                try { window.setTheme && window.setTheme(next); } catch {}
+                setIsDark(!isDark);
+              }}
+              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {isDark ? '☀️' : '🌙'}
+            </button>
 
             {profile && (
               <div className={styles.profileSection}>

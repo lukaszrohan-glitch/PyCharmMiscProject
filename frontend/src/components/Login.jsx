@@ -1,14 +1,15 @@
 import React, { useState } from 'react'
-import { login } from '../services/api'
+import { useAuth } from '../auth/AuthProvider'
 
-export default function Login({ onLogin, lang, setLang }) {
+export default function Login({ lang, setLang }) {
+  const { loginWithCredentials } = useAuth()
   const [email, setEmail] = useState('admin@arkuszowniasmb.pl')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const t = lang === 'pl' ? {
-    appName: 'Arkuszownia SMB',
+    appName: 'Synterra',
     tagline: 'System Zarzadzania Produkcja',
     login: 'Zaloguj się',
     email: 'Email',
@@ -18,7 +19,7 @@ export default function Login({ onLogin, lang, setLang }) {
     invalidCredentials: 'Błędny email lub hasło',
     error: 'Błąd logowania'
   } : {
-    appName: 'Arkuszownia SMB',
+    appName: 'Synterra',
     tagline: 'Manufacturing Management System',
     login: 'Sign In',
     email: 'Email',
@@ -37,12 +38,8 @@ export default function Login({ onLogin, lang, setLang }) {
     setLoading(true)
 
     try {
-      const response = await login(email, password)
-      if (response && response.user) {
-        onLogin({ user: response.user, token: response.access_token || response.token })
-      } else {
-        setError(t.invalidCredentials)
-      }
+      const { user } = await loginWithCredentials(email, password)
+      if (!user) setError(t.invalidCredentials)
     } catch (err) {
       console.error('Login error:', err)
       setError(err.message || t.error)

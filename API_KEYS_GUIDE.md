@@ -1,4 +1,4 @@
-# API Keys Guide - ArkuszowniaSMB
+# API Keys Guide - Synterra
 
 ## 🔑 What are API Keys?
 

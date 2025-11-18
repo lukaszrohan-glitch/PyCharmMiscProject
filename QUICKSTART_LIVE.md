@@ -1,4 +1,4 @@
-# 🚀 Arkuszownia SMB - LIVE NOW!
+# 🚀 Synterra - LIVE NOW!
 
 ## ✅ Application is LIVE and Running
 
@@ -192,7 +192,7 @@ docker logs smb_nginx
 
 ## 🎉 **You're All Set!**
 
-Your Arkuszownia SMB application is ready for:
+Your Synterra application is ready for:
 - ✅ Local development
 - ✅ Network testing  
 - ✅ Production deployment (with security updates)
@@ -200,3 +200,4 @@ Your Arkuszownia SMB application is ready for:
 **Time to Live**: ~5 minutes with docker-compose  
 **Status**: 🟢 **PRODUCTION READY**  
 **Last Updated**: 2025-11-13
+

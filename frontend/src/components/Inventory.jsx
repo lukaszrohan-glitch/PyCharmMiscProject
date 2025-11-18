@@ -254,7 +254,7 @@ export default function Inventory({ lang }) {
                   <td>{item.location || '—'}</td>
                   <td>
                     <button className="btn-sm btn-edit" onClick={() => handleEditClick(item)}>{t.edit}</button>
-                    <button className="btn-sm btn-delete" onClick={() => handleDeleteClick(item.txn_id)}>{t.delete}</button>
+                    <button className="btn-sm btn-danger" onClick={() => handleDeleteClick(item.txn_id)}>{t.delete}</button>
                   </td>
                 </tr>
               ))}

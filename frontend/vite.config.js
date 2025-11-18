@@ -1,32 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import path from 'path';
 
+// Use a relative base so the app works on GitHub Pages project sites
+// (e.g., https://user.github.io/repo) without broken asset paths.
 export default defineConfig({
   plugins: [react()],
-
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, 'src'),
-      '@components': path.resolve(__dirname, 'src/components'),
-      '@styles': path.resolve(__dirname, 'src/styles'),
-    },
-  },
-
-  server: {
-    port: 5173,
-    strictPort: true,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        secure: false,
-      },
-    },
-  },
-
-  build: {
-    outDir: 'dist',
-    sourcemap: true,
-  },
+  // Use absolute base for backend-served SPA so assets resolve from root
+  base: '/',
 });

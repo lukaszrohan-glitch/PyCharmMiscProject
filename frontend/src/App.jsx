@@ -8,7 +8,7 @@ import Inventory from './components/Inventory';
 import Timesheets from './components/Timesheets';
 import Products from './components/Products';
 import Admin from './components/Admin';
-import { getToken, setToken } from './services/api';
+import { useAuth } from './auth/AuthProvider';
 import styles from './App.module.css';
 
 export default function App() {
@@ -18,9 +18,8 @@ export default function App() {
       : 'pl'
   );
   const [currentView, setCurrentView] = useState('dashboard');
-  const [profile, setProfile] = useState(null);
   const [isSettingsOpen, setSettingsOpen] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true);
+  const { profile, checkingAuth, setAuth, logout } = useAuth();
 
   // zapisujemy język przy zmianie
   useEffect(() => {
@@ -33,13 +32,10 @@ export default function App() {
 
   // sprawdzamy token + profil przy starcie
   useEffect(() => {
-    const token = getToken();
-    if (!token) {
-      setCheckingAuth(false);
-      return;
-    }
+    // Auth bootstrap handled by AuthProvider; no-op
+    return;
 
-    (async () => {
+    /* (async () => {
       try {
         // uwaga: dynamiczny import OK jeśli chcesz code-splitting,
         // ale nie jest konieczny, skoro i tak importujesz getToken/setToken
@@ -53,19 +49,19 @@ export default function App() {
       } finally {
         setCheckingAuth(false);
       }
-    })();
+    })(); */
   }, []);
 
   const handleLogin = (data) => {
     // załóżmy, że data = { user, token }
-    setProfile(data.user);
-    setToken(data.token);
+    // Update global auth context as well
+    setAuth?.(data.user, data.token);
+    
     setCurrentView('dashboard');
   };
 
   const handleLogout = () => {
-    setProfile(null);
-    setToken(null);
+    logout?.();
     setCurrentView('dashboard');
   };
 
@@ -110,7 +106,7 @@ export default function App() {
 
   if (!profile) {
     // Login może mieć przełącznik języka, więc przekazanie setLang ma sens
-    return <Login onLogin={handleLogin} lang={lang} setLang={setLang} />;
+    return <Login lang={lang} setLang={setLang} />;
   }
 
   return (

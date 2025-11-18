@@ -56,7 +56,7 @@ Click **Save**
 
 3. **Add this rule**:
    ```
-   Service Name: Arkuszownia
+Service Name: Synterra
    External Port: 8080
    Internal IP: 192.168.1.XXX (your computer's local IP)
    Internal Port: 8080

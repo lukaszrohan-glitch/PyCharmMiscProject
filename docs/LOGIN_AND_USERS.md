@@ -12,7 +12,7 @@
 - Integracje korzystają z kluczy API (`X-API-Key`).
 
 W razie potrzeby rozszerzenia dokumentu – dopisz zgłoszenie w repo.
-# Arkuszownia SMB – Logowanie, konto administratora i tworzenie użytkowników
+# Synterra - Logowanie, konto administratora i tworzenie użytkowników
 
 Ten plik opisuje w prostych krokach:
 - jakie są dane logowania do konta administratora,

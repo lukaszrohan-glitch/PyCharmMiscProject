@@ -228,7 +228,7 @@ export default function Orders({ lang }) {
                   <td>{order.due_date || '—'}</td>
                   <td>
                     <button className="btn-sm btn-edit" onClick={() => handleEditClick(order)}>{t.edit}</button>
-                    <button className="btn-sm btn-delete" onClick={() => handleDeleteClick(order.order_id)}>{t.delete}</button>
+                    <button className="btn-sm btn-danger" onClick={() => handleDeleteClick(order.order_id)}>{t.delete}</button>
                   </td>
                 </tr>
               ))}

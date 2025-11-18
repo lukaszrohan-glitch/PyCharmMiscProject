@@ -1,4 +1,4 @@
-# Arkuszownia SMB - Quick Start Guide
+# Synterra - Quick Start Guide
 
 ## For Windows Users (5 minutes to production)
 

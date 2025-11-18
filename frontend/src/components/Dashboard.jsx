@@ -10,7 +10,7 @@ export default function Dashboard({ lang, setCurrentView }) {
     <>
       <div className={styles.hero}>
         <h1 className={styles.heroTitle}>
-          {lang === 'pl' ? 'Witamy w Arkuszownia SMB' : 'Welcome to Arkuszownia SMB'}
+          {lang === 'pl' ? 'Witamy w Synterra' : 'Welcome to Synterra'}
         </h1>
         <p className={styles.heroSubtitle}>
           {lang === 'pl'

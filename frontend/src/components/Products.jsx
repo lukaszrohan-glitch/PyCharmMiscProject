@@ -258,7 +258,7 @@ export default function Products({ lang }) {
                   <td>{product.make_or_buy}</td>
                   <td>
                     <button className="btn-sm btn-edit" onClick={() => handleEditClick(product)}>{t.edit}</button>
-                    <button className="btn-sm btn-delete" onClick={() => handleDeleteClick(product.product_id)}>{t.delete}</button>
+                    <button className="btn-sm btn-danger" onClick={() => handleDeleteClick(product.product_id)}>{t.delete}</button>
                   </td>
                 </tr>
               ))}

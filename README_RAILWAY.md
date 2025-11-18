@@ -1,8 +1,8 @@
-# Arkuszownia SMB - Railway.app Deployment
+# Synterra - Railway.app Deployment
 
 **Simple, Direct Deployment to Railway.app**
 
-This document provides step-by-step instructions for deploying Arkuszownia SMB to Railway.app without cloudflared, tunnels, or complex infrastructure.
+This document provides step-by-step instructions for deploying Synterra to Railway.app without cloudflared, tunnels, or complex infrastructure.
 
 ## Quick Commands (Build/Start)
 
@@ -82,7 +82,7 @@ CORS_ORIGINS=https://yourdomain.up.railway.app
 2. Click **New Project**
 3. Select **Deploy from GitHub repo**
 4. Authorize Railway to access your GitHub
-5. Select the Arkuszownia repository
+5. Select the Synterra repository
 6. Railway will detect Python and create a service
 
 ### Step 2: Add PostgreSQL Database
@@ -169,7 +169,7 @@ curl https://<your-app>.up.railway.app/api/healthz
 ### 2. Check Frontend Loads
 
 1. Open `https://<your-app>.up.railway.app` in browser
-2. You should see the Arkuszownia login page
+2. You should see the Synterra login page
 3. Check browser DevTools → Network tab:
    - `index.html` should load
    - `/assets/*` files should load (JS/CSS)

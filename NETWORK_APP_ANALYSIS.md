@@ -191,7 +191,7 @@ proxy: {
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    Arkuszownia SMB                       │
+│                    Synterra                       │
 ├─────────────────────────────────────────────────────────┤
 │                                                          │
 │  Frontend (React + Vite)                                │
@@ -339,3 +339,4 @@ docker-compose up -d --wait
 **Database**: PostgreSQL 15
 **Backend**: FastAPI 0.115.0
 **Frontend**: React 18.2.0
+

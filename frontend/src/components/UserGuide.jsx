@@ -7,7 +7,7 @@ export default function UserGuide() {
   const content = {
     pl: {
       title: 'Przewodnik Użytkownika',
-      intro: 'Witamy w Arkuszownia SMB - kompleksowym systemie zarządzania produkcją. Ten przewodnik pomoże Ci w pełni wykorzystać możliwości aplikacji.',
+      intro: 'Witamy w Synterra - kompleksowym systemie zarządzania produkcją. Ten przewodnik pomoże Ci w pełni wykorzystać możliwości aplikacji.',
       sections: [
         {
           title: '📋 Zarządzanie Zamówieniami',
@@ -179,7 +179,7 @@ export default function UserGuide() {
     },
     en: {
       title: 'User Guide',
-      intro: 'Welcome to Arkuszownia SMB - a comprehensive production management system. This guide will help you fully utilize the application capabilities.',
+      intro: 'Welcome to Synterra - a comprehensive production management system. This guide will help you fully utilize the application capabilities.',
       sections: [
         {
           title: '📋 Order Management',

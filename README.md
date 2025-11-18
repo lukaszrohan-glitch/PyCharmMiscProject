@@ -1,4 +1,4 @@
-# Arkuszownia SMB - Manufacturing Management System
+# Synterra - Manufacturing Management System
 
 Manufacturing and order management system for small and medium businesses.
 
@@ -447,7 +447,7 @@ The codebase automatically detects which database to use based on the `DATABASE_
 
 ## License
 
-Proprietary - Arkuszownia SMB
+Proprietary - Synterra
 
 ## Support
 

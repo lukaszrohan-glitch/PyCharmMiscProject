@@ -1,4 +1,4 @@
-# PowerShell smoke tests for Arkuszownia SMB stack
+# PowerShell smoke tests for Synterra stack
 param(
   [string]$Base = "http://localhost:8080",
   [string]$PublicBase = "",

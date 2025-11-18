@@ -1,4 +1,4 @@
-# Deployment Guide for ArkuszowniaSMB
+# Deployment Guide for Synterra
 
 ## System Requirements
 

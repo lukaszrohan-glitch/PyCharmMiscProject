@@ -1,5 +1,5 @@
 @echo off
-echo Starting ArkuszowniaSMB system...
+echo Starting Synterra system...
 
 REM Check if Docker is running
 docker info > nul 2>&1

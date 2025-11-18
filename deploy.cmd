@@ -8,7 +8,7 @@ echo To view logs in real-time: docker-compose logs -f
 echo.
 pause
 @echo off
-echo Setting up ArkuszowniaSMB deployment...
+echo Setting up Synterra deployment...
 
 REM Check Docker
 docker info > nul 2>&1

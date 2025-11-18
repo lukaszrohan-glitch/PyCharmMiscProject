@@ -482,7 +482,7 @@ export default function Timesheets({ lang }) {
                   </td>
                   <td>
                     <button className="btn-sm btn-edit" onClick={() => handleEditClick(item)}>{t.edit}</button>
-                    <button className="btn-sm btn-delete" onClick={() => handleDeleteClick(item.ts_id)}>{t.delete}</button>
+                    <button className="btn-sm btn-danger" onClick={() => handleDeleteClick(item.ts_id)}>{t.delete}</button>
                     {isAdmin && !Number(item.approved) ? (
                       <button className="btn-sm" onClick={async ()=>{
                         try {

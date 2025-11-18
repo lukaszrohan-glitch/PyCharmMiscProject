@@ -4,7 +4,7 @@ REM This script verifies that all services are running and healthy
 
 echo.
 echo ========================================
-echo Arkuszownia SMB - Deployment Verification
+echo Synterra - Deployment Verification
 echo ========================================
 echo.
 
