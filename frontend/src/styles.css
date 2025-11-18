@@ -1260,7 +1260,7 @@ ul li button:hover::before {
   color: #1f2937;
 }
 .col {
-  background: white;
+ color: #000000;
   color: #1f2937;
 }
 .col h2, .col h3 {
@@ -1649,5 +1649,5 @@ table td,
 .products-container,
 .col,
 .container {
-  color: var(--text-dark);
+  color: #000000;
 }
