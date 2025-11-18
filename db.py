@@ -64,7 +64,7 @@ def _create_pool() -> Any:
     # Test/dev override: force sqlite path regardless of DATABASE_URL
     if os.getenv("FORCE_SQLITE") == "1":
         return None
-    # If DATABASE_URL or PG_* configured, require psycopg2
+    # If DATABASE_URL or PG_* configured, require psycopg2/psycopg
     if DATABASE_URL or os.getenv("PG_HOST") or os.getenv("PG_DB") or os.getenv("PG_USER"):
         dsn = DATABASE_URL
 
@@ -103,7 +103,7 @@ def _get_pool() -> Any:
 
 @contextmanager
 def get_conn() -> Iterator[Any]:
-    """Yield a DB connection. For Postgres returns a psycopg2 connection from pool.
+    """Yield a DB connection. For Postgres returns a psycopg/psycopg2 connection from pool.
     For sqlite fallback returns a sqlite3.Connection object.
     """
     pool = _get_pool()
@@ -154,6 +154,7 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
       nip TEXT,
       address TEXT,
       email TEXT,
+      contact_person TEXT,
       payment_terms_days INTEGER NOT NULL DEFAULT 14,
       active BOOLEAN NOT NULL DEFAULT 1
     );
@@ -171,7 +172,8 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
       order_date DATE NOT NULL DEFAULT CURRENT_DATE,
       customer_id TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'Planned',
-      due_date DATE
+      due_date DATE,
+      contact_person TEXT
     );
     CREATE TABLE IF NOT EXISTS order_lines (
       order_id TEXT,
@@ -197,7 +199,7 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
       operation_no INTEGER,
       hours REAL NOT NULL,
       notes TEXT,
-      approved BOOLEAN NOT NULL DEFAULT 0,
+      approved BOOLEAN NOT NULL DEFAULT FALSE,
       approved_by TEXT,
       approved_at TEXT
     );
@@ -232,7 +234,7 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
       audit_id INTEGER PRIMARY KEY AUTOINCREMENT,
       event_type TEXT NOT NULL,
       event_by TEXT,
-      event_time TEXT,
+      event_time TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       details TEXT
     );
     CREATE TABLE IF NOT EXISTS users (
@@ -443,110 +445,44 @@ def fetch_one(sql: str, params: Optional[Tuple] = None) -> Optional[dict]:
 
 
 def execute(sql: str, params: Optional[Tuple] = None, returning: bool = False):
+    """Execute SQL (INSERT, UPDATE, DELETE).
+    For INSERT with `returning=True`, it will return the ID of the new row (for PG).
+    """
     pool = _get_pool()
     if pool is None:
+        # sqlite path
         with get_conn() as conn:
             cur = conn.cursor()
+            # translate %s placeholders (Postgres style) to ? for sqlite
             sql_exec = sql.replace('%s', '?') if params else sql
-            # SQLite nie wspiera RETURNING w tej formie – ucinamy, jeśli jest
-            sql_exec = sql_exec.split('RETURNING')[0].rstrip() if 'RETURNING' in sql_exec else sql_exec
-            # Convert Decimal parameters to float for sqlite binding
+            # Convert Decimal params to float for sqlite binding
+            bind_params = params
             if params:
                 bind_params = tuple(float(p) if isinstance(p, Decimal) else p for p in params)
-            else:
-                bind_params = ()
-            cur.execute(sql_exec, bind_params)
-            if returning:
-                try:
-                    rows = cur.fetchall()
-                    conn.commit()
-                    if rows:
-                        return [dict(r) for r in rows]
-                except sqlite3.ProgrammingError:
-                    # No result set; fall through to emulate
-                    pass
-                # Emulate common RETURNING patterns used in this app
-                conn.commit()
-                lower = sql.lower()
-                # Determine if last statement changed any rows (0 indicates conflict/no-op)
-                change_count = 0
-                try:
-                    cur2 = conn.cursor()
-                    cur2.execute("SELECT changes()")
-                    change_count = int(cur2.fetchone()[0])
-                except Exception:
-                    pass
-                try:
-                    if "insert into orders" in lower:
-                        if change_count == 0:
-                            return []
-                        row = fetch_one(
-                            "SELECT order_id, customer_id, status, order_date, due_date FROM orders WHERE order_id = ?",
-                            (params[0],)
-                        )
-                        return [row] if row else []
-                    if "insert into order_lines" in lower:
-                        if change_count == 0:
-                            return []
-                        row = fetch_one(
-                            "SELECT order_id, line_no, product_id, qty, unit_price, discount_pct, graphic_id FROM order_lines WHERE order_id = ? AND line_no = ?",
-                            (params[0], params[1])
-                        )
-                        return [row] if row else []
-                    if "insert into timesheets" in lower:
-                        row = fetch_one(
-                            "SELECT ts_id, emp_id, ts_date, order_id, operation_no, hours, notes FROM timesheets ORDER BY ts_id DESC LIMIT 1"
-                        )
-                        return [row] if row else []
-                    if "insert into inventory" in lower:
-                        if change_count == 0:
-                            return []
-                        row = fetch_one(
-                            "SELECT txn_id, txn_date, product_id, qty_change, reason, lot, location FROM inventory WHERE txn_id = ?",
-                            (params[0],)
-                        )
-                        return [row] if row else []
-                    if "update orders set" in lower:
-                        order_id = params[-1]
-                        row = fetch_one(
-                            "SELECT order_id, customer_id, status, order_date, due_date FROM orders WHERE order_id = ?",
-                            (order_id,)
-                        )
-                        return [row] if row else []
-                    if "update products set" in lower and "where product_id" in lower:
-                        product_id = params[-1]
-                        row = fetch_one(
-                            "SELECT product_id, name, unit, std_cost, price, vat_rate FROM products WHERE product_id = ?",
-                            (product_id,)
-                        )
-                        return [row] if row else []
-                    if "update users" in lower and "where user_id" in lower:
-                        user_id = params[-1]
-                        return [{"user_id": user_id}]
-                except Exception:
-                    return []
+            cur.execute(sql_exec, bind_params or ())
             conn.commit()
+            if returning:
+                return cur.lastrowid
             return None
     else:
+        # Postgres path
         with get_conn() as conn:
             if PSYCOPG3_AVAILABLE:
-                with conn.cursor(row_factory=dict_row) as cur:  # type: ignore
+                with conn.cursor() as cur:  # type: ignore
                     cur.execute(sql, params or ())
                     if returning:
-                        rows = cur.fetchall()
-                        conn.commit()
-                        return rows
-                    conn.commit()
+                        # Assuming the table has a RETURNING id clause
+                        res = cur.fetchone()
+                        return res[0] if res else None
                     return None
             else:
                 from psycopg2.extras import RealDictCursor  # type: ignore
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:  # type: ignore
                     cur.execute(sql, params or ())
                     if returning:
-                        rows = cur.fetchall()
-                        conn.commit()
-                        return rows
-                    conn.commit()
+                        # Assuming the table has a RETURNING id clause
+                        res = cur.fetchone()
+                        return res['id'] if res else None
                     return None
 
 

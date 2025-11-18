@@ -69,7 +69,12 @@ def order_get(order_id: str):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.post("/api/orders", response_model=Order, status_code=201, summary="Create order")
+@router.post(
+    "/api/orders",
+    response_model=Order,
+    status_code=201,
+    summary="Create order",
+)
 def create_order(payload: OrderCreate, _ok: bool = Depends(check_api_key)):
     try:
         rows = execute(
@@ -145,17 +150,19 @@ def update_order(order_id: str, payload: OrderUpdate, _ok: bool = Depends(check_
         if payload.due_date is not None:
             updates.append("due_date = %s")
             params.append(payload.due_date)
-        if getattr(payload, 'contact_person', None) is not None:
+        if getattr(payload, "contact_person", None) is not None:
             updates.append("contact_person = %s")
             params.append(payload.contact_person)
         if not updates:
             raise HTTPException(status_code=400, detail="No fields to update")
+
         params.append(order_id)
         sql = (
             f"UPDATE orders SET {', '.join(updates)} "
             "WHERE order_id = %s "
             "RETURNING order_id, customer_id, status, order_date, due_date, contact_person"
         )
+
         rows = execute(sql, params, returning=True)
         if not rows:
             raise HTTPException(status_code=404, detail="Order not found")
@@ -171,5 +178,31 @@ def delete_order(order_id: str, _ok: bool = Depends(check_api_key)):
     try:
         execute("DELETE FROM orders WHERE order_id = %s", (order_id,))
         return {"deleted": True}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+# ------------- TUTAJ DODANY ENDPOINT MIGRACYJNY -------------
+
+
+@router.post(
+    "/internal/migrate-contact-person",
+    summary="TEMP: add contact_person columns",
+)
+def migrate_contact_person(_ok: bool = Depends(check_api_key)):
+    """
+    Jednorazowa migracja: dodaje kolumnę contact_person
+    do tables customers i orders (jeśli jej nie ma).
+    """
+    try:
+        execute(
+            "ALTER TABLE customers "
+            "ADD COLUMN IF NOT EXISTS contact_person text;"
+        )
+        execute(
+            "ALTER TABLE orders "
+            "ADD COLUMN IF NOT EXISTS contact_person text;"
+        )
+        return {"ok": True}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
