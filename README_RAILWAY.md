@@ -19,6 +19,19 @@ This document provides step-by-step instructions for deploying Synterra to Railw
   web: alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
   ```
 
+### Important: Start Command for Dockerfile builds
+
+If your Railway service is set to Build with the Dockerfile (recommended in this repo):
+
+- Do not set an npm-based Start Command (e.g., `npm run preview` or `npm run dev`). The final image does not include Node; the SPA is built during the Node stage and then served by FastAPI.
+- Leave the Start Command empty so Railway uses the Dockerfile `CMD` (which runs `bash /app/entrypoint.sh`), or explicitly set it to:
+  - `bash /app/entrypoint.sh`
+
+If you instead build with Nixpacks (no Dockerfile):
+
+- Build Command: `pip install -r requirements.txt && cd frontend && npm ci && npm run build`
+- Start Command: `alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}`
+
 ### Windows (PowerShell) equivalents
 
 If you’re running locally in PowerShell, use these commands from the repo root (they avoid Bash `&&` and `${PORT:-8000}` syntax):

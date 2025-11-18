@@ -9,8 +9,7 @@ export default function Login({ lang, setLang }) {
   const [error, setError] = useState('')
 
   const t = lang === 'pl' ? {
-    appName: 'Synterra',
-    tagline: 'System Zarzadzania Produkcja',
+    tagline: 'System Zarządzania Produkcją',
     login: 'Zaloguj się',
     email: 'Email',
     password: 'Hasło',
@@ -19,7 +18,6 @@ export default function Login({ lang, setLang }) {
     invalidCredentials: 'Błędny email lub hasło',
     error: 'Błąd logowania'
   } : {
-    appName: 'Synterra',
     tagline: 'Manufacturing Management System',
     login: 'Sign In',
     email: 'Email',
@@ -33,10 +31,8 @@ export default function Login({ lang, setLang }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (loading) return
-
     setError('')
     setLoading(true)
-
     try {
       const { user } = await loginWithCredentials(email, password)
       if (!user) setError(t.invalidCredentials)
@@ -49,207 +45,51 @@ export default function Login({ lang, setLang }) {
   }
 
   return (
-    <div className="login-container">
-      <div className="login-box">
-        <div className="logo-section">
-          <h1>{t.appName}</h1>
-          <p>{t.tagline}</p>
+    <div className="login-root">
+      <div className="login-card">
+        <div className="login-header">
+          <div className="login-brand">Synterra</div>
+          <div className="login-tagline">{t.tagline}</div>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <h2>{t.login}</h2>
+        {error && <div className="login-error" role="alert">{error}</div>}
 
-          {error && <div className="error-message">{error}</div>}
+        <form onSubmit={handleSubmit} className="login-form">
+          <label htmlFor="email" className="login-label">{t.email}</label>
+          <input id="email" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="admin@arkuszowniasmb.pl" required disabled={loading} className="login-input" />
 
-          <div className="form-group">
-            <label htmlFor="email">{t.email}</label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="admin@arkuszowniasmb.pl"
-              required
-              disabled={loading}
-            />
-          </div>
+          <label htmlFor="password" className="login-label">{t.password}</label>
+          <input id="password" type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder={t.password} required disabled={loading} className="login-input" />
 
-          <div className="form-group">
-            <label htmlFor="password">{t.password}</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder={t.password}
-              required
-              disabled={loading}
-            />
-          </div>
-
-          <button type="submit" disabled={loading || !email || !password}>
-            {loading ? t.loading : t.signIn}
-          </button>
+          <button type="submit" className="login-submit" disabled={loading || !email || !password}>{loading ? t.loading : t.signIn}</button>
         </form>
 
-        <div className="lang-switch">
-          <button
-            className={lang === 'pl' ? 'lang-active' : 'lang-btn'}
-            onClick={() => setLang('pl')}
-          >
-            PL
-          </button>
-          <button
-            className={lang === 'en' ? 'lang-active' : 'lang-btn'}
-            onClick={() => setLang('en')}
-          >
-            EN
-          </button>
+        <div className="login-lang">
+          <button className={lang==='pl' ? 'login-lang-active' : 'login-lang-btn'} onClick={()=>setLang('pl')}>PL</button>
+          <button className={lang==='en' ? 'login-lang-active' : 'login-lang-btn'} onClick={()=>setLang('en')}>EN</button>
         </div>
       </div>
 
       <style jsx>{`
-        .login-container {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          min-height: 100vh;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-        }
-
-        .login-box {
-          background: white;
-          border-radius: 8px;
-          padding: 2rem;
-          width: 100%;
-          max-width: 400px;
-          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-        }
-
-        .logo-section {
-          text-align: center;
-          margin-bottom: 2rem;
-        }
-
-        .logo-section h1 {
-          margin: 0;
-          color: #333;
-          font-size: 1.5rem;
-        }
-
-        .logo-section p {
-          margin: 0.5rem 0 0;
-          color: #666;
-          font-size: 0.875rem;
-        }
-
-        form {
-          margin-bottom: 1.5rem;
-        }
-
-        form h2 {
-          margin: 0 0 1.5rem;
-          color: #333;
-          font-size: 1.25rem;
-        }
-
-        .error-message {
-          background: #fee;
-          color: #c33;
-          padding: 0.75rem;
-          border-radius: 4px;
-          margin-bottom: 1rem;
-          font-size: 0.875rem;
-        }
-
-        .form-group {
-          margin-bottom: 1rem;
-        }
-
-        .form-group label {
-          display: block;
-          margin-bottom: 0.5rem;
-          color: #333;
-          font-size: 0.875rem;
-          font-weight: 500;
-        }
-
-        .form-group input {
-          width: 100%;
-          padding: 0.75rem;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          font-size: 1rem;
-          box-sizing: border-box;
-          transition: border-color 0.3s;
-        }
-
-        .form-group input:focus {
-          outline: none;
-          border-color: #667eea;
-          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .form-group input:disabled {
-          background: #f5f5f5;
-          cursor: not-allowed;
-        }
-
-        button[type="submit"] {
-          width: 100%;
-          padding: 0.75rem;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-          border: none;
-          border-radius: 4px;
-          font-size: 1rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: opacity 0.3s;
-        }
-
-        button[type="submit"]:hover:not(:disabled) {
-          opacity: 0.9;
-        }
-
-        button[type="submit"]:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
-        }
-
-        .lang-switch {
-          display: flex;
-          gap: 0.5rem;
-          justify-content: center;
-        }
-
-        .lang-btn, .lang-active {
-          padding: 0.5rem 1rem;
-          border: 1px solid #ddd;
-          background: white;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 0.875rem;
-          transition: all 0.3s;
-        }
-
-        .lang-btn:hover {
-          border-color: #667eea;
-          color: #667eea;
-        }
-
-        .lang-active {
-          background: #667eea;
-          color: white;
-          border-color: #667eea;
-        }
-
-        @media (max-width: 640px) {
-          .login-box {
-            margin: 1rem;
-          }
-        }
+        .login-root { min-height: 100vh; display: grid; place-items: center; background:#f5f5f7; color:#1d1d1f; font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',Roboto,Helvetica,Arial,sans-serif; }
+        .login-card { width:100%; max-width:420px; background:#fff; border:1px solid #d2d2d7; border-radius:14px; padding:28px; box-shadow:0 10px 30px rgba(0,0,0,.06); }
+        .login-header{ margin-bottom:20px; text-align:center; }
+        .login-brand{ font-size:28px; font-weight:700; letter-spacing:-.02em; }
+        .login-tagline{ margin-top:6px; color:#6e6e73; font-size:13px; }
+        .login-error{ background:#fde7e7; color:#b62324; border:1px solid #e0b3b2; padding:10px 12px; border-radius:8px; margin-bottom:12px; }
+        .login-form{ display:grid; gap:10px; }
+        .login-label{ font-size:12px; color:#3a3a3c; }
+        .login-input{ height:42px; padding:0 12px; border-radius:10px; border:1px solid #d2d2d7; background:#fff; color:#1d1d1f; transition:box-shadow .2s,border-color .2s; }
+        .login-input:focus{ outline:none; border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.2); }
+        .login-input:disabled{ background:#f5f5f7; color:#6e6e73; }
+        .login-submit{ height:44px; border-radius:12px; border:1px solid #0071e3; background:#0071e3; color:#fff; font-weight:600; cursor:pointer; transition:background .2s, transform .02s; }
+        .login-submit:hover:not(:disabled){ background:#0077ed; }
+        .login-submit:active:not(:disabled){ transform: translateY(1px); }
+        .login-submit:disabled{ opacity:.6; cursor:not-allowed; }
+        .login-lang{ display:flex; gap:8px; justify-content:center; margin-top:16px; }
+        .login-lang-btn,.login-lang-active{ padding:6px 12px; border-radius:10px; border:1px solid #d2d2d7; background:#fff; color:#1d1d1f; font-size:12px; }
+        .login-lang-active{ background:#1d1d1f; color:#fff; border-color:#1d1d1f; }
+        @media (prefers-color-scheme: dark){ .login-root{ background:#000; color:#f5f5f7; } .login-card{ background:#1c1c1e; border-color:#2c2c2e; } .login-label{ color:#9e9ea2; } .login-input{ background:#2c2c2e; border-color:#3a3a3c; color:#f5f5f7; } .login-input:disabled{ background:#242426; color:#9e9ea2; } .login-submit{ border-color:#0a84ff; background:#0a84ff; } .login-lang-btn{ background:#2c2c2e; color:#f5f5f7; border-color:#3a3a3c; } .login-lang-active{ background:#f5f5f7; color:#000; border-color:#f5f5f7; } }
       `}</style>
     </div>
   )

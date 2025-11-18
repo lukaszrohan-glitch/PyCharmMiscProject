@@ -14,15 +14,16 @@
   --brand-accent: #EC4899; /* A complementary pink for highlights */
 
   /* Neutral Palette (Grays) */
-  --bg-primary: #F9FAFB;      /* Lightest gray for main background */
-  --bg-secondary: #FFFFFF;    /* White for cards, modals */
-  --bg-tertiary: #F3F4F6;     /* Slightly darker gray for hover states, borders */
+  /* Apple-like neutrals */
+  --bg-primary: #f5f5f7;      /* Page background */
+  --bg-secondary: #ffffff;    /* Surfaces */
+  --bg-tertiary: #f2f2f7;     /* Hover / subtle blocks */
 
-  --text-primary: #111827;    /* Darkest gray for primary text */
-  --text-secondary: #6B7280;  /* Lighter gray for secondary text, placeholders */
+  --text-primary: #1d1d1f;    /* Primary text */
+  --text-secondary: #6e6e73;  /* Secondary text */
   --text-on-brand: #FFFFFF;   /* White text for use on primary brand color backgrounds */
 
-  --border-primary: #E5E7EB;  /* Standard border color */
+  --border-primary: #d2d2d7;  /* Subtle border color */
   --border-focus: #4F46E5;    /* Border color for focused elements */
 
   /* Status Colors */
@@ -48,24 +49,23 @@
 
 /* Base theme variables */
 :root {
-  --primary: #2563eb;
-  --primary-dark: #1d4ed8;
-  --primary-light: #60a5fa;
-  --success: #22c55e;
-  --success-dark: #16a34a;
-  --danger: #ef4444;
-  --danger-dark: #dc2626;
-  --warning: #f59e0b;
-  --warning-dark: #d97706;
-  --text: #111827;
-  /* Darken secondary text for better contrast on white backgrounds */
-  --text-secondary: #374151;
-  --background: #ffffff;
-  --surface: #f3f4f6;
-  --surface-hover: #e5e7eb;
-  --border: #e5e7eb;
-  --shadow: rgba(0, 0, 0, 0.1);
-  --focus-ring: rgba(37, 99, 235, 0.5);
+  --primary: #0071e3; /* Apple blue */
+  --primary-dark: #0077ed;
+  --primary-light: #4ea3ff;
+  --success: #34c759;
+  --success-dark: #28a745;
+  --danger: #ff3b30;
+  --danger-dark: #d70015;
+  --warning: #ff9f0a;
+  --warning-dark: #d98200;
+  --text: var(--text-primary);
+  --text-secondary: var(--text-secondary);
+  --background: var(--bg-primary);
+  --surface: var(--bg-secondary);
+  --surface-hover: var(--bg-tertiary);
+  --border: var(--border-primary);
+  --shadow: rgba(0, 0, 0, 0.08);
+  --focus-ring: rgba(0, 113, 227, 0.35);
 }
 
 /* Dark theme */

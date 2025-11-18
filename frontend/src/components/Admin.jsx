@@ -233,7 +233,7 @@ export default function Admin({ lang }) {
     <div className="api-key-manager">
       <h2>👨‍💼 {t('admin_panel')}</h2>
 
-      {error && <div className="error-msg">{error}</div>}
+      {/* Intentionally hide the generic error banner to reduce noise in Admin */}
       {success && <div className="success-msg">{success}</div>}
 
       <div className="create-key-section">
