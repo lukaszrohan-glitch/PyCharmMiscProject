@@ -61,13 +61,20 @@ from urllib.parse import urlparse
 
 database_url = os.environ.get('DATABASE_URL', '')
 if not database_url:
-    print("[DB Check] No DATABASE_URL", file=sys.stderr)
+    print("[DB Check] No DATABASE_URL")
     sys.exit(0)
 
+HAS_PSYCOPG3 = False
+HAS_PSYCOPG2 = False
+try:
+    import psycopg
+    HAS_PSYCOPG3 = True
+except Exception:
+    HAS_PSYCOPG3 = False
 try:
     import psycopg2
     HAS_PSYCOPG2 = True
-except ImportError:
+except Exception:
     HAS_PSYCOPG2 = False
 
 try:
@@ -75,9 +82,30 @@ try:
     host = parsed.hostname or 'localhost'
     port = parsed.port or 5432
 
-    if not HAS_PSYCOPG2:
-        # Fallback: zwykły socket check
-        print("[DB Check] psycopg2 not available, doing socket check only", file=sys.stderr)
+    if HAS_PSYCOPG3:
+        # Prefer psycopg v3 if installed (matches app runtime)
+        print(f"[DB Check] Using psycopg3 to connect {host}:{port}/{parsed.path.lstrip('/')} as {parsed.username or 'postgres'}")
+        conn = psycopg.connect(database_url, connect_timeout=10)  # type: ignore[name-defined]
+        conn.close()
+        print("[DB Check] psycopg3 connection successful")
+        sys.exit(0)
+    elif HAS_PSYCOPG2:
+        print(f"[DB Check] Using psycopg2 to connect {host}:{port}/{parsed.path.lstrip('/')} as {parsed.username or 'postgres'}")
+        conn = psycopg2.connect(  # type: ignore[name-defined]
+            host=host,
+            port=port,
+            user=parsed.username or 'postgres',
+            password=parsed.password or '',
+            database=parsed.path.lstrip('/') or 'postgres',
+            connect_timeout=10,
+            sslmode='allow'
+        )
+        conn.close()
+        print("[DB Check] psycopg2 connection successful")
+        sys.exit(0)
+    else:
+        # Fallback: socket-only reachability check (info-level)
+        print("[DB Check] psycopg/psycopg2 not available, doing socket check only")
         import socket
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.settimeout(3)
@@ -106,10 +134,11 @@ try:
 
 except Exception as e:
     msg = str(e)
-    # Typowe błędy auth/nazwy bazy – akceptujemy, aplikacja wystartuje
+    # Typical auth/database name errors are acceptable for readiness of TCP path
     if any(x in msg for x in ("FATAL", "does not exist", "password authentication")):
-        print(f"[DB Check] Authentication/DB error (acceptable): {msg}", file=sys.stderr)
+        print(f"[DB Check] Authentication/DB error (acceptable): {msg}")
         sys.exit(0)
+    # Real connectivity error: keep on stderr to flag failure
     print(f"[DB Check] Connection error: {type(e).__name__}: {msg}", file=sys.stderr)
     sys.exit(1)
 PYEOF
