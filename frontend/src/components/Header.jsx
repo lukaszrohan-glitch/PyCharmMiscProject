@@ -129,6 +129,9 @@ export default function Header({ lang, setLang, currentView, setCurrentView, pro
                   <span className={styles.avatar}>{profile.name?.charAt(0) || profile.email?.charAt(0) || 'U'}</span>
                   <span className={styles.profileName}>{profile.name || profile.email}</span>
                 </button>
+                <button className={styles.logoutBtn} onClick={onLogout} title={t.logout} aria-label={t.logout}>
+                  {t.logout}
+                </button>
               </div>
             )}
           </div>

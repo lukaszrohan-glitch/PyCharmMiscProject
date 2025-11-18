@@ -1420,12 +1420,14 @@ input::placeholder {
 
 .btn {
   padding: 10px 20px;
-  border: none;
+  border: 1px solid var(--border-primary);
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
   transition: all 0.3s ease;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .btn-primary {

@@ -32,6 +32,16 @@ export default function Dashboard({ lang, setCurrentView }) {
           </p>
         </div>
 
+        <div className={styles.card} onClick={() => handleCardClick('clients')}>
+          <div className={styles.cardIcon}>👥</div>
+          <h3 className={styles.cardTitle}>
+            {lang === 'pl' ? 'Klienci' : 'Clients'}
+          </h3>
+          <p className={styles.cardText}>
+            {lang === 'pl' ? 'Zarządzaj klientami' : 'Manage customers'}
+          </p>
+        </div>
+
         <div className={styles.card} onClick={() => handleCardClick('inventory')}>
           <div className={styles.cardIcon}>📦</div>
           <h3 className={styles.cardTitle}>
@@ -65,6 +75,16 @@ export default function Dashboard({ lang, setCurrentView }) {
             {lang === 'pl'
               ? 'Analizuj wyniki działalności'
               : 'Analyze business results'}
+          </p>
+        </div>
+
+        <div className={styles.card} onClick={() => handleCardClick('financials')}>
+          <div className={styles.cardIcon}>💹</div>
+          <h3 className={styles.cardTitle}>
+            {lang === 'pl' ? 'Finanse' : 'Financials'}
+          </h3>
+          <p className={styles.cardText}>
+            {lang === 'pl' ? 'Przegląd finansów zamówień' : 'Order financial overview'}
           </p>
         </div>
       </div>

@@ -248,3 +248,23 @@ export default function Orders({ lang }) {
     </div>
   );
 }
+
+function InlineClientEditor({ lang, customer, onSaved }){
+  const [form, setForm] = React.useState({ name: customer.name||'', address: customer.address||'', email: customer.email||'', contact_person: customer.contact_person||'' })
+  const [saving, setSaving] = React.useState(false)
+  async function save(){
+    setSaving(true)
+    try { await api.updateCustomer(customer.customer_id, form); onSaved && onSaved() } catch(e) { alert((lang==='pl'?'Błąd: ':'Error: ')+e.message) } finally { setSaving(false) }
+  }
+  return (
+    <div style={{display:'grid', gap:6}}>
+      <label>{lang==='pl'?'Nazwa':'Name'}<input value={form.name} onChange={e=>setForm({...form, name:e.target.value})} /></label>
+      <label>{lang==='pl'?'Adres':'Address'}<input value={form.address} onChange={e=>setForm({...form, address:e.target.value})} /></label>
+      <label>Email<input type="email" value={form.email} onChange={e=>setForm({...form, email:e.target.value})} /></label>
+      <label>{lang==='pl'?'Osoba kontaktowa':'Point of contact'}<input value={form.contact_person} onChange={e=>setForm({...form, contact_person:e.target.value})} /></label>
+      <div>
+        <button type="button" className="btn btn-sm" disabled={saving} onClick={save}>{lang==='pl'?'Zapisz':'Save'}</button>
+      </div>
+    </div>
+  )
+}

@@ -44,7 +44,8 @@ CREATE TABLE IF NOT EXISTS orders (
   order_date date NOT NULL DEFAULT CURRENT_DATE,
   customer_id text NOT NULL REFERENCES customers(customer_id),
   status text NOT NULL DEFAULT 'Planned',
-  due_date date
+  due_date date,
+  contact_person text
 );
 
 CREATE TABLE IF NOT EXISTS order_lines (
@@ -148,6 +149,7 @@ CREATE TABLE IF NOT EXISTS subscription_plans (
 );
 
 -- minimal seed
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS contact_person text;
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS contact_person text;
 INSERT INTO customers(customer_id, name, nip, address, email, contact_person) VALUES ('CUST-ALFA', 'Alfa Sp. z o.o.', '1234567890', 'Warszawa', 'biuro@alfa.pl', 'Jan Kowalski') ON CONFLICT DO NOTHING;
 INSERT INTO products(product_id, name, std_cost, price) VALUES ('P-100', 'Gadzet A', 10, 30), ('P-101', 'Komponent X', 2, 5) ON CONFLICT DO NOTHING;

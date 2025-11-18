@@ -35,6 +35,7 @@ class Order(BaseModel):
     status: OrderStatus
     order_date: Optional[date] = None
     due_date: Optional[date] = None
+    contact_person: Optional[str] = None
 
 
 class Finance(BaseModel):
@@ -57,6 +58,7 @@ class OrderCreate(BaseModel):
     customer_id: str = Field(..., min_length=1)
     status: OrderStatus = OrderStatus.New
     due_date: Optional[date] = None
+    contact_person: Optional[str] = None
 
 
 class OrderUpdate(BaseModel):
@@ -66,6 +68,7 @@ class OrderUpdate(BaseModel):
     customer_id: Optional[str] = None
     status: Optional[OrderStatus] = None
     due_date: Optional[date] = None
+    contact_person: Optional[str] = None
 
 
 class OrderLineCreate(BaseModel):

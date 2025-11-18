@@ -3,7 +3,7 @@
 
 # READS
 SQL_ORDERS = """
-SELECT order_id, customer_id, status, due_date, order_date
+SELECT order_id, customer_id, status, due_date, order_date, contact_person
 FROM orders
 ORDER BY order_date DESC, order_id;
 """
@@ -40,10 +40,10 @@ ORDER BY customer_id;
 
 # WRITES with proper constraints
 SQL_INSERT_ORDER = """
-INSERT INTO orders (order_id, order_date, customer_id, status, due_date)
-VALUES (%s, CURRENT_DATE, %s, %s, %s)
+INSERT INTO orders (order_id, order_date, customer_id, status, due_date, contact_person)
+VALUES (%s, CURRENT_DATE, %s, %s, %s, %s)
 ON CONFLICT (order_id) DO NOTHING
-RETURNING order_id, customer_id, status, order_date, due_date;
+RETURNING order_id, customer_id, status, order_date, due_date, contact_person;
 """
 
 SQL_INSERT_ORDER_LINE = """

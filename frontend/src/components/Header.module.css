@@ -184,16 +184,7 @@
 }
 
 /* Navigation Menu */
-.navMenu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-primary);
-  box-shadow: var(--shadow-md);
-  animation: slideDown 0.2s ease;
-}
+.navMenu { position:absolute; top: calc(100% + 6px); left:8px; background: var(--bg-secondary); border:1px solid var(--border-primary); border-radius:12px; min-width:220px; box-shadow: 0 10px 24px rgba(0,0,0,.12); animation: slideDown .2s ease; }
 
 @keyframes slideDown {
   from {
@@ -206,36 +197,11 @@
   }
 }
 
-.navList {
-  list-style: none;
-  margin: 0;
-  padding: 0.5rem;
-  max-width: 1400px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 0.5rem;
-}
+.navList { list-style:none; margin:0; padding:.25rem; display:block; }
 
-.navItem,
-.navItemActive {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.9375rem;
-  font-weight: 500;
-  color: var(--text-primary);
-  text-align: left;
-  transition: all 0.15s;
-}
+.navItem, .navItemActive { width:100%; display:flex; align-items:center; gap:.5rem; padding:.5rem .75rem; background:transparent; border:0; border-radius:8px; cursor:pointer; font-size:.9375rem; font-weight:500; color:var(--text-primary); text-align:left; transition: all .15s; }
 
-.navItemActive { color: var(--brand-primary); border-color: transparent; font-weight: 600; }
+.navItemActive { color: var(--brand-primary); font-weight: 600; }
 
 .navItem:hover { background: transparent; text-decoration: underline; }
 
@@ -243,12 +209,10 @@
   font-size: 1.25rem;
 }
 
-.navDivider {
-  grid-column: 1 / -1;
-  height: 1px;
-  background: var(--border-primary);
-  margin: 0.5rem 0;
-}
+.navDivider { height:1px; background: var(--border-primary); margin:.25rem 0; }
+
+.logoutBtn { background: transparent; border:1px solid var(--border-primary); color: var(--text-primary); padding:6px 10px; border-radius:8px; cursor:pointer; margin-left:.5rem; }
+.logoutBtn:hover { background: var(--surface-hover); }
 
 /* Responsive */
 @media (max-width: 768px) {

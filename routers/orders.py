@@ -58,7 +58,7 @@ def orders_list(
 def order_get(order_id: str):
     try:
         row = fetch_one(
-            "SELECT order_id, customer_id, status, order_date, due_date "
+            "SELECT order_id, customer_id, status, order_date, due_date, contact_person "
             "FROM orders WHERE order_id = %s",
             (order_id,),
         )
@@ -81,6 +81,7 @@ def create_order(payload: OrderCreate, _ok: bool = Depends(check_api_key)):
                 if hasattr(payload.status, "value")
                 else payload.status,
                 payload.due_date,
+                payload.contact_person,
             ),
             returning=True,
         )
@@ -144,13 +145,16 @@ def update_order(order_id: str, payload: OrderUpdate, _ok: bool = Depends(check_
         if payload.due_date is not None:
             updates.append("due_date = %s")
             params.append(payload.due_date)
+        if getattr(payload, 'contact_person', None) is not None:
+            updates.append("contact_person = %s")
+            params.append(payload.contact_person)
         if not updates:
             raise HTTPException(status_code=400, detail="No fields to update")
         params.append(order_id)
         sql = (
             f"UPDATE orders SET {', '.join(updates)} "
             "WHERE order_id = %s "
-            "RETURNING order_id, customer_id, status, order_date, due_date"
+            "RETURNING order_id, customer_id, status, order_date, due_date, contact_person"
         )
         rows = execute(sql, params, returning=True)
         if not rows:
