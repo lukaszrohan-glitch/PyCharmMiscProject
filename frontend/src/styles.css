@@ -1471,6 +1471,17 @@ input::placeholder {
   color: var(--text-on-brand);
 }
 
+/* Ensure destructive buttons are always visible and readable */
+.btn.btn-danger, .btn-sm.btn-danger {
+  background: #fff !important;
+  color: var(--status-error) !important;
+  border-color: var(--status-error) !important;
+}
+.btn.btn-danger:hover, .btn-sm.btn-danger:hover {
+  background: var(--status-error) !important;
+  color: #fff !important;
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;
