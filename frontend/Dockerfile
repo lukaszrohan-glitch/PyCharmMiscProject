@@ -1,14 +1,19 @@
 # Dockerfile for SMB Tool (FastAPI + React SPA)
-# Node.js build stage for frontend
+
+# -------------------------
+# 1. Node.js build stage for frontend
+# -------------------------
 FROM node:20-alpine AS frontend-builder
 
 WORKDIR /frontend
 COPY frontend/package*.json ./
 RUN npm ci
-COPY frontend . 
+COPY frontend .
 RUN npm run build
 
-# Python builder stage
+# -------------------------
+# 2. Python builder stage (venv + deps)
+# -------------------------
 FROM python:3.11-slim AS python-builder
 
 # Set environment variables
@@ -17,7 +22,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Install system dependencies
+# Install system dependencies for building wheels
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         gcc \
@@ -33,7 +38,9 @@ ENV PATH="/opt/venv/bin:$PATH"
 COPY requirements.txt .
 RUN pip install -r requirements.txt && pip check
 
-# Final stage
+# -------------------------
+# 3. Final runtime image
+# -------------------------
 FROM python:3.11-slim
 
 # Copy virtual environment from python-builder
@@ -71,7 +78,7 @@ RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8000}/healthz || exit 1
 
-# Expose port (lokalnie – Railway i tak nadpisuje PORT)
+# Expose port (dla lokalnego dev; Railway i tak nadpisuje PORT)
 EXPOSE 8000
 
 # Environment variables

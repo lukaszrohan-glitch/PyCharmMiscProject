@@ -1,13 +1,12 @@
+node_modules
+dist
+dist-lib
 .git
 .gitignore
-*.pyc
-__pycache__/
-logs/
-.db.sqlite
-_dev_db.sqlite
-frontend/node_modules/
-frontend/.env
-.env
 *.log
-cloudflared.log
+npm-debug.log*
+.DS_Store
+coverage
+.vscode
+.idea
 

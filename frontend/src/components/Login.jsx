@@ -96,9 +96,8 @@ export default function Login({ lang, setLang }) {
         .login-lang{ display:flex; gap:8px; justify-content:center; margin-top:16px; }
         .login-lang-btn,.login-lang-active{ padding:6px 12px; border-radius:10px; border:1px solid #d2d2d7; background:#fff; color:#1d1d1f; font-size:12px; }
         .login-lang-active{ background:#1d1d1f; color:#fff; border-color:#1d1d1f; }
-        /* dark-mode removed */ .login-card{ background:#1c1c1e; border-color:#2c2c2e; } .login-label{ color:#9e9ea2; } .login-input{ background:#2c2c2e; border-color:#3a3a3c; color:#f5f5f7; } .login-input:disabled{ background:#242426; color:#9e9ea2; } .login-submit{ border-color:#0a84ff; background:#0a84ff; } .login-lang-btn{ background:#2c2c2e; color:#f5f5f7; border-color:#3a3a3c; } .login-lang-active{ background:#f5f5f7; color:#000; border-color:#f5f5f7; } }
+        @media (prefers-color-scheme: dark){ .login-root{ background:#000; color:#f5f5f7; } .login-card{ background:#1c1c1e; border-color:#2c2c2e; } .login-label{ color:#9e9ea2; } .login-input{ background:#2c2c2e; border-color:#3a3a3c; color:#f5f5f7; } .login-input:disabled{ background:#242426; color:#9e9ea2; } .login-submit{ border-color:#0a84ff; background:#0a84ff; } .login-lang-btn{ background:#2c2c2e; color:#f5f5f7; border-color:#3a3a3c; } .login-lang-active{ background:#f5f5f7; color:#000; border-color:#f5f5f7; } }
       `}</style>
     </div>
   )
 }
-

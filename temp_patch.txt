@@ -1,0 +1,20 @@
+*** Begin Patch
+*** Add File: frontend/src/components/Breadcrumbs.jsx
++import React from 'react'
++
++export default function Breadcrumbs({ items = [] }){
++  return (
++    <nav aria-label="Breadcrumb" style={{marginBottom:8}}>
++      <ol style={{listStyle:'none', display:'flex', gap:6, padding:0, margin:0, color:'#6e6e73'}}>
++        {items.map((it, i) => (
++          <li key={i} style={{display:'flex', alignItems:'center', gap:6}}>
++            <span style={{fontWeight: i === items.length-1 ? 700 : 500, color: i===items.length-1 ? 'var(--text)' : 'var(--text-secondary)'}}>{it}</span>
++            {i < items.length-1 && <span aria-hidden="true">/</span>}
++          </li>
++        ))}
++      </ol>
++    </nav>
++  )
++}
++
+*** End Patch

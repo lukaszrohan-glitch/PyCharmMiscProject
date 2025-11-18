@@ -7,9 +7,25 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null)
   const [checking, setChecking] = useState(true)
 
-  // No auto-login: start unauthenticated (explicit login required)
+  // Startup: check token and fetch profile
   useEffect(() => {
-    setChecking(false)
+    const token = api.getToken()
+    if (!token) {
+      setChecking(false)
+      return
+    }
+    (async () => {
+      try {
+        const me = await api.getProfile()
+        // Don't clear token on transient errors; only set profile if available
+        setProfile(me || null)
+      } catch (e) {
+        // Keep token; backend may be unreachable temporarily
+        console.warn('Auth bootstrap: profile unavailable, keeping token')
+      } finally {
+        setChecking(false)
+      }
+    })()
   }, [])
 
   const loginWithCredentials = async (email, password, persistLocal=false) => {

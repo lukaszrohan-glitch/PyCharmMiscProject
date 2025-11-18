@@ -1,0 +1,12 @@
+
+# ... existing code
+from sqlalchemy import Column, String
+# ... existing code
+
+class Customer(Base):
+    # ... existing columns
+    contact_person = Column(String)
+
+class Order(Base):
+    # ... existing columns
+    contact_person = Column(String)

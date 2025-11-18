@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as api from '../services/api';
 import Calendar from './Calendar';
-import Breadcrumbs from './Breadcrumbs';
 
 export default function Timesheets({ lang }) {
   const [timesheets, setTimesheets] = useState([]);
@@ -218,21 +217,6 @@ export default function Timesheets({ lang }) {
 
   return (
     <div className="timesheets-container">
-      <Breadcrumbs items={[lang==='pl'?'Strona główna':'Home', t.title]} />
-      <div className="toolbar" style={{display:'flex', alignItems:'center', gap:8, marginBottom:8, borderBottom:'1px solid var(--border-primary)', paddingBottom:8}}>
-        <label style={{display:'inline-flex', alignItems:'center', gap:6}}>
-          {t.employee}:
-          <select value={filterEmpId} onChange={e=> setFilterEmpId(e.target.value)}>
-            <option value="">{lang==='pl'?'Wszyscy':'All'}</option>
-            {employees.map(e => <option key={e.emp_id} value={e.emp_id}>{e.name}</option>)}
-          </select>
-        </label>
-        <label style={{display:'inline-flex', alignItems:'center', gap:6}}>
-          <input type="checkbox" checked={approvedOnly} onChange={e=> setApprovedOnly(e.target.checked)} />
-          {t.approvedOnly}
-        </label>
-        <button className="btn btn-sm" onClick={()=>{ loadSummary(); loadWeekly(); }}>{lang==='pl'?'Zastosuj':'Apply'}</button>
-      </div>
       <div className="timesheets-header">
         <h2>{t.title}</h2>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -254,7 +238,7 @@ export default function Timesheets({ lang }) {
             const d = new Date(currentMonth.year, currentMonth.month + 1, 1);
             setCurrentMonth({ year: d.getFullYear(), month: d.getMonth() });
           }}>{'>'}</button>
-          <button className="btn btn-sm" onClick={async () => {
+          <button className="btn" onClick={async () => {
             try {
               const { start, end } = monthRange(currentMonth.year, currentMonth.month)
               const blob = await api.exportTimesheetsCSV({ fromDate: start, toDate: end, empId: filterEmpId || undefined })
@@ -269,7 +253,7 @@ export default function Timesheets({ lang }) {
             } catch (err) {
               alert('Export failed: ' + err.message)
             }
-          }}>{t.exportCsv}</button>
+          }} className="btn btn-sm">{t.exportCsv}</button>
           <button className="btn btn-sm" onClick={async () => {
             try {
               const { start, end } = monthRange(currentMonth.year, currentMonth.month)
@@ -285,7 +269,7 @@ export default function Timesheets({ lang }) {
             } catch (err) {
               alert('Export summary failed: ' + err.message)
             }
-          }}>{t.exportMonthly}</button>
+          }} className="btn btn-sm">{t.exportMonthly}</button>
           <button className="btn btn-primary" onClick={handleAddClick}>{t.add}</button>
         </div>
       </div>
@@ -296,7 +280,7 @@ export default function Timesheets({ lang }) {
         {Object.values(summary).reduce((a,b)=> a + Number(b||0), 0)}h
       </div>
 
-      <div className="calendar-wrapper" style={{maxWidth:320}}>
+      <div className="calendar-wrapper">
         <Calendar
           year={currentMonth.year}
           month={currentMonth.month}
