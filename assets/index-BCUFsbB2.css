@@ -3,3 +3,12 @@
 /* High-contrast overrides injected post-build */
 .empty-message,.loading{color:#1f2937!important}
 .data-table th,.data-table td{color:#1f2937}
+/* Global visibility hardening for data tables */
+.data-table th,
+.data-table td,
+table.data-table th,
+table.data-table td,
+table th,
+table td {
+  color: #1f2937 !important; /* ciemny szary, czytelny na jasnym tle */
+}
