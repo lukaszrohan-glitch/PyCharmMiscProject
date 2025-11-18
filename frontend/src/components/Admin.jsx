@@ -86,10 +86,10 @@ export default function Admin({ lang }) {
         setUsers(result || []);
         setIsAuthed(true);
         setSuccess(' ' + t('authenticate'));
-      } catch (err) {
-        console.error(err);
+      } catch (err) { console.error(err); try { window.lastAdminError = err?.message || String(err) } catch {}
         setIsAuthed(false);
         setError(' ' + t('error_generic'));
+        try { document.getElementById('admin-error-details').textContent = err?.message || String(err) } catch {}
       } finally {
         setLoading(false);
       }
@@ -113,8 +113,7 @@ export default function Admin({ lang }) {
       setUsers(result || []);
       setIsAuthed(true);
       setSuccess('✅ ' + t('authenticate'));
-    } catch (err) {
-      console.error(err);
+    } catch (err) { console.error(err); try { window.lastAdminError = err?.message || String(err) } catch {}
       setIsAuthed(false);
       setError('❌ ' + t('error_auth_failed'));
     } finally {
@@ -154,8 +153,7 @@ export default function Admin({ lang }) {
 
       const updated = await adminListUsers();
       setUsers(updated || []);
-    } catch (err) {
-      console.error(err);
+    } catch (err) { console.error(err); try { window.lastAdminError = err?.message || String(err) } catch {}
       setError('❌ ' + t('error_generic'));
     } finally {
       setLoading(false);
@@ -189,8 +187,7 @@ export default function Admin({ lang }) {
       const updated = await adminListUsers();
       setUsers(updated || []);
       setSuccess('✅ ' + t('user_deleted'));
-    } catch (err) {
-      console.error(err);
+    } catch (err) { console.error(err); try { window.lastAdminError = err?.message || String(err) } catch {}
       setError('❌ ' + t('error_generic'));
     } finally {
       setLoading(false);
@@ -362,3 +359,5 @@ export default function Admin({ lang }) {
     </div>
   );
 }
+
+
