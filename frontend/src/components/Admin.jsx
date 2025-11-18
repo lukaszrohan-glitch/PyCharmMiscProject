@@ -206,7 +206,24 @@ export default function Admin({ lang }) {
             {t('enter_admin_key')}
           </p>
 
-          {error && <div className="error-msg">{error}</div>}
+          {error && (
+            <div className="error-msg" style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <span>{error}</span>
+              <button
+                type="button"
+                onClick={(e)=>{
+                  e.preventDefault();
+                  const el = document.getElementById('admin-error-details');
+                  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+                }}
+                style={{ marginLeft: 8, background:'transparent', border:'none', color:'#6e6e73', cursor:'pointer' }}
+              >
+                details
+              </button>
+            </div>
+          )}
+          <pre id="admin-error-details" style={{display:'none', whiteSpace:'pre-wrap', background:'#f5f5f7', border:'1px solid #d2d2d7', padding:'8px', borderRadius:'8px', color:'#1d1d1f'}}>
+          </pre>
           {success && <div className="success-msg">{success}</div>}
 
           <input

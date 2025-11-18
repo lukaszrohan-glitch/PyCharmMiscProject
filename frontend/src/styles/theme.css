@@ -68,8 +68,8 @@
   --focus-ring: rgba(0, 113, 227, 0.35);
 }
 
-/* Dark theme */
-[data-theme="dark"] {
+/* Dark theme (triggered by html.dark) */
+html.dark, .dark {
   --primary: #3b82f6;
   --primary-dark: #2563eb;
   --primary-light: #60a5fa;

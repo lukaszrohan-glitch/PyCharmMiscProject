@@ -30,7 +30,7 @@ export function AuthProvider({ children }) {
 
   const loginWithCredentials = async (email, password) => {
     const res = await api.login(email, password)
-    const token = res?.access_token || res?.token
+    const token = res?.access_token || res?.token || res?.tokens?.access_token
     if (token) api.setToken(token)
     // Prefer server-provided user, otherwise fetch
     const user = res?.user || (await api.getProfile())

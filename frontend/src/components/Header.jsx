@@ -80,6 +80,19 @@ export default function Header({ lang, setLang, currentView, setCurrentView, pro
             </div>
           </div>
 
+          {/* Inline desktop navigation */}
+          <nav className={styles.desktopNav} aria-label="Primary">
+            {navItems.map(item => (
+              <button
+                key={item.id}
+                className={currentView === item.id ? styles.navItemActive : styles.navItem}
+                onClick={() => setCurrentView(item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+
           <div className={styles.rightSection}>
             <div className={styles.langSwitch}>
               <button
@@ -112,10 +125,8 @@ export default function Header({ lang, setLang, currentView, setCurrentView, pro
             {profile && (
               <div className={styles.profileSection}>
                 <button className={styles.profileBtn} onClick={onSettings}>
-                  <span className={styles.avatar}>
-                    {profile.name?.charAt(0) || 'A'}
-                  </span>
-                  <span className={styles.profileName}>{profile.name}</span>
+                  <span className={styles.avatar}>{profile.name?.charAt(0) || profile.email?.charAt(0) || 'U'}</span>
+                  <span className={styles.profileName}>{profile.name || profile.email}</span>
                 </button>
               </div>
             )}
