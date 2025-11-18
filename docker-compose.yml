@@ -1,60 +1,54 @@
+version: "3.9"
+
 services:
   db:
-    image: postgres:15
-    container_name: smb_db
+    image: postgres:17-alpine
+    container_name: smb-postgres
     environment:
-      POSTGRES_DB: smbtool
-      POSTGRES_USER: smb_user
-      POSTGRES_PASSWORD: smb_password
-    volumes:
-      - db_data:/var/lib/postgresql/data
-      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      POSTGRES_DB: railway
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U smb_user -d smbtool"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d railway"]
       interval: 10s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
 
-  backend:
+  app:
     build: .
-    container_name: smb_backend
+    container_name: smb-app
     depends_on:
       db:
         condition: service_healthy
-    env_file: .env
+    environment:
+      # Używamy PRIVATE_URL, bo masz już logikę w entrypoint.sh
+      DATABASE_PRIVATE_URL: "postgresql+psycopg://postgres:postgres@db:5432/railway"
+
+      # JWT / admin – pod dev możesz tak zostawić
+      JWT_SECRET: "changeme-dev-secret"
+      ADMIN_EMAIL: "admin@arkuszowniasmb.local"
+      ADMIN_PASSWORD: "SMB#Admin2025!"
+
+      # CORS – frontend dev (Vite) + backend
+      CORS_ORIGINS: "http://localhost:5173,http://127.0.0.1:5173,http://localhost:8000,http://127.0.0.1:8000"
+
+      # FastAPI / uvicorn
+      APP_MODULE: "main:app"
+      PORT: "8000"
+
     ports:
       - "8000:8000"
-    volumes:
-      - ./logs:/app/logs
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
 
-  nginx:
-    image: nginx:alpine
-    container_name: smb_nginx
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./logs/nginx:/var/log/nginx
-      - ./frontend/dist:/usr/share/nginx/html:ro
-      - ./ssl:/etc/nginx/ssl:ro
-    ports:
-      - "8088:80"
-      - "8443:443"
-    depends_on:
-      - backend
-    restart: unless-stopped
+    # Jeżeli chcesz live-reload na kodzie w dev – możesz odkomentować:
+    # volumes:
+    #   - .:/app
+
+    # Domyślnie korzystamy z CMD z Dockerfile:
+    # CMD ["bash", "/app/entrypoint.sh"]
 
 volumes:
-  db_data:
-
-networks:
-  default:
-    name: arkuszowniasmb_net
-    driver: bridge
+  db-data:

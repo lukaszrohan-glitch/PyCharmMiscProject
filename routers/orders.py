@@ -13,18 +13,21 @@ from security import check_api_key
 router = APIRouter(tags=["Orders"])
 
 
-@router.get("/api/orders", response_model=List[Order], summary="List orders")
 def _normalize_status(value: Optional[str]) -> Optional[str]:
+    """
+    Helper: normalizuje statusy do wartości używanych w aplikacji.
+    """
     if value is None:
         return value
     mapping = {
-        'in progress': 'InProd',
-        'completed': 'Done',
+        "in progress": "InProd",
+        "completed": "Done",
     }
     v = str(value).strip()
     return mapping.get(v.lower(), v)
 
 
+@router.get("/api/orders", response_model=List[Order], summary="List orders")
 def orders_list(
     limit: Optional[int] = Query(None, ge=1, le=1000),
     offset: Optional[int] = Query(None, ge=0),
@@ -40,22 +43,27 @@ def orders_list(
             params.append(offset)
         rows = fetch_all(sql, tuple(params) if params else None)
         for r in rows or []:
-            if 'status' in r:
-                r['status'] = _normalize_status(r.get('status'))
+            if "status" in r:
+                r["status"] = _normalize_status(r.get("status"))
         return rows if rows else []
     except Exception as exc:
         raise HTTPException(status_code=500, detail="Failed to fetch orders") from exc
 
 
-@router.get("/api/orders/{order_id}", response_model=Optional[Order], summary="Get order by ID")
+@router.get(
+    "/api/orders/{order_id}",
+    response_model=Optional[Order],
+    summary="Get order by ID",
+)
 def order_get(order_id: str):
     try:
         row = fetch_one(
-            "SELECT order_id, customer_id, status, order_date, due_date FROM orders WHERE order_id = %s",
+            "SELECT order_id, customer_id, status, order_date, due_date "
+            "FROM orders WHERE order_id = %s",
             (order_id,),
         )
-        if row and 'status' in row:
-            row['status'] = _normalize_status(row.get('status'))
+        if row and "status" in row:
+            row["status"] = _normalize_status(row.get("status"))
         return row
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
@@ -69,7 +77,9 @@ def create_order(payload: OrderCreate, _ok: bool = Depends(check_api_key)):
             (
                 payload.order_id,
                 payload.customer_id,
-                payload.status.value if hasattr(payload.status, "value") else payload.status,
+                payload.status.value
+                if hasattr(payload.status, "value")
+                else payload.status,
                 payload.due_date,
             ),
             returning=True,
@@ -83,7 +93,11 @@ def create_order(payload: OrderCreate, _ok: bool = Depends(check_api_key)):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.post("/api/order-lines", status_code=201, summary="Create order line")
+@router.post(
+    "/api/order-lines",
+    status_code=201,
+    summary="Create order line",
+)
 def create_order_line(payload: OrderLineCreate, _ok: bool = Depends(check_api_key)):
     try:
         rows = execute(
@@ -108,7 +122,11 @@ def create_order_line(payload: OrderLineCreate, _ok: bool = Depends(check_api_ke
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.put("/api/orders/{order_id}", response_model=Order, summary="Update order")
+@router.put(
+    "/api/orders/{order_id}",
+    response_model=Order,
+    summary="Update order",
+)
 def update_order(order_id: str, payload: OrderUpdate, _ok: bool = Depends(check_api_key)):
     try:
         updates = []
@@ -118,7 +136,11 @@ def update_order(order_id: str, payload: OrderUpdate, _ok: bool = Depends(check_
             params.append(payload.customer_id)
         if payload.status is not None:
             updates.append("status = %s")
-            params.append(payload.status.value if hasattr(payload.status, "value") else payload.status)
+            params.append(
+                payload.status.value
+                if hasattr(payload.status, "value")
+                else payload.status
+            )
         if payload.due_date is not None:
             updates.append("due_date = %s")
             params.append(payload.due_date)

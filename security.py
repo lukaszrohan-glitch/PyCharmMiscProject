@@ -7,7 +7,6 @@ from typing import Optional
 from fastapi import Header, HTTPException
 
 from config import settings
-import os
 import auth
 
 logger = logging.getLogger(__name__)

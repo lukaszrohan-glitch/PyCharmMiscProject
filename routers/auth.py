@@ -17,11 +17,19 @@ router = APIRouter(tags=["Auth"])
 
 @router.post("/api/auth/login", summary="Login with email and password")
 def auth_login(payload: UserLogin):
+    """
+    Zwraca:
+      - tokens: {access_token, refresh_token, expires_in}
+      - user: podstawowe informacje o użytkowniku
+    """
     return login_user(payload.email, payload.password)
 
 
 @router.get("/api/user/profile", summary="Get current user profile")
 def user_profile(user=Depends(get_current_user)):
+    """
+    Profil aktualnie zalogowanego użytkownika (na podstawie JWT w Authorization: Bearer).
+    """
     return {
         k: user[k]
         for k in ["user_id", "email", "company_id", "is_admin", "subscription_plan"]
@@ -30,15 +38,23 @@ def user_profile(user=Depends(get_current_user)):
 
 @router.post("/api/auth/change-password", summary="Change current user password")
 def auth_change_password(payload: PasswordChange, user=Depends(get_current_user)):
+    """
+    Zmiana hasła zalogowanego użytkownika.
+    """
     return change_password(user["user_id"], payload.old_password, payload.new_password)
 
 
 @router.post("/api/auth/request-reset", summary="Request password reset")
 def auth_request_reset(payload: PasswordResetRequest):
+    """
+    Tworzy token resetu hasła (obsługa wysyłki maila leży po Twojej stronie / w logach).
+    """
     return request_password_reset(payload.email)
 
 
 @router.post("/api/auth/reset", summary="Reset password with token")
 def auth_reset(payload: PasswordReset):
+    """
+    Reset hasła na podstawie tokenu z poprzedniego kroku.
+    """
     return reset_password_with_token(payload.token, payload.new_password)
-

@@ -64,18 +64,18 @@ COPY --chown=app:app --from=frontend-builder /frontend/dist ./frontend/dist
 # Create necessary directories with proper permissions
 RUN mkdir -p /app/logs && chmod 755 /app/logs
 
-# Add entrypoint script and ensure executable
+# Normalize line endings and ensure entrypoint executable
 RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
-# Health check
+# Health check – użyj PORT, domyślnie 8000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/healthz || exit 1
+    CMD curl -f http://localhost:${PORT:-8000}/healthz || exit 1
 
-# Expose port
+# Expose port (lokalnie – Railway i tak nadpisuje PORT)
 EXPOSE 8000
 
 # Environment variables
 ENV DATABASE_URL=""
 
 # Run via entrypoint to wait for DB and run migrations
-CMD ["sh", "/app/entrypoint.sh"]
+CMD ["bash", "/app/entrypoint.sh"]

@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from typing import List, Optional
 
+import csv
+import io
+
 from fastapi import APIRouter, HTTPException, Depends, Query
 from fastapi.responses import StreamingResponse
-import io
-import csv
 
 from db import fetch_all, fetch_one, execute, _get_pool
 from queries import SQL_INSERT_TIMESHEET
@@ -27,24 +28,48 @@ def timesheets_list(
     approved: Optional[bool] = Query(None),
 ):
     try:
-        sql = (
-            "SELECT ts_id, emp_id, ts_date, order_id, operation_no, hours, notes, "
-            "COALESCE(approved, 0) AS approved, approved_by, approved_at "
-            "FROM timesheets WHERE 1=1"
-        )
+        pool = _get_pool()
         params: List = []
-        if from_date:
-            sql += " AND ts_date >= %s"
-            params.append(from_date)
-        if to_date:
-            sql += " AND ts_date <= %s"
-            params.append(to_date)
-        if emp_id:
-            sql += " AND emp_id = %s"
-            params.append(emp_id)
-        if approved is not None:
-            sql += " AND COALESCE(approved, 0) = %s"
-            params.append(1 if approved else 0)
+
+        if pool is None:
+            # SQLite – approved jako 0/1
+            sql = (
+                "SELECT ts_id, emp_id, ts_date, order_id, operation_no, hours, notes, "
+                "COALESCE(approved, 0) AS approved, approved_by, approved_at "
+                "FROM timesheets WHERE 1=1"
+            )
+            if from_date:
+                sql += " AND ts_date >= %s"
+                params.append(from_date)
+            if to_date:
+                sql += " AND ts_date <= %s"
+                params.append(to_date)
+            if emp_id:
+                sql += " AND emp_id = %s"
+                params.append(emp_id)
+            if approved is not None:
+                sql += " AND COALESCE(approved, 0) = %s"
+                params.append(1 if approved else 0)
+        else:
+            # Postgres – approved jako BOOLEAN
+            sql = (
+                "SELECT ts_id, emp_id, ts_date, order_id, operation_no, hours, notes, "
+                "approved, approved_by, approved_at "
+                "FROM timesheets WHERE 1=1"
+            )
+            if from_date:
+                sql += " AND ts_date >= %s"
+                params.append(from_date)
+            if to_date:
+                sql += " AND ts_date <= %s"
+                params.append(to_date)
+            if emp_id:
+                sql += " AND emp_id = %s"
+                params.append(emp_id)
+            if approved is not None:
+                sql += " AND approved = %s"
+                params.append(approved)
+
         sql += " ORDER BY ts_date DESC"
         if limit is not None:
             sql += " LIMIT %s"
@@ -52,20 +77,33 @@ def timesheets_list(
         if offset is not None:
             sql += " OFFSET %s"
             params.append(offset)
+
         return fetch_all(sql, tuple(params) if params else None)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.get("/api/timesheets/{ts_id}", response_model=Optional[Timesheet], summary="Get timesheet by ID")
+@router.get(
+    "/api/timesheets/{ts_id}",
+    response_model=Optional[Timesheet],
+    summary="Get timesheet by ID",
+)
 def timesheet_get(ts_id: int):
     try:
-        return fetch_one(
-            "SELECT ts_id, emp_id, ts_date, order_id, operation_no, hours, notes, "
-            "COALESCE(approved, 0) AS approved, approved_by, approved_at "
-            "FROM timesheets WHERE ts_id = %s",
-            (ts_id,),
-        )
+        pool = _get_pool()
+        if pool is None:
+            sql = (
+                "SELECT ts_id, emp_id, ts_date, order_id, operation_no, hours, notes, "
+                "COALESCE(approved, 0) AS approved, approved_by, approved_at "
+                "FROM timesheets WHERE ts_id = %s"
+            )
+        else:
+            sql = (
+                "SELECT ts_id, emp_id, ts_date, order_id, operation_no, hours, notes, "
+                "approved, approved_by, approved_at "
+                "FROM timesheets WHERE ts_id = %s"
+            )
+        return fetch_one(sql, (ts_id,))
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
@@ -94,8 +132,14 @@ def create_timesheet(payload: TimesheetCreate, _ok: bool = Depends(check_api_key
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.put("/api/timesheets/{ts_id}", response_model=Timesheet, summary="Update timesheet")
-def update_timesheet(ts_id: int, payload: TimesheetUpdate, _ok: bool = Depends(check_api_key)):
+@router.put(
+    "/api/timesheets/{ts_id}",
+    response_model=Timesheet,
+    summary="Update timesheet",
+)
+def update_timesheet(
+    ts_id: int, payload: TimesheetUpdate, _ok: bool = Depends(check_api_key)
+):
     try:
         updates = []
         params = []
@@ -120,11 +164,23 @@ def update_timesheet(ts_id: int, payload: TimesheetUpdate, _ok: bool = Depends(c
         if not updates:
             raise HTTPException(status_code=400, detail="No fields to update")
         params.append(ts_id)
+
+        pool = _get_pool()
+        if pool is None:
+            select_clause = (
+                "ts_id, emp_id, ts_date, order_id, operation_no, hours, notes, "
+                "COALESCE(approved, 0) AS approved, approved_by, approved_at"
+            )
+        else:
+            select_clause = (
+                "ts_id, emp_id, ts_date, order_id, operation_no, hours, notes, "
+                "approved, approved_by, approved_at"
+            )
+
         sql = (
             f"UPDATE timesheets SET {', '.join(updates)} "
             "WHERE ts_id = %s "
-            "RETURNING ts_id, emp_id, ts_date, order_id, operation_no, hours, notes, "
-            "COALESCE(approved, 0) AS approved, approved_by, approved_at"
+            f"RETURNING {select_clause}"
         )
         rows = execute(sql, params, returning=True)
         if not rows:
@@ -145,7 +201,10 @@ def delete_timesheet(ts_id: int, _ok: bool = Depends(check_api_key)):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.get("/api/timesheets/pending", summary="List unapproved timesheets (admin)")
+@router.get(
+    "/api/timesheets/pending",
+    summary="List unapproved timesheets (admin)",
+)
 def list_pending_timesheets(
     from_date: Optional[str] = Query(None, alias="from"),
     to_date: Optional[str] = Query(None, alias="to"),
@@ -153,12 +212,24 @@ def list_pending_timesheets(
     _admin=Depends(require_admin),
 ):
     try:
-        sql = (
-            "SELECT ts_id, emp_id, ts_date, order_id, operation_no, hours, notes, "
-            "COALESCE(approved, 0) AS approved, approved_by, approved_at "
-            "FROM timesheets WHERE COALESCE(approved, 0) = 0"
-        )
+        pool = _get_pool()
         params: list = []
+
+        if pool is None:
+            # SQLite – 0 = not approved
+            sql = (
+                "SELECT ts_id, emp_id, ts_date, order_id, operation_no, hours, notes, "
+                "COALESCE(approved, 0) AS approved, approved_by, approved_at "
+                "FROM timesheets WHERE COALESCE(approved, 0) = 0"
+            )
+        else:
+            # Postgres – NULL lub FALSE
+            sql = (
+                "SELECT ts_id, emp_id, ts_date, order_id, operation_no, hours, notes, "
+                "approved, approved_by, approved_at "
+                "FROM timesheets WHERE approved IS DISTINCT FROM TRUE"
+            )
+
         if from_date:
             sql += " AND ts_date >= %s"
             params.append(from_date)
@@ -168,6 +239,7 @@ def list_pending_timesheets(
         if emp_id:
             sql += " AND emp_id = %s"
             params.append(emp_id)
+
         sql += " ORDER BY ts_date, emp_id, ts_id"
         return fetch_all(sql, tuple(params) if params else None) or []
     except Exception as exc:
@@ -182,11 +254,11 @@ def timesheets_summary(
     approved: Optional[bool] = Query(None),
 ):
     try:
-        sql = (
-            "SELECT ts_date AS date, SUM(hours) AS total_hours "
-            "FROM timesheets WHERE 1=1"
-        )
+        pool = _get_pool()
         params: List = []
+
+        sql = "SELECT ts_date AS date, SUM(hours) AS total_hours FROM timesheets WHERE 1=1"
+
         if from_date:
             sql += " AND ts_date >= %s"
             params.append(from_date)
@@ -196,9 +268,15 @@ def timesheets_summary(
         if emp_id:
             sql += " AND emp_id = %s"
             params.append(emp_id)
+
         if approved is not None:
-            sql += " AND COALESCE(approved, 0) = %s"
-            params.append(1 if approved else 0)
+            if pool is None:
+                sql += " AND COALESCE(approved, 0) = %s"
+                params.append(1 if approved else 0)
+            else:
+                sql += " AND approved = %s"
+                params.append(approved)
+
         sql += " GROUP BY ts_date ORDER BY ts_date"
         rows = fetch_all(sql, tuple(params) if params else None)
         return rows or []
@@ -216,6 +294,7 @@ def timesheets_weekly_summary(
     try:
         pool = _get_pool()
         params: list = []
+
         if pool is None:
             # SQLite
             sql = (
@@ -255,29 +334,33 @@ def timesheets_weekly_summary(
                 sql += " AND emp_id = %s"
                 params.append(emp_id)
             if approved is not None:
-                sql += " AND COALESCE(approved, 0) = %s"
-                params.append(1 if approved else 0)
+                sql += " AND approved = %s"
+                params.append(approved)
             sql += " GROUP BY 1,2 ORDER BY 1,2"
 
         rows = fetch_all(sql, tuple(params) if params else None)
-        # Normalize week label like YYYY-Www
         out = []
         for r in rows or []:
             year = str(int(r.get("year"))) if r.get("year") is not None else ""
             week = str(r.get("week")).zfill(2)
-            out.append({
-                "year": year,
-                "week": week,
-                "week_label": f"{year}-W{week}",
-                "week_start": r.get("week_start"),
-                "total_hours": float(r.get("total_hours") or 0),
-            })
+            out.append(
+                {
+                    "year": year,
+                    "week": week,
+                    "week_label": f"{year}-W{week}",
+                    "week_start": r.get("week_start"),
+                    "total_hours": float(r.get("total_hours") or 0),
+                }
+            )
         return out
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.get("/api/timesheets/export.csv", summary="Export timesheets as CSV")
+@router.get(
+    "/api/timesheets/export.csv",
+    summary="Export timesheets as CSV",
+)
 def timesheets_export_csv(
     from_date: Optional[str] = Query(None, alias="from"),
     to_date: Optional[str] = Query(None, alias="to"),
@@ -285,12 +368,22 @@ def timesheets_export_csv(
     pending: Optional[bool] = Query(None),
 ):
     try:
-        sql = (
-            "SELECT ts_id, emp_id, ts_date, order_id, operation_no, hours, notes, "
-            "COALESCE(approved, 0) AS approved, approved_by, approved_at "
-            "FROM timesheets WHERE 1=1"
-        )
+        pool = _get_pool()
         params: list = []
+
+        if pool is None:
+            sql = (
+                "SELECT ts_id, emp_id, ts_date, order_id, operation_no, hours, notes, "
+                "COALESCE(approved, 0) AS approved, approved_by, approved_at "
+                "FROM timesheets WHERE 1=1"
+            )
+        else:
+            sql = (
+                "SELECT ts_id, emp_id, ts_date, order_id, operation_no, hours, notes, "
+                "approved, approved_by, approved_at "
+                "FROM timesheets WHERE 1=1"
+            )
+
         if from_date:
             sql += " AND ts_date >= %s"
             params.append(from_date)
@@ -301,39 +394,58 @@ def timesheets_export_csv(
             sql += " AND emp_id = %s"
             params.append(emp_id)
         if pending is True:
-            sql += " AND COALESCE(approved, 0) = 0"
+            if pool is None:
+                sql += " AND COALESCE(approved, 0) = 0"
+            else:
+                sql += " AND approved IS DISTINCT FROM TRUE"
+
         sql += " ORDER BY ts_date, emp_id, ts_id"
 
         rows = fetch_all(sql, tuple(params) if params else None)
         output = io.StringIO()
-        # Write UTF-8 BOM for better Excel compatibility
-        output.write('\ufeff')
-        writer = csv.DictWriter(output, fieldnames=[
-            "ts_id", "emp_id", "ts_date", "order_id", "operation_no", "hours", "notes",
-            "approved", "approved_by", "approved_at"
-        ])
+        output.write("\ufeff")
+        writer = csv.DictWriter(
+            output,
+            fieldnames=[
+                "ts_id",
+                "emp_id",
+                "ts_date",
+                "order_id",
+                "operation_no",
+                "hours",
+                "notes",
+                "approved",
+                "approved_by",
+                "approved_at",
+            ],
+        )
         writer.writeheader()
         for r in rows or []:
             writer.writerow(r)
 
-        csv_bytes = output.getvalue().encode('utf-8')
+        csv_bytes = output.getvalue().encode("utf-8")
         mem = io.BytesIO(csv_bytes)
-        # Build filename suggestion
         fname_parts = ["timesheets"]
-        if from_date: fname_parts.append(from_date)
-        if to_date: fname_parts.append(to_date)
-        if emp_id: fname_parts.append(str(emp_id))
+        if from_date:
+            fname_parts.append(from_date)
+        if to_date:
+            fname_parts.append(to_date)
+        if emp_id:
+            fname_parts.append(str(emp_id))
         filename = "_".join(fname_parts) + ".csv"
         headers = {
-            'Content-Disposition': f'attachment; filename="{filename}"',
-            'Content-Type': 'text/csv; charset=utf-8'
+            "Content-Disposition": f'attachment; filename=\"{filename}\"",
+            "Content-Type": "text/csv; charset=utf-8",
         }
         return StreamingResponse(mem, headers=headers)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.get("/api/timesheets/export-summary.csv", summary="Export daily and weekly summaries as CSV")
+@router.get(
+    "/api/timesheets/export-summary.csv",
+    summary="Export daily and weekly summaries as CSV",
+)
 def timesheets_export_summary_csv(
     from_date: Optional[str] = Query(None, alias="from"),
     to_date: Optional[str] = Query(None, alias="to"),
@@ -342,7 +454,8 @@ def timesheets_export_summary_csv(
     try:
         # Daily summary
         sql_daily = (
-            "SELECT ts_date AS date, SUM(hours) AS total_hours FROM timesheets WHERE 1=1"
+            "SELECT ts_date AS date, SUM(hours) AS total_hours "
+            "FROM timesheets WHERE 1=1"
         )
         params_daily: list = []
         if from_date:
@@ -355,20 +468,24 @@ def timesheets_export_summary_csv(
             sql_daily += " AND emp_id = %s"
             params_daily.append(emp_id)
         sql_daily += " GROUP BY ts_date ORDER BY ts_date"
-        daily_rows = fetch_all(sql_daily, tuple(params_daily) if params_daily else None) or []
+        daily_rows = (
+            fetch_all(sql_daily, tuple(params_daily) if params_daily else None) or []
+        )
 
-        # Weekly summary (reuse logic w.r.t DB flavor)
+        # Weekly summary
         pool = _get_pool()
         params_week: list = []
         if pool is None:
             sql_week = (
-                "SELECT strftime('%Y', ts_date) AS year, strftime('%W', ts_date) AS week, "
+                "SELECT strftime('%Y', ts_date) AS year, "
+                "strftime('%W', ts_date) AS week, "
                 "MIN(ts_date) AS week_start, SUM(hours) AS total_hours "
                 "FROM timesheets WHERE 1=1"
             )
         else:
             sql_week = (
-                "SELECT EXTRACT(isoyear FROM ts_date) AS year, to_char(ts_date, 'IW') AS week, "
+                "SELECT EXTRACT(isoyear FROM ts_date) AS year, "
+                "to_char(ts_date, 'IW') AS week, "
                 "MIN(ts_date)::date AS week_start, SUM(hours) AS total_hours "
                 "FROM timesheets WHERE 1=1"
             )
@@ -382,55 +499,72 @@ def timesheets_export_summary_csv(
             sql_week += " AND emp_id = %s"
             params_week.append(emp_id)
         sql_week += " GROUP BY 1,2 ORDER BY 1,2"
-        weekly_rows = fetch_all(sql_week, tuple(params_week) if params_week else None) or []
+        weekly_rows = (
+            fetch_all(sql_week, tuple(params_week) if params_week else None) or []
+        )
 
-        # Prepare CSV
         output = io.StringIO()
-        output.write('\ufeff')  # UTF-8 BOM for Excel
-        writer = csv.DictWriter(output, fieldnames=["kind", "date", "week_label", "week_start", "total_hours"])
+        output.write("\ufeff")
+        writer = csv.DictWriter(
+            output,
+            fieldnames=["kind", "date", "week_label", "week_start", "total_hours"],
+        )
         writer.writeheader()
         for r in daily_rows:
-            writer.writerow({
-                "kind": "daily",
-                "date": r.get("date"),
-                "week_label": "",
-                "week_start": "",
-                "total_hours": float(r.get("total_hours") or 0),
-            })
+            writer.writerow(
+                {
+                    "kind": "daily",
+                    "date": r.get("date"),
+                    "week_label": "",
+                    "week_start": "",
+                    "total_hours": float(r.get("total_hours") or 0),
+                }
+            )
         for r in weekly_rows:
             year = str(int(r.get("year"))) if r.get("year") is not None else ""
             week = str(r.get("week")).zfill(2)
-            writer.writerow({
-                "kind": "weekly",
-                "date": "",
-                "week_label": f"{year}-W{week}",
-                "week_start": r.get("week_start"),
-                "total_hours": float(r.get("total_hours") or 0),
-            })
+            writer.writerow(
+                {
+                    "kind": "weekly",
+                    "date": "",
+                    "week_label": f"{year}-W{week}",
+                    "week_start": r.get("week_start"),
+                    "total_hours": float(r.get("total_hours") or 0),
+                }
+            )
 
-        csv_bytes = output.getvalue().encode('utf-8')
+        csv_bytes = output.getvalue().encode("utf-8")
         mem = io.BytesIO(csv_bytes)
         fname_parts = ["timesheets_summary"]
-        if from_date: fname_parts.append(from_date)
-        if to_date: fname_parts.append(to_date)
-        if emp_id: fname_parts.append(str(emp_id))
+        if from_date:
+            fname_parts.append(from_date)
+        if to_date:
+            fname_parts.append(to_date)
+        if emp_id:
+            fname_parts.append(str(emp_id))
         filename = "_".join(fname_parts) + ".csv"
         headers = {
-            'Content-Disposition': f'attachment; filename="{filename}"',
-            'Content-Type': 'text/csv; charset=utf-8'
+            "Content-Disposition": f'attachment; filename=\"{filename}\"",
+            "Content-Type": "text/csv; charset=utf-8",
         }
         return StreamingResponse(mem, headers=headers)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.post("/api/timesheets/{ts_id}/approve", summary="Approve timesheet entry (admin)")
+@router.post(
+    "/api/timesheets/{ts_id}/approve",
+    summary="Approve timesheet entry (admin)",
+)
 def approve_timesheet(ts_id: int, admin=Depends(require_admin)):
     try:
         email = admin.get("email") if isinstance(admin, dict) else None
         sql = (
-            "UPDATE timesheets SET approved = 1, approved_by = %s, approved_at = CURRENT_TIMESTAMP "
-            "WHERE ts_id = %s RETURNING ts_id, emp_id, ts_date, order_id, operation_no, hours, notes, approved, approved_by, approved_at"
+            "UPDATE timesheets "
+            "SET approved = 1, approved_by = %s, approved_at = CURRENT_TIMESTAMP "
+            "WHERE ts_id = %s "
+            "RETURNING ts_id, emp_id, ts_date, order_id, operation_no, hours, notes, "
+            "approved, approved_by, approved_at"
         )
         rows = execute(sql, (email, ts_id), returning=True)
         if not rows:
@@ -442,12 +576,18 @@ def approve_timesheet(ts_id: int, admin=Depends(require_admin)):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.post("/api/timesheets/{ts_id}/unapprove", summary="Unapprove timesheet entry (admin)")
+@router.post(
+    "/api/timesheets/{ts_id}/unapprove",
+    summary="Unapprove timesheet entry (admin)",
+)
 def unapprove_timesheet(ts_id: int, _admin=Depends(require_admin)):
     try:
         sql = (
-            "UPDATE timesheets SET approved = 0, approved_by = NULL, approved_at = NULL "
-            "WHERE ts_id = %s RETURNING ts_id, emp_id, ts_date, order_id, operation_no, hours, notes, approved, approved_by, approved_at"
+            "UPDATE timesheets "
+            "SET approved = 0, approved_by = NULL, approved_at = NULL "
+            "WHERE ts_id = %s "
+            "RETURNING ts_id, emp_id, ts_date, order_id, operation_no, hours, notes, "
+            "approved, approved_by, approved_at"
         )
         rows = execute(sql, (ts_id,), returning=True)
         if not rows:

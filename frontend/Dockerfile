@@ -1,28 +1,88 @@
-FROM node:18-alpine as build
+# Dockerfile for SMB Tool (FastAPI + React SPA)
 
+# -------------------------
+# 1. Node.js build stage for frontend
+# -------------------------
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /frontend
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend .
+RUN npm run build
+
+# -------------------------
+# 2. Python builder stage (venv + deps)
+# -------------------------
+FROM python:3.11-slim AS python-builder
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system dependencies for building wheels
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        gcc \
+        python3-dev \
+        libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create and activate virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install -r requirements.txt && pip check
+
+# -------------------------
+# 3. Final runtime image
+# -------------------------
+FROM python:3.11-slim
+
+# Copy virtual environment from python-builder
+COPY --from=python-builder /opt/venv /opt/venv
+
+# Set environment variables
+ENV PATH="/opt/venv/bin:$PATH" \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Install runtime dependencies and setup user
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libpq5 curl bash \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd -m -s /bin/bash app \
+    && mkdir -p /app/frontend \
+    && chown -R app:app /app
+
+# Set working directory
 WORKDIR /app
 
-# Copy package files first for better caching
-COPY package*.json ./
+# Copy application code
+COPY --chown=app:app . .
 
-# Install dependencies with better error output
-RUN npm install || (echo "npm install failed" && exit 1)
+# Copy frontend dist from frontend-builder
+COPY --chown=app:app --from=frontend-builder /frontend/dist ./frontend/dist
 
-# Copy the rest of the application
-COPY . .
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/logs && chmod 755 /app/logs
 
-# Build the application with better error output
-RUN npm run build || (echo "npm build failed" && exit 1)
+# Normalize line endings and ensure entrypoint executable
+RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
-# Production stage
-FROM nginx:stable-alpine
+# Health check – użyj PORT, domyślnie 8000
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-8000}/healthz || exit 1
 
-# Copy built assets from build stage
-COPY --from=build /app/dist /usr/share/nginx/html
+# Expose port (dla lokalnego dev; Railway i tak nadpisuje PORT)
+EXPOSE 8000
 
-# Add custom nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Environment variables
+ENV DATABASE_URL=""
 
-# Add health check
-HEALTHCHECK --interval=30s --timeout=3s \
-    CMD wget -q --spider http://localhost:80/ || exit 1
+# Run via entrypoint to wait for DB and run migrations
+CMD ["bash", "/app/entrypoint.sh"]

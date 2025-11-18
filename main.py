@@ -10,12 +10,10 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 
-logger = logging.getLogger(__name__)
-
 from db import execute, fetch_one, _get_pool
 import auth
 from user_mgmt import ensure_user_tables
-from logging_utils import setup_logging
+from logging_utils import setup_logging, logger as app_logger
 from config import settings
 from docs import tags_metadata
 from routers.orders import router as orders_router
@@ -62,7 +60,7 @@ async def log_requests(request: Request, call_next):
     start = time.monotonic()
     response = await call_next(request)
     duration_ms = (time.monotonic() - start) * 1000
-    logger.info(f"{request.method} {request.url.path} -> {response.status_code} in {duration_ms:.1f}ms")
+    app_logger.info(f"{request.method} {request.url.path} -> {response.status_code} in {duration_ms:.1f}ms")
     return response
 
 
@@ -148,7 +146,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     if isinstance(exc, HTTPException):
         return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
     # Log unexpected errors
-    print(f"Unexpected error at {datetime.now()}: {str(exc)}")
+    app_logger.error("Unhandled exception", exc_info=True)
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
@@ -167,7 +165,7 @@ if FRONTEND_DIST.exists():
         index_file = FRONTEND_DIST / "index.html"
         if index_file.exists():
             return FileResponse(index_file)
-        logger.error(f"Frontend index.html not found at {index_file}")
+        app_logger.error(f"Frontend index.html not found at {index_file}")
         raise HTTPException(
             status_code=500,
             detail="Frontend not built. Run: cd frontend && npm run build",
@@ -178,7 +176,7 @@ if FRONTEND_DIST.exists():
         index_file = FRONTEND_DIST / "index.html"
         if index_file.exists():
             return FileResponse(index_file)
-        logger.error(f"Frontend index.html not found at {index_file}")
+        app_logger.error(f"Frontend index.html not found at {index_file}")
         raise HTTPException(
             status_code=500,
             detail="Frontend not built. Run: cd frontend && npm run build",

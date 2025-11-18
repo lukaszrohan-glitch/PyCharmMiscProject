@@ -3,7 +3,7 @@
   "build": {
     "builder": "dockerfile",
     "buildCommand": "",
-    "startCommand": "sh entrypoint.sh"
+    "startCommand": "bash /app/entrypoint.sh"
   },
   "deploy": {
     "numReplicas": 1,

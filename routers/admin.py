@@ -17,12 +17,19 @@ from user_mgmt import create_user, list_users, create_plan, list_plans, require_
 router = APIRouter(tags=["Admin", "Admin/API Keys"])
 
 
-# Ensure admin_audit table exists
+# Upewniamy się, że tabela audytu admina istnieje
 ensure_admin_audit()
 
 
+# ---- Zarządzanie użytkownikami (JWT admin) ----
+
 @router.post("/api/admin/users", summary="Admin: create user")
 def admin_create_user(payload: UserCreateAdmin, _admin=Depends(require_admin)):
+    """
+    Tworzy użytkownika (admin lub zwykły, zależnie od payload.is_admin).
+    To tutaj możesz tworzyć userów typu:
+      - pełen dostęp poza admin: is_admin = False
+    """
     try:
         row = create_user(
             payload.email,
@@ -31,8 +38,11 @@ def admin_create_user(payload: UserCreateAdmin, _admin=Depends(require_admin)):
             payload.subscription_plan,
             getattr(payload, "password", None),
         )
-        # audit
-        log_admin_event("create_user", event_by=_admin.get("email"), details={"email": payload.email})
+        log_admin_event(
+            "create_user",
+            event_by=_admin.get("email"),
+            details={"email": payload.email, "is_admin": payload.is_admin},
+        )
         return row
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
@@ -40,11 +50,17 @@ def admin_create_user(payload: UserCreateAdmin, _admin=Depends(require_admin)):
 
 @router.get("/api/admin/users", summary="Admin: list users")
 def admin_list_users(_admin=Depends(require_admin)):
+    """
+    Lista użytkowników (tylko admin).
+    """
     return list_users()
 
 
 @router.post("/api/admin/subscription-plans", summary="Admin: create subscription plan")
 def admin_create_plan(payload: SubscriptionPlanCreate, _admin=Depends(require_admin)):
+    """
+    Tworzenie planu subskrypcyjnego (admin only).
+    """
     row = create_plan(
         payload.plan_id,
         payload.name,
@@ -54,29 +70,43 @@ def admin_create_plan(payload: SubscriptionPlanCreate, _admin=Depends(require_ad
     )
     if not row:
         raise HTTPException(status_code=500, detail="Failed to create plan")
-    # audit
-    log_admin_event("create_plan", event_by=_admin.get("email"), details={"plan_id": payload.plan_id})
+    log_admin_event(
+        "create_plan",
+        event_by=_admin.get("email"),
+        details={"plan_id": payload.plan_id},
+    )
     return row
 
 
 @router.get("/api/admin/subscription-plans", summary="Admin: list subscription plans")
 def admin_list_plans(_admin=Depends(require_admin)):
+    """
+    Lista planów subskrypcyjnych (admin only).
+    """
     return list_plans()
 
 
 @router.get("/api/admin/audit", summary="List admin audit events (user/plan/import)")
 def admin_list_admin_audit(limit: int = 100, _admin=Depends(require_admin)):
+    """
+    Podgląd audytu działań admina (tworzenie userów, planów, importy).
+    """
     try:
-        # Lazy import to avoid circular import
         from admin_audit import list_admin_audit
+
         return list_admin_audit(limit=limit)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-# ---- Admin API keys (x-admin-key) ----
+# ---- Admin API keys (x-admin-key, osobny sekret z ENV) ----
+
 @router.get("/api/admin/api-keys", summary="List API keys (x-admin-key)")
 def admin_list_keys(_ok: bool = Depends(check_admin_key)):
+    """
+    Zarządzanie API keyami za pomocą nagłówka x-admin-key.
+    JWT nie jest tu wymagany – to osobny kanał administracyjny.
+    """
     try:
         return api_keys.list_api_keys()
     except Exception as exc:
@@ -113,6 +143,9 @@ def admin_rotate_key(key_id: int, _ok: bool = Depends(check_admin_key)):
 
 @router.get("/api/admin/api-key-audit", summary="List API key audit events")
 def admin_api_key_audit(_ok: bool = Depends(check_admin_key)):
+    """
+    Podgląd logów użycia API keyów (x-admin-key).
+    """
     try:
         rows = fetch_all(
             "SELECT * FROM api_key_audit ORDER BY event_time DESC LIMIT 100"
@@ -124,11 +157,15 @@ def admin_api_key_audit(_ok: bool = Depends(check_admin_key)):
 
 @router.delete("/api/admin/api-key-audit", summary="Purge old API key audit events")
 def admin_purge_audit(days: int = 30, _ok: bool = Depends(check_admin_key)):
+    """
+    Czyszczenie starych logów API keyów.
+    """
     try:
         from db import _get_pool
 
         pool = _get_pool()
         if pool is None:
+            # SQLite
             execute(
                 "DELETE FROM api_key_audit "
                 "WHERE event_time IS NULL OR event_time = '' "
@@ -136,6 +173,7 @@ def admin_purge_audit(days: int = 30, _ok: bool = Depends(check_admin_key)):
                 ("-" + str(days) + " days",),
             )
         else:
+            # Postgres
             execute(
                 "DELETE FROM api_key_audit "
                 "WHERE event_time IS NULL "
@@ -147,8 +185,8 @@ def admin_purge_audit(days: int = 30, _ok: bool = Depends(check_admin_key)):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-# ---- Legacy paths without "/api" prefix for admin-key endpoints ----
-# Keep compatibility with older clients and tests expecting "/admin/..." paths.
+# ---- Legacy ścieżki bez prefiksu /api dla admin-key ----
+# Zostawione dla kompatybilności wstecznej.
 
 @router.get("/admin/api-keys", summary="List API keys (legacy x-admin-key)")
 def legacy_admin_list_keys(_ok: bool = Depends(check_admin_key)):
@@ -180,7 +218,8 @@ def legacy_admin_purge_audit(days: int = 30, _ok: bool = Depends(check_admin_key
     return admin_purge_audit(days, _ok)
 
 
-# ---- Import endpoint: JSON and CSV upload ----
+# ---- Import endpoint: JSON + CSV (JWT admin) ----
+
 @router.post("/api/import/csv", summary="Import data from JSON or CSV upload")
 async def import_csv(
     entity_type: Optional[str] = Form(None),
@@ -189,33 +228,46 @@ async def import_csv(
     _admin=Depends(require_admin),
 ):
     """
-    Accept either:
-      - application/json { entity_type, data: [ {...}, ... ] }
-      - multipart/form-data with fields: entity_type + file (CSV)
-    Only admin users (JWT) can import.
+    Import:
+      - JSON: { "entity_type": "...", "data": [ {...}, ... ] }
+      - CSV: multipart/form-data z polami: entity_type + file
+
+    Dozwolone entity_type:
+      - orders, products, customers, employees, timesheets, inventory
     """
     try:
         if data and not entity_type:
             raise HTTPException(status_code=400, detail="Missing entity_type")
         if not data and not (file and entity_type):
-            raise HTTPException(status_code=400, detail="Provide JSON data or CSV file + entity_type")
+            raise HTTPException(
+                status_code=400,
+                detail="Provide JSON data or CSV file + entity_type",
+            )
 
         rows_imported = 0
 
         # CSV mode
         if file is not None and entity_type:
             content = await file.read()
-            text = content.decode('utf-8', errors='replace')
+            text = content.decode("utf-8", errors="replace")
             reader = csv.DictReader(io.StringIO(text))
             parsed = list(reader)
             rows_imported = _do_import(entity_type, parsed)
-            log_admin_event("import_csv", event_by=_admin.get("email"), details={"entity_type": entity_type, "rows": rows_imported})
+            log_admin_event(
+                "import_csv",
+                event_by=_admin.get("email"),
+                details={"entity_type": entity_type, "rows": rows_imported},
+            )
             return {"imported": rows_imported, "entity_type": entity_type}
 
         # JSON mode
         if data is not None and entity_type:
             rows_imported = _do_import(entity_type, data)
-            log_admin_event("import_json", event_by=_admin.get("email"), details={"entity_type": entity_type, "rows": rows_imported})
+            log_admin_event(
+                "import_json",
+                event_by=_admin.get("email"),
+                details={"entity_type": entity_type, "rows": rows_imported},
+            )
             return {"imported": rows_imported, "entity_type": entity_type}
 
         raise HTTPException(status_code=400, detail="Invalid import payload")
@@ -227,8 +279,12 @@ async def import_csv(
 
 
 def _do_import(entity_type: str, data_rows: List[Dict]) -> int:
+    """
+    Właściwa logika importu – per encja.
+    """
     entity_type = entity_type.lower()
     imported = 0
+
     if entity_type == "orders":
         for row in data_rows:
             execute(
@@ -244,6 +300,7 @@ def _do_import(entity_type: str, data_rows: List[Dict]) -> int:
                 returning=False,
             )
             imported += 1
+
     elif entity_type == "products":
         for row in data_rows:
             execute(
@@ -261,6 +318,7 @@ def _do_import(entity_type: str, data_rows: List[Dict]) -> int:
                 returning=False,
             )
             imported += 1
+
     elif entity_type == "customers":
         for row in data_rows:
             execute(
@@ -277,6 +335,7 @@ def _do_import(entity_type: str, data_rows: List[Dict]) -> int:
                 returning=False,
             )
             imported += 1
+
     elif entity_type == "employees":
         for row in data_rows:
             execute(
@@ -292,11 +351,12 @@ def _do_import(entity_type: str, data_rows: List[Dict]) -> int:
                 returning=False,
             )
             imported += 1
+
     elif entity_type == "timesheets":
         for row in data_rows:
             execute(
                 "INSERT INTO timesheets (emp_id, ts_date, order_id, operation_no, hours, notes) "
-                "VALUES (%s, %s, %s, %s, %s, %s) ",
+                "VALUES (%s, %s, %s, %s, %s, %s)",
                 (
                     row.get("emp_id"),
                     row.get("ts_date"),
@@ -308,6 +368,7 @@ def _do_import(entity_type: str, data_rows: List[Dict]) -> int:
                 returning=False,
             )
             imported += 1
+
     elif entity_type == "inventory":
         for row in data_rows:
             execute(
@@ -326,6 +387,7 @@ def _do_import(entity_type: str, data_rows: List[Dict]) -> int:
                 returning=False,
             )
             imported += 1
+
     else:
         raise HTTPException(status_code=400, detail=f"Unknown entity_type: {entity_type}")
 

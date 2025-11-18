@@ -9,134 +9,542 @@ OLD COLORS:
 - Pre background: #fafbfc
 */
 
-/* NEW COLOR SCHEME - Inspired by Modern Scheduling Interface */
+/* UPDATED COLOR SCHEME (AA-safe) */
 :root {
   /* Primary Brand Colors - Deep Blues */
   --primary-dark: #1e3a5f;      /* Darkest blue - header gradient start, important text */
   --primary-blue: #2c5282;      /* Main blue - header gradient end, buttons, section headers */
 
-  /* Accent Colors - Status & Interactions */
-  --accent-cyan: #4299e1;       /* Light blue - hover states, links, "New" status */
-  --accent-green: #48bb78;      /* Green - success, submit buttons, "Done" status */
-  --accent-orange: #ed8936;     /* Orange - warnings, "InProd" status */
-  --accent-yellow: #ecc94b;     /* Yellow - pending, "Planned" status */
-  --accent-purple: #9f7aea;     /* Purple - special, "Invoiced" status */
+  /* Accent Colors - darkened for contrast */
+  --accent-cyan:   #2b6cb0;     /* Links, hover, "New" status */
+  --accent-green:  #2f855a;     /* Success, submit buttons, "Done" status */
+  --accent-orange: #c05621;     /* Warnings, "InProd" status */
+  --accent-yellow: #ecc94b;     /* Pending, "Planned" status (dark text on top) */
+  --accent-purple: #805ad5;     /* "Invoiced" status */
 
   /* Neutrals - Backgrounds & Text */
-  --bg-light: #f7fafc;          /* Page background - very light gray-blue */
-  --bg-white: #ffffff;          /* Card backgrounds - pure white */
-  --text-dark: #2d3748;         /* Primary text - dark gray */
-  --text-muted: #718096;        /* Secondary text - medium gray */
-  --border-light: #e2e8f0;      /* Borders & dividers - light gray */
+  --bg-light:   #f7fafc;        /* Page background */
+  --bg-white:   #ffffff;        /* Card backgrounds, inputs */
+  --text-dark:  #2d3748;        /* Primary text */
+  --text-muted: #4a5568;        /* Secondary text (AA on white/bg-light) */
+  --border-light: #e2e8f0;      /* Borders & dividers */
+
+  /* Finance panel text */
+  --finance-text: #e2e8f0;
 
   /* Shadows */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);      /* Small shadow for buttons */
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);      /* Medium shadow for cards */
 }
 
-/*
-COLOR USAGE MAP:
+/* GLOBAL RESET / BASE */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
-HEADER BAR (Gradient)
-- Background: linear-gradient(135deg, var(--primary-dark), var(--primary-blue))
-- Text: white
-- Buttons: rgba(255, 255, 255, 0.2) with backdrop-filter
+html, body {
+  margin: 0;
+  padding: 0;
+}
 
-PRIMARY BUTTONS
-- Background: var(--primary-blue) #2c5282
-- Hover: var(--primary-dark) #1e3a5f
-- Text: white
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-dark);
+  background: var(--bg-light);
+}
 
-SUBMIT BUTTONS
-- Background: var(--accent-green) #48bb78
-- Hover: #38a169 (darker green)
-- Text: white
+/* LINKS */
+a {
+  color: var(--accent-cyan);
+  text-decoration: none;
+}
 
-STATUS BADGES
-- New:      var(--accent-cyan) #4299e1    [Cyan badge]
-- Planned:  var(--accent-yellow) #ecc94b  [Yellow badge]
-- InProd:   var(--accent-orange) #ed8936  [Orange badge]
-- Done:     var(--accent-green) #48bb78   [Green badge]
-- Invoiced: var(--accent-purple) #9f7aea  [Purple badge]
+a:hover,
+a:focus-visible {
+  color: var(--primary-dark);
+  text-decoration: underline;
+}
 
-CARDS
-- Background: var(--bg-white) #ffffff
-- Border: var(--border-light) #e2e8f0
-- Shadow: var(--shadow-md)
-- Hover shadow: 0 8px 12px rgba(0, 0, 0, 0.12)
+/* LAYOUT WRAPPER (optional) */
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
 
-INPUTS & FORMS
-- Background: var(--bg-white) #ffffff
-- Border: var(--border-light) #e2e8f0
-- Focus border: var(--accent-cyan) #4299e1
-- Focus ring: 0 0 0 3px rgba(66, 153, 225, 0.1)
-- Form panel: var(--bg-light) #f7fafc
+/* HEADER BAR */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary-blue));
+  color: #ffffff;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-md);
+}
 
-ORDER LIST ITEMS
-- Background: var(--bg-light) #f7fafc
-- Border: var(--border-light) #e2e8f0
-- Hover background: var(--accent-cyan) #4299e1
-- Hover text: white
-- Left border accent: var(--accent-cyan) #4299e1
+.header-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+}
 
-FINANCE PANEL (Terminal-style)
-- Background: var(--primary-dark) #1e3a5f
-- Text: var(--accent-cyan) #4299e1
-- Border: var(--primary-blue) #2c5282
+.header-subtitle {
+  margin: 0.1rem 0 0;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.85);
+}
 
-SECTION HEADERS (h2)
-- Text: var(--primary-blue) #2c5282
-- Underline: var(--accent-cyan) #4299e1
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
 
-SUBSECTION HEADERS (h3)
-- Text: var(--primary-blue) #2c5282
+.header-actions .btn {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(8px);
+}
 
-MAIN TITLE (h1)
-- Text: var(--primary-dark) #1e3a5f
-- (When in gradient header: white)
+.header-actions .btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
 
-ERROR MESSAGES
-- Background: #fed7d7 (light red)
-- Border: #fc8181 (medium red)
-- Text: #c53030 (dark red)
+/* TYPOGRAPHY */
+h1, h2, h3 {
+  margin: 0 0 0.75rem;
+  font-weight: 600;
+}
 
-SUCCESS MESSAGES
-- Background: #c6f6d5 (light green)
-- Border: var(--accent-green) #48bb78
-- Text: #22543d (dark green)
+h1 {
+  font-size: 1.75rem;
+  color: var(--primary-dark);
+}
 
-PAGE BACKGROUND
-- var(--bg-light) #f7fafc
+h2 {
+  font-size: 1.25rem;
+  color: var(--primary-blue);
+  position: relative;
+  padding-bottom: 0.35rem;
+  margin-top: 1.25rem;
+}
 
-LOADING STATE
-- Text: var(--text-muted) #718096
-*/
+h2::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 2.5rem;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--accent-cyan);
+}
 
-/*
-ACCESSIBILITY NOTES:
+h3 {
+  font-size: 1rem;
+  color: var(--primary-blue);
+  margin-top: 1rem;
+}
 
-- All color combinations meet WCAG AA contrast requirements
-- Focus indicators are clearly visible (cyan glow)
-- Status badges use color + uppercase text for clarity
-- Text sizes are readable (14px minimum)
-- Hover states are obvious (lift animation + color change)
+/* TEXT UTILITIES */
+.text-muted {
+  color: var(--text-muted);
+}
 
-RESPONSIVE BEHAVIOR:
+.text-right {
+  text-align: right;
+}
 
-Desktop (1024px+):
-- Two-column layout
-- Sticky finance panel
-- Horizontal header bar
+.text-center {
+  text-align: center;
+}
 
-Tablet (768px - 1024px):
-- Single column layout
-- Stacked header elements
-- Full-width cards
+/* BUTTONS */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  background: #f7fafc;
+  color: var(--text-dark);
+  box-shadow: var(--shadow-sm);
+  transition: background 0.15s ease, color 0.15s ease,
+              box-shadow 0.15s ease, transform 0.1s ease,
+              border-color 0.15s ease;
+}
 
-Mobile (< 768px):
-- Single column
-- Stacked forms
-- Full-width buttons
-- Touch-friendly sizes
-*/
+.btn:hover {
+  background: #edf2f7;
+  transform: translateY(-1px);
+}
 
+.btn:active {
+  transform: translateY(0);
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.45);
+}
+
+/* Primary actions */
+.btn--primary {
+  background: var(--primary-blue);
+  color: #ffffff;
+  border-color: var(--primary-blue);
+}
+
+.btn--primary:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+/* Secondary / ghost button */
+.btn--secondary {
+  background: #ffffff;
+  color: var(--text-dark);
+  border-color: var(--border-light);
+}
+
+.btn--secondary:hover {
+  background: #edf2f7;
+}
+
+/* Submit / success button */
+.btn--success {
+  background: var(--accent-green);
+  color: #ffffff;
+  border-color: var(--accent-green);
+}
+
+.btn--success:hover {
+  background: #276749; /* darker green */
+  border-color: #276749;
+}
+
+/* Destructive button */
+.btn--danger {
+  background: #e53e3e;
+  color: #ffffff;
+  border-color: #e53e3e;
+}
+
+.btn--danger:hover {
+  background: #c53030;
+  border-color: #c53030;
+}
+
+/* Full-width on mobile (optional) */
+.btn--block {
+  width: 100%;
+}
+
+/* CARDS */
+.card {
+  background: var(--bg-white);
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-light);
+  padding: 1rem;
+  box-shadow: var(--shadow-md);
+}
+
+.card + .card {
+  margin-top: 1rem;
+}
+
+.card--hoverable {
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.card--hoverable:hover {
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+/* FORM PANELS / SECTIONS */
+.form-panel {
+  background: var(--bg-light);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--border-light);
+}
+
+/* FORM CONTROLS */
+label {
+  display: inline-block;
+  margin-bottom: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--text-dark);
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-light);
+  background: var(--bg-white);
+  color: var(--text-dark);
+  font-size: 0.875rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.35);
+}
+
+/* ORDER LIST */
+.order-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.order-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.35rem;
+  background: var(--bg-light);
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-light);
+  color: var(--text-dark);
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+  position: relative;
+  cursor: pointer;
+}
+
+.order-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--accent-cyan);
+}
+
+.order-item:hover {
+  background: var(--accent-cyan);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.order-item:hover .text-muted {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* STATUS BADGES */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* New / cyan */
+.badge--new {
+  background: var(--accent-cyan);
+  color: #ffffff;
+}
+
+/* Planned / yellow with dark text */
+.badge--planned {
+  background: var(--accent-yellow);
+  color: var(--text-dark);
+}
+
+/* In production / orange */
+.badge--inprod {
+  background: var(--accent-orange);
+  color: #ffffff;
+}
+
+/* Done / green */
+.badge--done {
+  background: var(--accent-green);
+  color: #ffffff;
+}
+
+/* Invoiced / purple */
+.badge--invoiced {
+  background: var(--accent-purple);
+  color: #ffffff;
+}
+
+/* FINANCE PANEL (terminal-style) */
+.finance-panel {
+  background: var(--primary-dark);
+  color: var(--finance-text);
+  border-radius: 0.75rem;
+  border: 1px solid var(--primary-blue);
+  padding: 0.75rem 1rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.8rem;
+  overflow-x: auto;
+}
+
+.finance-panel__title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #ffffff;
+}
+
+.finance-panel__accent {
+  color: var(--accent-cyan);
+}
+
+.finance-panel__line--muted {
+  color: rgba(226, 232, 240, 0.75);
+}
+
+/* MESSAGES / ALERTS */
+.alert {
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  margin: 0.5rem 0;
+}
+
+.alert-icon {
+  margin-top: 0.1rem;
+}
+
+/* Error */
+.alert--error {
+  background: #fed7d7;
+  border: 1px solid #fc8181;
+  color: #c53030;
+}
+
+/* Success */
+.alert--success {
+  background: #c6f6d5;
+  border: 1px solid var(--accent-green);
+  color: #22543d;
+}
+
+/* LOADING STATE */
+.loading-text {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+/* TABLES (if any) */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+th,
+td {
+  border: 1px solid var(--border-light);
+  padding: 0.4rem 0.5rem;
+}
+
+th {
+  background: #edf2f7;
+  text-align: left;
+  font-weight: 600;
+}
+
+/* RESPONSIVE LAYOUT */
+.layout {
+  display: grid;
+  grid-template-columns: 2fr 1.1fr;
+  gap: 1rem;
+}
+
+/* Desktop: sticky finance panel */
+@media (min-width: 1024px) {
+  .layout-sidebar-sticky {
+    position: sticky;
+    top: 1rem;
+  }
+}
+
+/* Tablet */
+@media (max-width: 1023.98px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .btn--block-tablet {
+    width: 100%;
+  }
+}
+
+/* Mobile */
+@media (max-width: 767.98px) {
+  .page {
+    padding: 1rem;
+  }
+
+  .header {
+    padding: 0.75rem 1rem;
+  }
+
+  .header-title {
+    font-size: 1.35rem;
+  }
+
+  .btn,
+  .btn--block {
+    width: 100%;
+  }
+
+  .order-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+}
