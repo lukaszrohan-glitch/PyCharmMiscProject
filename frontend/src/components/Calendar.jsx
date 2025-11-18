@@ -40,17 +40,26 @@ function fmtLocal(date){
   return `${y}-${m}-${d}`;
 }
 
-export default function Calendar({ year, month, selectedDate, onSelectDate, totalsByDate = {} }) {
+export default function Calendar({ year, month, selectedDate, onSelectDate, totalsByDate = {}, lang }) {
   const weeks = getMonthDays(year, month)
   const todayStr = new Date().toISOString().slice(0,10)
-  const monthLabel = new Date(year, month, 1).toLocaleDateString(undefined, { month:'long', year:'numeric' })
+  const locale = lang === 'pl' ? 'pl-PL' : undefined
+  const monthLabel = new Date(year, month, 1).toLocaleDateString(locale, { month:'long', year:'numeric' })
+  const dayLabels = Array.from({length:7}).map((_,i)=>{
+    const d = new Date(2020, 5, 1 + i) // arbitrary week
+    // Convert to Monday-first
+    const weekday = (d.getDay() + 6) % 7
+    const ref = new Date(2020, 5, 1 + weekday)
+    return ref.toLocaleDateString(locale, { weekday:'short' })
+  })
 
   const fmt = (date) => fmtLocal(date)
 
   return (
     <div className="calendar">
+      <div className="cal-month" style={{fontWeight:700, margin:'4px 0 6px'}}>{monthLabel}</div>
       <div className="calendar-grid">
-        {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => (
+        {dayLabels.map(d => (
           <div key={d} className="cal-header">{d}</div>
         ))}
         {weeks.map((week, i) => {

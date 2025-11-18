@@ -30,7 +30,7 @@ from routers.inventory import router as inventory_router
 # Initialize logging early
 setup_logging()
 
-app = FastAPI(title="SMB Tool API", version="1.0", openapi_tags=tags_metadata)
+app = FastAPI(title="Synterra API", version="1.0", openapi_tags=tags_metadata)
 
 
 # ---- CORS ----

@@ -191,9 +191,9 @@ export default function Orders({ lang }) {
               <div className="form-group">
                 <label>{t.status}</label>
                 <select name="status" value={formData.status} onChange={handleInputChange}>
-                  <option value="Planned">Planned</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Completed">Completed</option>
+                  <option value="Planned">{lang==='pl'?'Planowane':'Planned'}</option>
+                  <option value="InProd">{lang==='pl'?'W produkcji':'In Production'}</option>
+                  <option value="Done">{lang==='pl'?'Zakończone':'Completed'}</option>
                 </select>
               </div>
               <div className="form-group">
@@ -233,7 +233,9 @@ export default function Orders({ lang }) {
                 <tr key={order.order_id}>
                   <td>{order.order_id}</td>
                   <td>{(() => { const c = customers.find(x => String(x.customer_id)===String(order.customer_id)); return c ? c.name : order.customer_id })()}</td>
-                  <td><span className={`status-badge ${order.status.toLowerCase()}`}>{order.status}</span></td>
+                  <td><span className={`status-badge ${order.status.toLowerCase()}`}>
+                    {lang==='pl' ? (order.status==='Planned'?'Planowane': order.status==='InProd'?'W produkcji': order.status==='Done'?'Zakończone': order.status) : (order.status==='InProd'?'In Production': order.status==='Done'?'Completed': order.status)}
+                  </span></td>
                   <td>{order.due_date || '-'}</td>
                   <td>
                     <button className="btn-sm btn-edit" onClick={() => handleEditClick(order)}>{t.edit}</button>

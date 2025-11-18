@@ -110,19 +110,6 @@ export default function Header({ lang, setLang, currentView, setCurrentView, pro
               </button>
             </div>
 
-            <button
-              className={styles.themeToggle}
-              onClick={() => {
-                const next = isDark ? 'light' : 'dark';
-                try { window.setTheme && window.setTheme(next); } catch {}
-                setIsDark(!isDark);
-              }}
-              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-              aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {isDark ? '☀️' : '🌙'}
-            </button>
-
             {profile && (
               <div className={styles.profileSection}>
                 <button className={styles.profileBtn} onClick={onSettings}>
@@ -172,4 +159,5 @@ export default function Header({ lang, setLang, currentView, setCurrentView, pro
     </header>
   );
 }
+
 

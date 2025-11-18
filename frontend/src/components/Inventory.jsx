@@ -55,6 +55,20 @@ export default function Inventory({ lang }) {
     selectProduct: 'Select product'
   };
 
+  const reasonLabel = (code) => {
+    if (lang === 'pl') {
+      switch (String(code)) {
+        case 'PO': return 'Zakup';
+        case 'WO': return 'Produkcja';
+        case 'Sale': return 'Sprzedaż';
+        case 'Adjust':
+        case 'Adjustment': return 'Korekta';
+        default: return code;
+      }
+    }
+    return code;
+  }
+
   useEffect(() => {
     loadInventory();
     loadProducts();
@@ -249,7 +263,7 @@ export default function Inventory({ lang }) {
                   <td>{item.txn_id}</td>
                   <td>{item.product_id}</td>
                   <td>{item.qty_change}</td>
-                  <td>{item.reason}</td>
+                  <td>{reasonLabel(item.reason)}</td>
                   <td>{item.lot || '—'}</td>
                   <td>{item.location || '—'}</td>
                   <td>

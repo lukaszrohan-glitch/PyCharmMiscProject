@@ -29,6 +29,10 @@ function isoWeekInfo(dateStr){
 }
 
 export default function Approvals(){
+  const lang = (typeof localStorage!=='undefined' && localStorage.getItem('lang')) || 'pl'
+  const t = lang==='pl' ? {
+    pending: 'Oczekujące zatwierdzenia', allEmployees: 'Wszyscy pracownicy', apply:'Zastosuj', exportPending:'Eksport oczekujących CSV', approveSelected:'Zatwierdź zaznaczone', weeklyPending:'Podsumowanie tygodniowe (oczekujące)', weeklyApproved:'Podsumowanie tygodniowe (zatwierdzone)', approveWeek:'Zatwierdź tydzień', selectWeek:'Zaznacz tydzień', noPending:'Brak oczekujących pozycji'
+  } : { pending:'Pending Approvals', allEmployees:'All employees', apply:'Apply', exportPending:'Export Pending CSV', approveSelected:'Approve Selected', weeklyPending:'Weekly pending', weeklyApproved:'Weekly approved', approveWeek:'Approve Week', selectWeek:'Select Week', noPending:'No pending items' }
   const [rows, setRows] = useState([])
   const [selected, setSelected] = useState({})
   const [loading, setLoading] = useState(false)
@@ -138,9 +142,9 @@ export default function Approvals(){
   return (
     <div style={{ padding: 8, border: '1px solid #e1e4e8', borderRadius: 6, background: '#fff' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap: 8, flexWrap:'wrap' }}>
-        <h3 style={{ marginRight: 'auto' }}>Pending Approvals</h3>
+        <h3 style={{ marginRight: 'auto' }}>{t.pending}</h3>
         <select value={filterEmpId} onChange={e=> setFilterEmpId(e.target.value)}>
-          <option value="">All employees</option>
+          <option value="">{t.allEmployees}</option>
           {employees.map(e => (
             <option key={e.emp_id} value={e.emp_id}>{e.name} ({e.emp_id})</option>
           ))}
@@ -151,28 +155,28 @@ export default function Approvals(){
           <input type="checkbox" checked={showApprovedWeekly} onChange={e=> setShowApprovedWeekly(e.target.checked)} />
           Approved weekly
         </label>
-        <button onClick={load} disabled={loading}>Apply</button>
-        <button onClick={exportPending} disabled={loading}>Export Pending CSV</button>
-        <button onClick={approveSelected} disabled={loading}>Approve Selected</button>
+        <button onClick={load} disabled={loading}>{t.apply}</button>
+        <button onClick={exportPending} disabled={loading}>{t.exportPending}</button>
+        <button onClick={approveSelected} disabled={loading}>{t.approveSelected}</button>
       </div>
       {error && <div style={{ color:'crimson', marginTop: 6 }}>{error}</div>}
 
       {/* Weekly summary with mode badge */}
       {weekly.length > 0 && (
         <div style={{ marginTop: 8, padding: 8, border:'1px solid #eee', borderRadius: 6, background:'#fafafa' }}>
-          <strong>{showApprovedWeekly ? 'Weekly approved' : 'Weekly pending'}</strong>
+          <strong>{showApprovedWeekly ? t.weeklyApproved : t.weeklyPending}</strong>
           <ul>
             {weekly.map(w => (
               <li key={w.week_label} style={{ marginTop: 4 }}>
                 {w.week_label} — {w.total_hours}h — {w.rows.length} entries
                 {!showApprovedWeekly && (
                   <>
-                    <button className="btn" style={{ marginLeft: 8 }} onClick={()=>approveWeek(w)} disabled={loading}>Approve Week</button>
+                    <button className="btn" style={{ marginLeft: 8 }} onClick={()=>approveWeek(w)} disabled={loading}>{t.approveWeek}</button>
                     <button className="btn" style={{ marginLeft: 8 }} onClick={()=>{
                       const sel = {}
                       for (const r of w.rows) sel[r.ts_id] = true
                       setSelected(prev => ({ ...prev, ...sel }))
-                    }}>Select Week</button>
+                    }}>{t.selectWeek}</button>
                   </>
                 )}
               </li>
@@ -214,7 +218,7 @@ export default function Approvals(){
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={8} style={{ textAlign:'center', color:'#888' }}>No pending items</td></tr>
+              <tr><td colSpan={8} style={{ textAlign:'center', color:'#888' }}>{t.noPending}</td></tr>
             )}
           </tbody>
         </table>

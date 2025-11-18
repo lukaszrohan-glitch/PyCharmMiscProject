@@ -54,7 +54,7 @@ export default function Timesheets({ lang }) {
     noItems: 'Brak wpisów',
     selectEmployee: 'Wybierz pracownika',
     selectOrder: 'Wybierz zamówienie',
-    approvedOnly: 'Tylko zatwierdzone'
+    approvedOnly: 'Tylko zatwierdzone', exportCsv: 'Eksport CSV', exportMonthly: 'Eksport podsumowania', approvedTag: 'Zatwierdzone', approve: 'Zatwierdź', unapprove: 'Cofnij zatwierdzenie'
   } : {
     title: 'Timesheets',
     employee: 'Employee',
@@ -74,7 +74,7 @@ export default function Timesheets({ lang }) {
     noItems: 'No entries',
     selectEmployee: 'Select employee',
     selectOrder: 'Select order',
-    approvedOnly: 'Approved only'
+    approvedOnly: 'Approved only', exportCsv: 'Export CSV', exportMonthly: 'Export Monthly Summary', approvedTag: 'Approved', approve: 'Approve', unapprove: 'Unapprove'
   };
 
   useEffect(() => {
@@ -253,7 +253,7 @@ export default function Timesheets({ lang }) {
             } catch (err) {
               alert('Export failed: ' + err.message)
             }
-          }} className="btn btn-sm">Export CSV</button>
+          }} className="btn btn-sm">{t.exportCsv}</button>
           <button className="btn btn-sm" onClick={async () => {
             try {
               const { start, end } = monthRange(currentMonth.year, currentMonth.month)
@@ -269,7 +269,7 @@ export default function Timesheets({ lang }) {
             } catch (err) {
               alert('Export summary failed: ' + err.message)
             }
-          }} className="btn btn-sm">Export Monthly Summary</button>
+          }} className="btn btn-sm">{t.exportMonthly}</button>
           <button className="btn btn-primary" onClick={handleAddClick}>{t.add}</button>
         </div>
       </div>
@@ -287,6 +287,7 @@ export default function Timesheets({ lang }) {
           selectedDate={selectedDate}
           onSelectDate={setSelectedDate}
           totalsByDate={summary}
+          lang={lang}
         />
       </div>
 
@@ -316,7 +317,7 @@ export default function Timesheets({ lang }) {
                   }catch(err){
                     alert('Export week failed: ' + err.message)
                   }
-                }}>Export CSV</button>
+                }}>{t.exportCsv}</button>
                 {isAdmin && (
                   <button className="btn" style={{ marginLeft: 8 }} onClick={async () => {
                     try{
@@ -477,7 +478,7 @@ export default function Timesheets({ lang }) {
                   <td>
                     {item.notes || '—'}
                     {Number(item.approved) ? (
-                      <span style={{ marginLeft: 8, color: '#16a34a', fontWeight: 600 }}>Approved</span>
+                      <span style={{ marginLeft: 8, color: '#16a34a', fontWeight: 600 }}>{t.approvedTag}</span>
                     ) : null}
                   </td>
                   <td>
@@ -493,7 +494,7 @@ export default function Timesheets({ lang }) {
                         } catch(err){
                           alert('Approve failed: ' + err.message)
                         }
-                      }}>Approve</button>
+                          }}>{t.approve}</button>
                     ) : isAdmin ? (
                       <button className="btn-sm" onClick={async ()=>{
                         try {
@@ -504,7 +505,7 @@ export default function Timesheets({ lang }) {
                         } catch(err){
                           alert('Unapprove failed: ' + err.message)
                         }
-                      }}>Unapprove</button>
+                          }}>{t.unapprove}</button>
                     ) : null}
                   </td>
                 </tr>
@@ -516,3 +517,4 @@ export default function Timesheets({ lang }) {
     </div>
   );
 }
+
