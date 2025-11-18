@@ -1628,3 +1628,26 @@ input::placeholder {
     font-size: 11px;
   }
 }
+/* ============================================
+   CONTRAST SAFETY – WHITE ON DARK, DARK ON LIGHT
+   ============================================ */
+
+/* Dark gradient headers / navbars: white text */
+.app-header,
+.odoo-topbar {
+  color: #ffffff;
+}
+
+/* Data tables and main content: dark text on light background */
+.data-table th,
+.data-table td,
+table th,
+table td,
+.orders-container,
+.inventory-container,
+.timesheets-container,
+.products-container,
+.col,
+.container {
+  color: var(--text-dark);
+}

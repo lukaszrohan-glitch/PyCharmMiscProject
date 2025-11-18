@@ -1,3 +1,4 @@
+
 from pydantic import BaseModel, Field, condecimal, field_validator, ConfigDict
 from typing import Optional, List
 from datetime import date
@@ -18,6 +19,7 @@ class InventoryReason(str, Enum):
     WO = "WO"
     Sale = "Sale"
     Adjust = "Adjust"
+    Adjustment = "Adjustment"  # Add this line
 
 
 class Order(BaseModel):

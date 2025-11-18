@@ -1,11 +1,109 @@
-/* same minimal fixes copied from dist */
-:root, html { color-scheme: light dark; }
-html { background: #ffffff; color: #0f1724; }
-html[data-theme="dark"], [data-theme="dark"] { background: #0f1724; color: #ffffff; }
-body { margin: 0; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
-h1,h2,h3,h4,p,div,span,button,label,input { color: inherit; }
-.app-header, .odoo-topbar, header { color: inherit; }
-.odoo-search, input[type="text"], input[type="search"] { color: inherit; background: rgba(255,255,255,0.03); border: 1px solid rgba(0,0,0,0.08); }
-html[data-theme="dark"] .odoo-search, html[data-theme="dark"] input[type="text"], html[data-theme="dark"] input[type="search"] { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); }
-.lang-btn, .pill, .chip { color: inherit; }
+/* Global color scheme & safe defaults */
+:root {
+  color-scheme: light;
+}
 
+html {
+  background: #ffffff;
+  color: #1f2937; /* dark-ish text */
+}
+
+html[data-theme="dark"],
+[data-theme="dark"] {
+  color-scheme: dark;
+  background: #0f1724;
+  color: #f9fafb; /* light text on dark */
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Inherit text color by default */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+div,
+span,
+button,
+label,
+input,
+textarea,
+select {
+  color: inherit;
+}
+
+/* Light areas – dark text */
+.container,
+.col,
+.table-container,
+.orders-container,
+.inventory-container,
+.timesheets-container,
+.products-container,
+.card,
+.panel,
+.box,
+.data-table,
+table {
+  background-color: #ffffff;
+  color: #1f2937;
+}
+
+/* Dark header / nav bars – white text */
+.app-header,
+.odoo-topbar,
+header.header-dark {
+  color: #ffffff;
+}
+
+/* Ensure table cells are always readable */
+table th,
+table td,
+.data-table th,
+.data-table td {
+  color: #1f2937;
+}
+
+/* Any explicitly dark background → force white text */
+*[style*="background:#000"],
+*[style*="background: #000"],
+*[style*="background:#111"],
+*[style*="background:#1f2937"],
+*[style*="background-color:#000"],
+*[style*="background-color:#111"],
+*[style*="background-color:#1f2937"] {
+  color: #ffffff;
+}
+
+/* Inputs & search fields follow current theme */
+input[type="text"],
+input[type="search"],
+input[type="email"],
+input[type="password"],
+.odoo-search {
+  color: inherit;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+html[data-theme="dark"] input[type="text"],
+html[data-theme="dark"] input[type="search"],
+html[data-theme="dark"] input[type="email"],
+html[data-theme="dark"] input[type="password"],
+html[data-theme="dark"] .odoo-search {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+/* Pills, chips, lang buttons – kolor z aktualnego kontekstu */
+.lang-btn,
+.pill,
+.chip {
+  color: inherit;
+}
