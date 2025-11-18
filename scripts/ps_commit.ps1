@@ -66,6 +66,13 @@ if ($forcedAdds.Count -gt 0) {
     }
 }
 
+# Check if there are any staged changes before attempting to commit
+$status = & git status --porcelain
+if (-not $status) {
+    Write-Host "Working tree clean. Nothing to commit." -ForegroundColor Green
+    exit 0
+}
+
 # Commit
 Write-Host "Committing with message: $Message" -ForegroundColor Cyan
 & git commit -m "$Message"
