@@ -55,6 +55,7 @@ export default function Header({ lang, setLang, currentView, setCurrentView, pro
   const navItems = [
     { id: 'dashboard', label: t.dashboard, icon: 'D' },
     { id: 'orders', label: t.orders, icon: 'O' },
+    { id: 'clients', label: lang==='pl' ? 'Klienci' : 'Clients', icon: 'C' },
     { id: 'inventory', label: t.inventory, icon: 'I' },
     { id: 'timesheets', label: t.timesheets, icon: 'T' },
     { id: 'reports', label: t.reports, icon: 'R' }

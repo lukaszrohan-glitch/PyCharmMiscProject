@@ -28,10 +28,10 @@ export function AuthProvider({ children }) {
     })()
   }, [])
 
-  const loginWithCredentials = async (email, password) => {
+  const loginWithCredentials = async (email, password, persistLocal=false) => {
     const res = await api.login(email, password)
     const token = res?.access_token || res?.token || res?.tokens?.access_token
-    if (token) api.setToken(token)
+    if (token) api.setToken(token, persistLocal ? 'local' : 'session')
     // Prefer server-provided user, otherwise fetch
     const user = res?.user || (await api.getProfile())
     setProfile(user || null)
@@ -39,8 +39,8 @@ export function AuthProvider({ children }) {
   }
 
   // Accept an already obtained login result (for compatibility with existing flows)
-  const setAuth = (user, token) => {
-    api.setToken(token || null)
+  const setAuth = (user, token, persistLocal=false) => {
+    api.setToken(token || null, persistLocal ? 'local' : 'session')
     setProfile(user || null)
   }
 

@@ -7,6 +7,8 @@ import Orders from './components/Orders';
 import Inventory from './components/Inventory';
 import Timesheets from './components/Timesheets';
 import Products from './components/Products';
+import Reports from './components/Reports';
+import Clients from './components/Clients';
 import Admin from './components/Admin';
 import { useAuth } from './auth/AuthProvider';
 import styles from './App.module.css';
@@ -75,10 +77,12 @@ export default function App() {
         return <Orders lang={lang} />;
       case 'inventory':
         return <Inventory lang={lang} />;
+      case 'clients':
+        return <Clients lang={lang} />;
       case 'timesheets':
         return <Timesheets lang={lang} />;
       case 'reports':
-        return <Products lang={lang} />;
+        return <Reports lang={lang} />;
       case 'admin':
         // prosty guard po stronie frontu – backend i tak musi sprawdzać
         if (profile?.is_admin) {

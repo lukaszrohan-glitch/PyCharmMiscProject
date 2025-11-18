@@ -6,6 +6,7 @@ export default function Login({ lang, setLang }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [remember, setRemember] = useState(false)
   const [error, setError] = useState('')
 
   const t = lang === 'pl' ? {
@@ -34,7 +35,7 @@ export default function Login({ lang, setLang }) {
     setError('')
     setLoading(true)
     try {
-      const { user } = await loginWithCredentials(email, password)
+      const { user } = await loginWithCredentials(email, password, remember)
       if (!user) setError(t.invalidCredentials)
     } catch (err) {
       console.error('Login error:', err)
@@ -61,6 +62,11 @@ export default function Login({ lang, setLang }) {
           <label htmlFor="password" className="login-label">{t.password}</label>
           <input id="password" type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder={t.password} required disabled={loading} className="login-input" />
 
+          <div className="login-remember">
+            <label>
+              <input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)} /> Remember me
+            </label>
+          </div>
           <button type="submit" className="login-submit" disabled={loading || !email || !password}>{loading ? t.loading : t.signIn}</button>
         </form>
 
@@ -78,6 +84,7 @@ export default function Login({ lang, setLang }) {
         .login-tagline{ margin-top:6px; color:#6e6e73; font-size:13px; }
         .login-error{ background:#fde7e7; color:#b62324; border:1px solid #e0b3b2; padding:10px 12px; border-radius:8px; margin-bottom:12px; }
         .login-form{ display:grid; gap:10px; }
+        .login-remember{ display:flex; justify-content:flex-start; align-items:center; margin: 2px 0 8px; color:#6e6e73; font-size:12px; }
         .login-label{ font-size:12px; color:#3a3a3c; }
         .login-input{ height:42px; padding:0 12px; border-radius:10px; border:1px solid #d2d2d7; background:#fff; color:#1d1d1f; transition:box-shadow .2s,border-color .2s; }
         .login-input:focus{ outline:none; border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.2); }

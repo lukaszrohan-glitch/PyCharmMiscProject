@@ -253,8 +253,8 @@ export default function Timesheets({ lang }) {
             } catch (err) {
               alert('Export failed: ' + err.message)
             }
-          }}>Export CSV</button>
-          <button className="btn" onClick={async () => {
+          }} className="btn btn-sm">Export CSV</button>
+          <button className="btn btn-sm" onClick={async () => {
             try {
               const { start, end } = monthRange(currentMonth.year, currentMonth.month)
               const blob = await api.exportTimesheetsSummaryCSV({ fromDate: start, toDate: end, empId: filterEmpId || undefined })
@@ -269,7 +269,7 @@ export default function Timesheets({ lang }) {
             } catch (err) {
               alert('Export summary failed: ' + err.message)
             }
-          }}>Export Monthly Summary</button>
+          }} className="btn btn-sm">Export Monthly Summary</button>
           <button className="btn btn-primary" onClick={handleAddClick}>{t.add}</button>
         </div>
       </div>
@@ -469,7 +469,7 @@ export default function Timesheets({ lang }) {
                 .filter(item => !selectedDate || item.ts_date === selectedDate)
                 .map(item => (
                 <tr key={item.ts_id}>
-                  <td>{item.emp_id}</td>
+                  <td>{(() => { const e = employees.find(x => String(x.emp_id)===String(item.emp_id)); return e ? (e.name || e.emp_id) : item.emp_id })()}</td>
                   <td>{item.ts_date}</td>
                   <td>{item.order_id || '—'}</td>
                   <td>{item.operation_no || '—'}</td>

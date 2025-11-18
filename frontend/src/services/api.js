@@ -31,23 +31,30 @@ export function setApiKey(key){
 export function setAdminKey(key){
   ADMIN_KEY = key
 }
-export function setToken(t){
+// persist: 'session' | 'local' | undefined (default 'session')
+export function setToken(t, persist){
   TOKEN = t
+  const mode = persist === 'local' ? 'local' : 'session'
   try {
+    const stor = mode === 'local' ? localStorage : sessionStorage
+    const other = mode === 'local' ? sessionStorage : localStorage
     if (t) {
-      // Store under both keys for compatibility
-      localStorage.setItem('authToken', t)
-      localStorage.setItem('token', t)
+      stor.setItem('authToken', t)
+      stor.setItem('token', t)
+      // Clear from the other storage to avoid accidental auto-login
+      other.removeItem('authToken'); other.removeItem('token')
     } else {
-      localStorage.removeItem('authToken')
-      localStorage.removeItem('token')
+      stor.removeItem('authToken'); stor.removeItem('token')
+      other.removeItem('authToken'); other.removeItem('token')
     }
   } catch {}
 }
 export function getToken(){
   if (TOKEN) return TOKEN
   try {
-    const t = localStorage.getItem('authToken') || localStorage.getItem('token')
+    // Prefer sessionStorage so we don't auto-login across new sessions
+    const t = sessionStorage.getItem('authToken') || sessionStorage.getItem('token') ||
+              localStorage.getItem('authToken') || localStorage.getItem('token')
     if (t) TOKEN = t
   } catch {}
   return TOKEN

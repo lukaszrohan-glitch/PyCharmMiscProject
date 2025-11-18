@@ -10,8 +10,8 @@ export default function Settings({ profile, onClose, onOpenAdmin }) {
   const toast = useToast()
   const { t } = useI18n()
 
-  const isStrongPassword = (pwd) =>
-    /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/.test(pwd)
+  // Keep validation simple and aligned with backend: min 8 chars
+  const isStrongPassword = (pwd) => typeof pwd === 'string' && pwd.length >= 8
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -54,12 +54,12 @@ export default function Settings({ profile, onClose, onOpenAdmin }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{t('settings')}</h2>
+          <div className="modal-title">{t('settings')}</div>
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
 
         <div className="user-info">
-          <h3>{t('profile')}</h3>
+          <h3 className="section-title">{t('profile')}</h3>
           <div className="info-grid">
             <div>
               <label>{t('email')}:</label>
@@ -81,7 +81,7 @@ export default function Settings({ profile, onClose, onOpenAdmin }) {
         </div>
 
         <form onSubmit={handleSubmit} className="change-password">
-          <h3>{t('change_password')}</h3>
+          <h3 className="section-title">{t('change_password')}</h3>
           <div className="form-group">
             <label htmlFor="old-password">{t('current_password')}</label>
             <input
@@ -110,10 +110,7 @@ export default function Settings({ profile, onClose, onOpenAdmin }) {
             <small className="help-text">{t('password_hint')}</small>
           </div>
           <div className="form-actions">
-            <button
-              type="submit"
-              disabled={loading || !oldPassword || !newPassword}
-            >
+            <button type="submit" className="primary" disabled={loading || !oldPassword || !newPassword}>
               {loading ? t('changing') : t('change_password')}
             </button>
           </div>
@@ -121,9 +118,9 @@ export default function Settings({ profile, onClose, onOpenAdmin }) {
 
         {profile?.is_admin && (
           <div className="admin-section">
-            <h3>{t('admin_tools')}</h3>
+            <h3 className="section-title">{t('admin_tools')}</h3>
             <div className="admin-actions">
-              <button onClick={onOpenAdmin}>{t('admin_panel')}</button>
+              <button className="secondary" onClick={onOpenAdmin}>{t('admin_panel')}</button>
             </div>
           </div>
         )}
@@ -143,39 +140,16 @@ export default function Settings({ profile, onClose, onOpenAdmin }) {
           z-index: 100;
         }
 
-        .modal-content {
-          background: var(--background);
-          border-radius: 0.5rem;
-          padding: 1.5rem;
-          width: 100%;
-          max-width: 500px;
-          max-height: 90vh;
-          overflow-y: auto;
-          box-shadow: 0 20px 25px -5px var(--shadow);
-        }
+        .modal-content { background: var(--background); border-radius: 16px; padding: 22px; width:100%; max-width:560px; max-height:90vh; overflow:auto; box-shadow: 0 24px 60px rgba(0,0,0,.2); border:1px solid var(--border); }
 
-        .modal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 1.5rem;
-        }
+        .modal-header { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom: 10px; }
+        .modal-title { font-size: 20px; font-weight: 700; letter-spacing:-.02em; }
 
-        .close-btn {
-          background: none;
-          border: none;
-          font-size: 1.5rem;
-          color: var(--text-secondary);
-          cursor: pointer;
-          padding: 0.5rem;
-          margin: -0.5rem;
-        }
+        .close-btn { background: transparent; border:1px solid var(--border); width:28px; height:28px; display:grid; place-items:center; border-radius:8px; color: var(--text-secondary); cursor:pointer; }
+        .close-btn:hover { background: var(--surface-hover); }
 
-        .info-grid {
-          display: grid;
-          gap: 1rem;
-          margin: 1rem 0 2rem;
-        }
+        .section-title { font-size:14px; color: var(--text-secondary); font-weight:700; margin: 14px 0 8px; text-transform: uppercase; letter-spacing:.06em; }
+        .info-grid { display:grid; gap:12px; margin: 8px 0 18px; }
 
         .info-grid label {
           color: var(--text-secondary);
@@ -199,9 +173,11 @@ export default function Settings({ profile, onClose, onOpenAdmin }) {
           font-size: 0.875rem;
         }
 
-        .form-actions {
-          margin-top: 2rem;
-        }
+        .form-actions { margin-top: 16px; display:flex; justify-content:flex-end; }
+        .primary { background:#0071e3; color:#fff; border:1px solid #0071e3; padding:10px 16px; border-radius:12px; font-weight:600; }
+        .primary:hover { background:#0077ed; }
+        .secondary { background:#fff; color:#1d1d1f; border:1px solid var(--border); padding:10px 16px; border-radius:12px; font-weight:600; }
+        .secondary:hover { background: var(--surface-hover); }
 
         .admin-section {
           margin-top: 2rem;
@@ -209,11 +185,7 @@ export default function Settings({ profile, onClose, onOpenAdmin }) {
           border-top: 1px solid var(--border);
         }
 
-        .admin-actions {
-          display: grid;
-          gap: 0.5rem;
-          margin-top: 1rem;
-        }
+        .admin-actions { display:flex; gap:8px; margin-top: 8px; }
 
         @media (max-width: 640px) {
           .modal-content {
