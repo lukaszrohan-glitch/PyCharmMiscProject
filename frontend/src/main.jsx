@@ -1,8 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import './styles/variables.css';
-import './styles/global.css';
+import './styles.css';
+import './style-fixes.css';
 
 // Ensure the root element exists
 const rootElement = document.getElementById('root');
