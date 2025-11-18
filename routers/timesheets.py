@@ -18,6 +18,11 @@ from user_mgmt import require_admin
 router = APIRouter(tags=["Timesheets"])
 
 
+# -------------------------------------------------------------------
+# LIST / GET
+# -------------------------------------------------------------------
+
+
 @router.get("/api/timesheets", response_model=List[Timesheet], summary="List timesheets")
 def timesheets_list(
     limit: Optional[int] = Query(None, ge=1, le=5000),
@@ -26,13 +31,18 @@ def timesheets_list(
     to_date: Optional[str] = Query(None, alias="to"),
     emp_id: Optional[str] = Query(None),
     approved: Optional[bool] = Query(None),
+    _ok: bool = Depends(check_api_key),
 ):
+    """
+    Lista wpisów timesheet z możliwością filtrowania.
+    Wspiera zarówno SQLite (approved = 0/1), jak i Postgres (BOOLEAN).
+    """
     try:
         pool = _get_pool()
         params: List = []
 
         if pool is None:
-            # SQLite – approved jako 0/1
+            # SQLite – approved przechowywane jako 0/1
             sql = (
                 "SELECT ts_id, emp_id, ts_date, order_id, operation_no, hours, notes, "
                 "COALESCE(approved, 0) AS approved, approved_by, approved_at "
@@ -78,7 +88,7 @@ def timesheets_list(
             sql += " OFFSET %s"
             params.append(offset)
 
-        return fetch_all(sql, tuple(params) if params else None)
+        return fetch_all(sql, tuple(params) if params else None) or []
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
@@ -88,7 +98,10 @@ def timesheets_list(
     response_model=Optional[Timesheet],
     summary="Get timesheet by ID",
 )
-def timesheet_get(ts_id: int):
+def timesheet_get(ts_id: int, _ok: bool = Depends(check_api_key)):
+    """
+    Pojedynczy wpis timesheet po ID.
+    """
     try:
         pool = _get_pool()
         if pool is None:
@@ -108,8 +121,16 @@ def timesheet_get(ts_id: int):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
+# -------------------------------------------------------------------
+# CREATE / UPDATE / DELETE
+# -------------------------------------------------------------------
+
+
 @router.post("/api/timesheets", status_code=201, summary="Create timesheet entry")
 def create_timesheet(payload: TimesheetCreate, _ok: bool = Depends(check_api_key)):
+    """
+    Tworzy wpis timesheet.
+    """
     try:
         rows = execute(
             SQL_INSERT_TIMESHEET,
@@ -138,11 +159,17 @@ def create_timesheet(payload: TimesheetCreate, _ok: bool = Depends(check_api_key
     summary="Update timesheet",
 )
 def update_timesheet(
-    ts_id: int, payload: TimesheetUpdate, _ok: bool = Depends(check_api_key)
+    ts_id: int,
+    payload: TimesheetUpdate,
+    _ok: bool = Depends(check_api_key),
 ):
+    """
+    Aktualizacja wpisu timesheet – tylko pola, które są w payloadzie.
+    """
     try:
         updates = []
         params = []
+
         if payload.emp_id is not None:
             updates.append("emp_id = %s")
             params.append(payload.emp_id)
@@ -161,8 +188,10 @@ def update_timesheet(
         if payload.notes is not None:
             updates.append("notes = %s")
             params.append(payload.notes)
+
         if not updates:
             raise HTTPException(status_code=400, detail="No fields to update")
+
         params.append(ts_id)
 
         pool = _get_pool()
@@ -194,11 +223,19 @@ def update_timesheet(
 
 @router.delete("/api/timesheets/{ts_id}", summary="Delete timesheet")
 def delete_timesheet(ts_id: int, _ok: bool = Depends(check_api_key)):
+    """
+    Usuwa wpis timesheet.
+    """
     try:
         execute("DELETE FROM timesheets WHERE ts_id = %s", (ts_id,))
         return {"deleted": True}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
+
+
+# -------------------------------------------------------------------
+# PENDING / SUMMARY
+# -------------------------------------------------------------------
 
 
 @router.get(
@@ -211,6 +248,9 @@ def list_pending_timesheets(
     emp_id: Optional[str] = Query(None),
     _admin=Depends(require_admin),
 ):
+    """
+    Lista niezatwierdzonych wpisów – tylko dla admina (require_admin).
+    """
     try:
         pool = _get_pool()
         params: list = []
@@ -252,7 +292,11 @@ def timesheets_summary(
     to_date: Optional[str] = Query(None, alias="to"),
     emp_id: Optional[str] = Query(None),
     approved: Optional[bool] = Query(None),
+    _ok: bool = Depends(check_api_key),
 ):
+    """
+    Dzienna suma godzin (SUM(hours) GROUP BY ts_date).
+    """
     try:
         pool = _get_pool()
         params: List = []
@@ -290,7 +334,12 @@ def timesheets_weekly_summary(
     to_date: Optional[str] = Query(None, alias="to"),
     emp_id: Optional[str] = Query(None),
     approved: Optional[bool] = Query(None),
+    _ok: bool = Depends(check_api_key),
 ):
+    """
+    Tygodniowe podsumowanie godzin.
+    SQLite – strftime, Postgres – EXTRACT/ISO week.
+    """
     try:
         pool = _get_pool()
         params: list = []
@@ -357,6 +406,11 @@ def timesheets_weekly_summary(
         raise HTTPException(status_code=500, detail=str(exc))
 
 
+# -------------------------------------------------------------------
+# EXPORT CSV
+# -------------------------------------------------------------------
+
+
 @router.get(
     "/api/timesheets/export.csv",
     summary="Export timesheets as CSV",
@@ -366,7 +420,11 @@ def timesheets_export_csv(
     to_date: Optional[str] = Query(None, alias="to"),
     emp_id: Optional[str] = Query(None),
     pending: Optional[bool] = Query(None),
+    _ok: bool = Depends(check_api_key),
 ):
+    """
+    Eksport pełnej listy timesheetów do CSV.
+    """
     try:
         pool = _get_pool()
         params: list = []
@@ -403,6 +461,7 @@ def timesheets_export_csv(
 
         rows = fetch_all(sql, tuple(params) if params else None)
         output = io.StringIO()
+        # BOM dla Excela
         output.write("\ufeff")
         writer = csv.DictWriter(
             output,
@@ -434,7 +493,7 @@ def timesheets_export_csv(
             fname_parts.append(str(emp_id))
         filename = "_".join(fname_parts) + ".csv"
         headers = {
-            "Content-Disposition": f'attachment; filename=\"{filename}\"",
+            "Content-Disposition": f'attachment; filename="{filename}"',
             "Content-Type": "text/csv; charset=utf-8",
         }
         return StreamingResponse(mem, headers=headers)
@@ -450,7 +509,11 @@ def timesheets_export_summary_csv(
     from_date: Optional[str] = Query(None, alias="from"),
     to_date: Optional[str] = Query(None, alias="to"),
     emp_id: Optional[str] = Query(None),
+    _ok: bool = Depends(check_api_key),
 ):
+    """
+    Eksport zarówno dziennych jak i tygodniowych sum godzin do jednego CSV.
+    """
     try:
         # Daily summary
         sql_daily = (
@@ -544,7 +607,7 @@ def timesheets_export_summary_csv(
             fname_parts.append(str(emp_id))
         filename = "_".join(fname_parts) + ".csv"
         headers = {
-            "Content-Disposition": f'attachment; filename=\"{filename}\"",
+            "Content-Disposition": f'attachment; filename="{filename}"',
             "Content-Type": "text/csv; charset=utf-8",
         }
         return StreamingResponse(mem, headers=headers)
@@ -552,11 +615,19 @@ def timesheets_export_summary_csv(
         raise HTTPException(status_code=500, detail=str(exc))
 
 
+# -------------------------------------------------------------------
+# APPROVE / UNAPPROVE (ADMIN)
+# -------------------------------------------------------------------
+
+
 @router.post(
     "/api/timesheets/{ts_id}/approve",
     summary="Approve timesheet entry (admin)",
 )
 def approve_timesheet(ts_id: int, admin=Depends(require_admin)):
+    """
+    Zatwierdzenie wpisu timesheet – admin only.
+    """
     try:
         email = admin.get("email") if isinstance(admin, dict) else None
         sql = (
@@ -581,6 +652,9 @@ def approve_timesheet(ts_id: int, admin=Depends(require_admin)):
     summary="Unapprove timesheet entry (admin)",
 )
 def unapprove_timesheet(ts_id: int, _admin=Depends(require_admin)):
+    """
+    Cofnięcie zatwierdzenia wpisu – admin only.
+    """
     try:
         sql = (
             "UPDATE timesheets "

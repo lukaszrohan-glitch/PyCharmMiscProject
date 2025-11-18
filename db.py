@@ -216,8 +216,8 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
       key_hash TEXT,
       salt TEXT,
       label TEXT,
-      created_at TEXT,
-      active BOOLEAN DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      active INTEGER NOT NULL DEFAULT 1,
       last_used TEXT
     );
     CREATE TABLE IF NOT EXISTS api_key_audit (
@@ -548,3 +548,82 @@ def execute(sql: str, params: Optional[Tuple] = None, returning: bool = False):
                         return rows
                     conn.commit()
                     return None
+
+
+def init_db():
+    """Initializes the database and creates tables if they don't exist."""
+    global POOL
+    db_url = os.getenv("DATABASE_URL")
+
+    if db_url:
+        # PostgreSQL setup
+        # ... existing code
+        
+        # Use PostgreSQL syntax for table creation
+        commands = [
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                email TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                is_admin BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS api_keys (
+                id SERIAL PRIMARY KEY,
+                key_hash TEXT NOT NULL UNIQUE,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                last_used_at TIMESTAMP WITH TIME ZONE,
+                is_active BOOLEAN DEFAULT TRUE,
+                description TEXT
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS admin_audit (
+                id SERIAL PRIMARY KEY,
+                event_type TEXT NOT NULL,
+                event_by TEXT,
+                event_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                details JSONB
+            )
+            """
+        ]
+        # ... existing code
+    else:
+        # SQLite fallback
+        # ... existing code
+        
+        # Use SQLite syntax for table creation
+        commands = [
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                is_admin INTEGER DEFAULT 0,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS api_keys (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                key_hash TEXT NOT NULL UNIQUE,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                last_used_at TEXT,
+                is_active INTEGER DEFAULT 1,
+                description TEXT
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS admin_audit (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                event_type TEXT NOT NULL,
+                event_by TEXT,
+                event_time TEXT DEFAULT CURRENT_TIMESTAMP,
+                details TEXT
+            )
+            """
+        ]
+        # ... existing code
