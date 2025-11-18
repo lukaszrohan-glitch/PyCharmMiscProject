@@ -19,6 +19,33 @@ This document provides step-by-step instructions for deploying Synterra to Railw
   web: alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
   ```
 
+### Windows (PowerShell) equivalents
+
+If you’re running locally in PowerShell, use these commands from the repo root (they avoid Bash `&&` and `${PORT:-8000}` syntax):
+
+```powershell
+# 1) Install Python deps
+pip install -r requirements.txt
+
+# 2) Build frontend
+cd frontend
+npm ci
+npm run build
+cd ..
+
+# 3) Run DB migrations
+alembic upgrade head
+
+# 4) Start the app (use $env:PORT if present; else 8000)
+$port = if ($env:PORT) { [int]$env:PORT } else { 8000 }
+uvicorn main:app --host 0.0.0.0 --port $port
+```
+
+CMD one‑liner alternative:
+```cmd
+cmd /c "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"
+```
+
 ## Architecture Overview
 
 - **One Service: "app"** - Runs FastAPI backend + serves React frontend as static files
