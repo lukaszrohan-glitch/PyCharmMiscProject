@@ -76,8 +76,33 @@
 
 /* Inline desktop nav */
 .desktopNav { display: none; gap: .5rem; justify-content: center; }
-.desktopNav button { background: transparent; border: none; color: var(--text-primary); padding: .5rem .75rem; border-radius: 6px; cursor: pointer; }
-.desktopNav button:hover { text-decoration: underline; }
+.desktopNavBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  padding: .5rem .75rem;
+  border-radius: 0;
+  cursor: pointer;
+  position: relative;
+  font-weight: 600;
+}
+.desktopNavBtn:hover { color: var(--brand-primary); }
+.desktopNavBtnActive {
+  background: transparent;
+  border: none;
+  color: var(--brand-primary);
+  position: relative;
+}
+.desktopNavBtnActive::after {
+  content: '';
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: -6px;
+  height: 2px;
+  background: var(--brand-primary);
+  border-radius: 2px;
+}
 
 @media (min-width: 1024px) {
   .menuBtn { display: none; }

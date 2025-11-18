@@ -86,7 +86,7 @@ export default function Header({ lang, setLang, currentView, setCurrentView, pro
             {navItems.map(item => (
               <button
                 key={item.id}
-                className={currentView === item.id ? styles.navItemActive : styles.navItem}
+                className={currentView === item.id ? styles.desktopNavBtnActive : styles.desktopNavBtn}
                 onClick={() => setCurrentView(item.id)}
               >
                 {item.label}
