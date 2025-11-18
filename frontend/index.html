@@ -5,12 +5,56 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#1e3a8a" />
-    <meta name="description" content="Arkuszownia SMB - System Zarządzania Produkcją dla małych i średnich przedsiębiorstw" />
+    <meta
+      name="description"
+      content="Arkuszownia SMB - System Zarządzania Produkcją dla małych i średnich przedsiębiorstw"
+    />
     <title>Arkuszownia SMB - System Zarządzania Produkcją</title>
+
+    <!-- Global visibility / contrast fix -->
+    <style>
+      :root {
+        /* Spójne z Twoją paletą z COLOR_REFERENCE.css */
+        --bg-light: #f7fafc;
+        --text-dark: #2d3748;
+      }
+
+      /* Globalne tło i kolor tekstu */
+      html,
+      body {
+        background-color: var(--bg-light) !important;
+        color: var(--text-dark) !important;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* Główna zawartość aplikacji + elementy w tabelach / kartach */
+      #root,
+      main,
+      table,
+      th,
+      td,
+      div,
+      span,
+      p,
+      label {
+        color: var(--text-dark) !important;
+      }
+
+      /* Linki (np. numery zleceń) w tabelach */
+      a,
+      a:visited {
+        color: #2c5282 !important; /* Twój primary-blue */
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
-

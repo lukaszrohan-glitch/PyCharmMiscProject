@@ -72,3 +72,10 @@ Write-Host "Committing with message: $Message" -ForegroundColor Cyan
 if ($LASTEXITCODE -ne 0) { Write-Error "git commit failed with exit code $LASTEXITCODE"; exit $LASTEXITCODE }
 
 Write-Host "Commit finished." -ForegroundColor Green
+
+# ADD THIS PART
+Write-Host "Pushing to origin main..." -ForegroundColor Cyan
+& git push origin main
+if ($LASTEXITCODE -ne 0) { Write-Error "git push failed with exit code $LASTEXITCODE"; exit $LASTEXITCODE }
+
+Write-Host "Push successful. Deployment should trigger now." -ForegroundColor Green
