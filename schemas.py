@@ -220,6 +220,7 @@ class Customer(BaseModel):
     nip: Optional[str] = None
     address: Optional[str] = None
     email: Optional[str] = None
+    contact_person: Optional[str] = None
 
 
 class CustomerCreate(BaseModel):
@@ -230,6 +231,7 @@ class CustomerCreate(BaseModel):
     nip: Optional[str] = None
     address: Optional[str] = None
     email: Optional[str] = None
+    contact_person: Optional[str] = None
 
 
 class CustomerUpdate(BaseModel):
@@ -239,6 +241,7 @@ class CustomerUpdate(BaseModel):
     nip: Optional[str] = None
     address: Optional[str] = None
     email: Optional[str] = None
+    contact_person: Optional[str] = None
 
 
 class Employee(BaseModel):

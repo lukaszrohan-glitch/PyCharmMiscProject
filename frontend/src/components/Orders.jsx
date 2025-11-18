@@ -14,6 +14,7 @@ export default function Orders({ lang }) {
     status: 'Planned',
     due_date: ''
   });
+  const selectedCustomer = customers.find(c => String(c.customer_id) === String(formData.customer_id));
 
   const t = lang === 'pl' ? {
     title: 'Zamówienia',
@@ -179,6 +180,14 @@ export default function Orders({ lang }) {
                   ))}
                 </select>
               </div>
+              {selectedCustomer && (
+                <div className="form-group" style={{background:'var(--surface)', border:"1px solid var(--border)", padding:'10px', borderRadius:'10px'}}>
+                  <div style={{fontWeight:600, marginBottom:6}}>{selectedCustomer.name}</div>
+                  <div style={{color:'var(--text-secondary)'}}>{selectedCustomer.address || '-'}</div>
+                  <div style={{color:'var(--text-secondary)'}}>{selectedCustomer.email || '-'}</div>
+                  <div style={{color:'var(--text-secondary)'}}>POC: {selectedCustomer.contact_person || '-'}</div>
+                </div>
+              )}
               <div className="form-group">
                 <label>{t.status}</label>
                 <select name="status" value={formData.status} onChange={handleInputChange}>
@@ -223,9 +232,9 @@ export default function Orders({ lang }) {
               {orders.map(order => (
                 <tr key={order.order_id}>
                   <td>{order.order_id}</td>
-                  <td>{order.customer_id}</td>
+                  <td>{(() => { const c = customers.find(x => String(x.customer_id)===String(order.customer_id)); return c ? c.name : order.customer_id })()}</td>
                   <td><span className={`status-badge ${order.status.toLowerCase()}`}>{order.status}</span></td>
-                  <td>{order.due_date || '—'}</td>
+                  <td>{order.due_date || '-'}</td>
                   <td>
                     <button className="btn-sm btn-edit" onClick={() => handleEditClick(order)}>{t.edit}</button>
                     <button className="btn-sm btn-danger" onClick={() => handleDeleteClick(order.order_id)}>{t.delete}</button>

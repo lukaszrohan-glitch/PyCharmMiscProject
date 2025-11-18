@@ -36,7 +36,7 @@ def customers_list(
 def customer_get(customer_id: str):
     try:
         return fetch_one(
-            "SELECT customer_id, name, nip, address, email FROM customers WHERE customer_id = %s",
+            "SELECT customer_id, name, nip, address, email, contact_person FROM customers WHERE customer_id = %s",
             (customer_id,),
         )
     except Exception as exc:
@@ -47,15 +47,16 @@ def customer_get(customer_id: str):
 def create_customer(payload: CustomerCreate, _ok: bool = Depends(check_api_key)):
     try:
         rows = execute(
-            "INSERT INTO customers (customer_id, name, nip, address, email) "
-            "VALUES (%s, %s, %s, %s, %s) "
-            "RETURNING customer_id, name, nip, address, email",
+            "INSERT INTO customers (customer_id, name, nip, address, email, contact_person) "
+            "VALUES (%s, %s, %s, %s, %s, %s) "
+            "RETURNING customer_id, name, nip, address, email, contact_person",
             (
                 payload.customer_id,
                 payload.name,
                 payload.nip,
                 payload.address,
                 payload.email,
+                payload.contact_person,
             ),
             returning=True,
         )
@@ -85,13 +86,16 @@ def update_customer(customer_id: str, payload: CustomerUpdate, _ok: bool = Depen
         if payload.email is not None:
             updates.append("email = %s")
             params.append(payload.email)
+        if getattr(payload, 'contact_person', None) is not None:
+            updates.append("contact_person = %s")
+            params.append(payload.contact_person)
         if not updates:
             raise HTTPException(status_code=400, detail="No fields to update")
         params.append(customer_id)
         sql = (
             f"UPDATE customers SET {', '.join(updates)} "
             "WHERE customer_id = %s "
-            "RETURNING customer_id, name, nip, address, email"
+            "RETURNING customer_id, name, nip, address, email, contact_person"
         )
         rows = execute(sql, params, returning=True)
         if not rows:
@@ -110,4 +114,3 @@ def delete_customer(customer_id: str, _ok: bool = Depends(check_api_key)):
         return {"deleted": True}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
-

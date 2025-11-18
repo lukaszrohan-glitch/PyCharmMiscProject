@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS customers (
   nip text,
   address text,
   email text,
+  contact_person text,
   payment_terms_days integer NOT NULL DEFAULT 14,
   active integer NOT NULL DEFAULT 1
 );
@@ -147,7 +148,8 @@ CREATE TABLE IF NOT EXISTS subscription_plans (
 );
 
 -- minimal seed
-INSERT INTO customers(customer_id, name, nip, address, email) VALUES ('CUST-ALFA', 'Alfa Sp. z o.o.', '1234567890', 'Warszawa', 'biuro@alfa.pl') ON CONFLICT DO NOTHING;
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS contact_person text;
+INSERT INTO customers(customer_id, name, nip, address, email, contact_person) VALUES ('CUST-ALFA', 'Alfa Sp. z o.o.', '1234567890', 'Warszawa', 'biuro@alfa.pl', 'Jan Kowalski') ON CONFLICT DO NOTHING;
 INSERT INTO products(product_id, name, std_cost, price) VALUES ('P-100', 'Gadzet A', 10, 30), ('P-101', 'Komponent X', 2, 5) ON CONFLICT DO NOTHING;
 INSERT INTO bom(parent_product_id, component_id, qty_per, scrap_pct) VALUES ('P-100','P-101',2,0.05) ON CONFLICT DO NOTHING;
 INSERT INTO routings(product_id, operation_no, work_center, std_setup_min, std_run_min_per_unit) VALUES ('P-100', 10, 'Monta\u017c', 15, 2.5) ON CONFLICT DO NOTHING;

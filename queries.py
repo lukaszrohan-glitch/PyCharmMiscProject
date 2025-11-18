@@ -33,7 +33,7 @@ ORDER BY product_id;
 """
 
 SQL_CUSTOMERS = """
-SELECT customer_id, name, nip, address, email 
+SELECT customer_id, name, nip, address, email, contact_person 
 FROM customers 
 ORDER BY customer_id;
 """

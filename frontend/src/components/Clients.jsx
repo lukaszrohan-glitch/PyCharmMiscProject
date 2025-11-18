@@ -5,7 +5,7 @@ export default function Clients({ lang }) {
   const [items, setItems] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState(null)
-  const [form, setForm] = useState({ customer_id:'', name:'', nip:'', address:'', email:'' })
+  const [form, setForm] = useState({ customer_id:'', name:'', nip:'', address:'', email:'', contact_person:'' })
   const [loading, setLoading] = useState(false)
 
   const t = lang === 'pl' ? {
@@ -20,7 +20,7 @@ export default function Clients({ lang }) {
   async function load(){ try{ setItems(await api.getCustomers()||[]) } catch(e){ console.error(e) } }
 
   function openAdd(){ setEditing(null); setForm({ customer_id:'', name:'', nip:'', address:'', email:'' }); setShowForm(true) }
-  function openEdit(row){ setEditing(row); setForm({ customer_id:row.customer_id, name:row.name||'', nip:row.nip||'', address:row.address||'', email:row.email||'' }); setShowForm(true) }
+  function openEdit(row){ setEditing(row); setForm({ customer_id:row.customer_id, name:row.name||'', nip:row.nip||'', address:row.address||'', email:row.email||'', contact_person:row.contact_person||'' }); setShowForm(true) }
 
   async function submit(e){ e.preventDefault(); if(loading) return; setLoading(true)
     try{
@@ -48,6 +48,7 @@ export default function Clients({ lang }) {
               <th>{t.nip}</th>
               <th>{t.address}</th>
               <th>{t.email}</th>
+              <th>POC</th>
               <th style={{textAlign:'right'}}>{t.actions}</th>
             </tr>
           </thead>
@@ -59,6 +60,7 @@ export default function Clients({ lang }) {
                 <td>{r.nip||'-'}</td>
                 <td>{r.address||'-'}</td>
                 <td>{r.email||'-'}</td>
+                <td>{r.contact_person||'-'}</td>
                 <td style={{textAlign:'right'}}>
                   <button className="btn-sm btn-edit" onClick={()=>openEdit(r)}>{t.edit}</button>
                   <button className="btn-sm btn-danger" onClick={()=>remove(r.customer_id)}>{t.del}</button>
@@ -97,6 +99,10 @@ export default function Clients({ lang }) {
                 <label>{t.email}</label>
                 <input type="email" value={form.email} onChange={e=>setForm({...form, email:e.target.value})} />
               </div>
+              <div className="form-group">
+                <label>POC</label>
+                <input value={form.contact_person} onChange={e=>setForm({...form, contact_person:e.target.value})} />
+              </div>
               <div className="form-actions">
                 <button className="btn btn-primary" type="submit" disabled={loading}>{t.save}</button>
                 <button className="btn btn-sm" type="button" onClick={()=>setShowForm(false)}>{t.cancel}</button>
@@ -108,4 +114,3 @@ export default function Clients({ lang }) {
     </div>
   )
 }
-
