@@ -42,3 +42,6 @@ Thumbs.db
 # Secrets
 .env.backup.*
 archive/tunnel-token.txt
+
+# Windows reserved filename accidentally created
+CON
