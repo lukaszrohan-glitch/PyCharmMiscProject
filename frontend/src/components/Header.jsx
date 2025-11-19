@@ -1,37 +1,27 @@
 import React, { useEffect, useRef, useState } from 'react';
 import styles from './Header.module.css';
+import { useI18n } from '../i18n';
 
 export default function Header({ lang, setLang, currentView, setCurrentView, profile, onSettings, onLogout }) {
+  const { t: tt } = useI18n(lang)
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const [isDark, setIsDark] = useState(() => {
     try { return document.documentElement.classList.contains('dark'); } catch { return false; }
   });
 
-  const t = lang === 'pl' ? {
+  const t = {
     appName: 'Synterra',
-    tagline: 'System Zarzadzania Produkcja',
-    menu: 'Menu',
-    dashboard: 'Panel glowny',
-    orders: 'Zamowienia',
-    inventory: 'Magazyn',
-    timesheets: 'Czas pracy',
-    reports: 'Raporty',
-    settings: 'Ustawienia',
-    logout: 'Wyloguj',
-    search: 'Szukaj...'
-  } : {
-    appName: 'Synterra',
-    tagline: 'Manufacturing Management System',
-    menu: 'Menu',
-    dashboard: 'Dashboard',
-    orders: 'Orders',
-    inventory: 'Inventory',
-    timesheets: 'Timesheets',
-    reports: 'Reports',
-    settings: 'Settings',
-    logout: 'Logout',
-    search: 'Search...'
+    tagline: tt('brand_tagline') || (lang==='pl' ? 'System Zarządzania Produkcją' : 'Manufacturing Management System'),
+    menu: tt('menu') || 'Menu',
+    dashboard: tt('dashboard') || (lang==='pl' ? 'Panel glowny' : 'Dashboard'),
+    orders: tt('orders') || (lang==='pl' ? 'Zamowienia' : 'Orders'),
+    inventory: tt('inventory') || (lang==='pl' ? 'Magazyn' : 'Inventory'),
+    timesheets: tt('timesheets') || (lang==='pl' ? 'Czas pracy' : 'Timesheets'),
+    reports: tt('reports') || (lang==='pl' ? 'Raporty' : 'Reports'),
+    settings: tt('settings') || (lang==='pl' ? 'Ustawienia' : 'Settings'),
+    logout: tt('logout') || (lang==='pl' ? 'Wyloguj' : 'Logout'),
+    search: (lang==='pl' ? 'Szukaj...' : 'Search...')
   };
 
   useEffect(() => {

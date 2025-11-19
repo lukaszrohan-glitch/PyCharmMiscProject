@@ -238,7 +238,7 @@ export default function Timesheets({ lang }) {
             const d = new Date(currentMonth.year, currentMonth.month + 1, 1);
             setCurrentMonth({ year: d.getFullYear(), month: d.getMonth() });
           }}>{'>'}</button>
-          <button className="btn" onClick={async () => {
+          <button className="btn btn-sm" onClick={async () => {
             try {
               const { start, end } = monthRange(currentMonth.year, currentMonth.month)
               const blob = await api.exportTimesheetsCSV({ fromDate: start, toDate: end, empId: filterEmpId || undefined })
@@ -253,7 +253,7 @@ export default function Timesheets({ lang }) {
             } catch (err) {
               alert('Export failed: ' + err.message)
             }
-          }} className="btn btn-sm">{t.exportCsv}</button>
+          }}>{t.exportCsv}</button>
           <button className="btn btn-sm" onClick={async () => {
             try {
               const { start, end } = monthRange(currentMonth.year, currentMonth.month)
@@ -269,7 +269,7 @@ export default function Timesheets({ lang }) {
             } catch (err) {
               alert('Export summary failed: ' + err.message)
             }
-          }} className="btn btn-sm">{t.exportMonthly}</button>
+          }}>{t.exportMonthly}</button>
           <button className="btn btn-primary" onClick={handleAddClick}>{t.add}</button>
         </div>
       </div>
