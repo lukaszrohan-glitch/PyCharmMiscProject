@@ -160,11 +160,14 @@ if FRONTEND_DIST.exists():
         name="assets",
     )
 
+    # Avoid stale index.html after deploy; allow assets to be cached by hash
+    NO_CACHE_INDEX_HEADERS = {"Cache-Control": "no-store, max-age=0, must-revalidate"}
+
     @app.get("/")
     async def spa_root():
         index_file = FRONTEND_DIST / "index.html"
         if index_file.exists():
-            return FileResponse(index_file)
+            return FileResponse(index_file, headers=NO_CACHE_INDEX_HEADERS, media_type="text/html; charset=utf-8")
         app_logger.error(f"Frontend index.html not found at {index_file}")
         raise HTTPException(
             status_code=500,
@@ -175,7 +178,7 @@ if FRONTEND_DIST.exists():
     async def spa_fallback(full_path: str):
         index_file = FRONTEND_DIST / "index.html"
         if index_file.exists():
-            return FileResponse(index_file)
+            return FileResponse(index_file, headers=NO_CACHE_INDEX_HEADERS, media_type="text/html; charset=utf-8")
         app_logger.error(f"Frontend index.html not found at {index_file}")
         raise HTTPException(
             status_code=500,

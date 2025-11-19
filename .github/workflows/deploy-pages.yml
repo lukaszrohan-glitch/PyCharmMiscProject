@@ -37,14 +37,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
+      - name: Build (Vite) with base path + API URL
         env:
-          # Provide your API base (e.g., https://api.example.com)
+          # Provide your API base (e.g., https://your-app.up.railway.app)
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
           # Optional legacy keys if you still use them
           VITE_ADMIN_KEY: ${{ secrets.VITE_ADMIN_KEY }}
           VITE_API_KEY: ${{ secrets.VITE_API_KEY }}
-        run: npm run build
+        run: |
+          REPO=${GITHUB_REPOSITORY#*/}
+          echo "Building with base=/$REPO/"
+          npm run build -- --base=/$REPO/
 
       - name: Prepare Pages artifacts
         run: |

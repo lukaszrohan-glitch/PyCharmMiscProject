@@ -19,7 +19,7 @@ jobs:
     name: Railway Deploy
     runs-on: ubuntu-latest
     env:
-      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}              # PROJECT TOKEN
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
       RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }}
     steps:
@@ -38,11 +38,62 @@ jobs:
         run: |
           set -euo pipefail
           railway --version
-          echo "RAILWAY_TOKEN length: ${#RAILWAY_TOKEN}"
           echo "Service ID: $RAILWAY_SERVICE_ID"
           EXTRA_ENV_FLAG=""
           if [ -n "${RAILWAY_ENVIRONMENT_ID:-}" ]; then
             EXTRA_ENV_FLAG="--environment \"$RAILWAY_ENVIRONMENT_ID\""
           fi
-          # Project token w RAILWAY_TOKEN sam wskazuje projekt – nie trzeba --project
+          # Project is implied by RAILWAY_TOKEN; no --project needed
           eval railway up --service "$RAILWAY_SERVICE_ID" $EXTRA_ENV_FLAG --ci
+
+  smoke:
+    name: Smoke After Deploy
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: ${{ github.event.inputs.base_url || secrets.RAILWAY_PROD_URL }}
+      ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+    steps:
+      - name: Ensure BASE_URL is set
+        run: |
+          if [ -z "$BASE_URL" ]; then
+            echo "BASE_URL not provided. Set input 'base_url' or secret 'RAILWAY_PROD_URL'. Skipping smoke."; echo "skip" > skip; fi
+
+      - name: Checkout repository
+        if: ${{ !hashFiles('skip') }}
+        uses: actions/checkout@v4
+
+      - name: Make smoke script executable
+        if: ${{ !hashFiles('skip') }}
+        run: chmod +x scripts/smoke.sh
+
+      - name: Wait for readiness (max 10 min)
+        if: ${{ !hashFiles('skip') }}
+        run: |
+          set -euo pipefail
+          END=$((SECONDS + 600))
+          while [ $SECONDS -lt $END ]; do
+            if curl -fsS "$BASE_URL/readyz" >/dev/null; then
+              echo "Service is ready."; break
+            fi
+            sleep 5
+          done
+          curl -fsS "$BASE_URL/readyz" >/dev/null
+
+      - name: Check SPA root and assets
+        if: ${{ !hashFiles('skip') }}
+        run: |
+          set -euo pipefail
+          HTML="$(curl -fsS "$BASE_URL/")"
+          echo "$HTML" | grep -q '<div id="root"' && echo "Root index served" || { echo "Root index missing"; exit 1; }
+          if echo "$HTML" | grep -q "/assets/"; then
+            echo "Assets referenced in index.html"
+          else
+            echo "WARNING: No /assets/ references found in index.html"
+          fi
+
+      - name: Run smoke
+        if: ${{ !hashFiles('skip') }}
+        run: ./scripts/smoke.sh "$BASE_URL"
+
