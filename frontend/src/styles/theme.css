@@ -1,103 +1,218 @@
 /*
-  This file defines the design tokens for the application.
-  It includes colors, fonts, spacing, and other core design variables.
+  Design Tokens — UX/UI values for consistency, clarity, accessibility, and brand coherence
+  Apple-inspired palette with WCAG AA+ contrast, semantic naming, and scalable spacing
 */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Font Family */
-  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  /* ========== TYPOGRAPHY ========== */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'SF Mono', 'Monaco', 'Cascadia Code', 'Courier New', monospace;
 
-  /* Colors */
-  --brand-primary: #4F46E5; /* A modern, vibrant indigo */
-  --brand-primary-hover: #4338CA;
-  --brand-accent: #EC4899; /* A complementary pink for highlights */
+  --font-size-xs: 0.75rem;    /* 12px */
+  --font-size-sm: 0.875rem;   /* 14px */
+  --font-size-base: 1rem;     /* 16px — base for accessibility */
+  --font-size-lg: 1.125rem;   /* 18px */
+  --font-size-xl: 1.25rem;    /* 20px */
+  --font-size-2xl: 1.5rem;    /* 24px */
+  --font-size-3xl: 1.875rem;  /* 30px */
+  --font-size-4xl: 2.25rem;   /* 36px */
 
-  /* Neutral Palette (Grays) */
-  /* Apple-like neutrals */
-  --bg-primary: #f5f5f7;      /* Page background */
-  --bg-secondary: #ffffff;    /* Surfaces */
-  --bg-tertiary: #f2f2f7;     /* Hover / subtle blocks */
+  --line-height-tight: 1.25;
+  --line-height-base: 1.5;     /* WCAG optimal readability */
+  --line-height-relaxed: 1.75;
 
-  --text-primary: #1d1d1f;    /* Primary text */
-  --text-secondary: #6e6e73;  /* Secondary text */
-  --text-on-brand: #FFFFFF;   /* White text for use on primary brand color backgrounds */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
 
-  --border-primary: #d2d2d7;  /* Subtle border color */
-  --border-focus: #4F46E5;    /* Border color for focused elements */
+  /* ========== COLORS — Apple-like Light Theme (WCAG AA+) ========== */
+  /* Primary Brand */
+  --brand-primary: #0071e3;       /* Apple blue */
+  --brand-primary-hover: #0077ed;
+  --brand-primary-active: #005bb5;
+  --brand-accent: #ff3b30;        /* Red accent */
 
-  /* Status Colors */
-  --status-success: #10B981;
-  --status-warning: #F59E0B;
-  --status-error: #EF4444;
+  /* Neutral Palette */
+  --bg-primary: #f5f5f7;          /* Page background */
+  --bg-secondary: #ffffff;        /* Cards, surfaces */
+  --bg-tertiary: #f2f2f7;         /* Hover states, subtle blocks */
+  --bg-overlay: rgba(0, 0, 0, 0.5); /* Modals, dropdowns */
 
-  /* Spacing & Sizing */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
+  --text-primary: #1d1d1f;        /* Headings, body — WCAG AAA */
+  --text-secondary: #6e6e73;      /* Muted text — WCAG AA */
+  --text-tertiary: #86868b;       /* Disabled text */
+  --text-on-brand: #ffffff;       /* White text on brand colors */
+  --text-link: #0071e3;           /* Link color */
+  --text-link-hover: #0077ed;
 
-  /* Border Radius */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 16px;
+  --border-primary: #d2d2d7;      /* Subtle borders */
+  --border-secondary: #e5e5ea;    /* Lighter borders */
+  --border-focus: #0071e3;        /* Focus ring */
 
-  /* Transitions */
-  --transition-fast: all 0.15s ease-in-out;
+  /* Status Colors (semantic, WCAG compliant) */
+  --status-success: #34c759;
+  --status-success-bg: #e8f9f0;
+  --status-warning: #ff9f0a;
+  --status-warning-bg: #fff8e6;
+  --status-error: #ff3b30;
+  --status-error-bg: #ffe8e6;
+  --status-info: #007aff;
+  --status-info-bg: #e6f2ff;
+
+  /* ========== SPACING & SIZING (8px grid) ========== */
+  --spacing-0: 0;
+  --spacing-1: 0.25rem;  /* 4px */
+  --spacing-2: 0.5rem;   /* 8px */
+  --spacing-3: 0.75rem;  /* 12px */
+  --spacing-4: 1rem;     /* 16px */
+  --spacing-5: 1.25rem;  /* 20px */
+  --spacing-6: 1.5rem;   /* 24px */
+  --spacing-8: 2rem;     /* 32px */
+  --spacing-10: 2.5rem;  /* 40px */
+  --spacing-12: 3rem;    /* 48px */
+  --spacing-16: 4rem;    /* 64px */
+
+  /* ========== BORDER RADIUS ========== */
+  --radius-xs: 0.25rem;  /* 4px */
+  --radius-sm: 0.375rem; /* 6px */
+  --radius-md: 0.5rem;   /* 8px */
+  --radius-lg: 0.75rem;  /* 12px */
+  --radius-xl: 1rem;     /* 16px */
+  --radius-full: 9999px; /* Pill shape */
+
+  /* ========== SHADOWS (depth hierarchy) ========== */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04);
+
+  /* ========== TRANSITIONS (motion & microinteractions) ========== */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ========== Z-INDEX (stacking layers) ========== */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+
+  /* ========== LAYOUT ========== */
+  --max-width-xs: 20rem;   /* 320px */
+  --max-width-sm: 24rem;   /* 384px */
+  --max-width-md: 28rem;   /* 448px */
+  --max-width-lg: 32rem;   /* 512px */
+  --max-width-xl: 36rem;   /* 576px */
+  --max-width-2xl: 42rem;  /* 672px */
+  --max-width-4xl: 56rem;  /* 896px */
+  --max-width-6xl: 72rem;  /* 1152px */
+  --max-width-full: 100%;
+
+  --header-height: 64px;
 }
 
-/* Base theme variables */
+/* ========== LEGACY ALIASES (backward compatibility) ========== */
 :root {
-  --primary: #0071e3; /* Apple blue */
-  --primary-dark: #0077ed;
-  --primary-light: #4ea3ff;
-  --success: #34c759;
-  --success-dark: #28a745;
-  --danger: #ff3b30;
-  --danger-dark: #d70015;
-  --warning: #ff9f0a;
-  --warning-dark: #d98200;
+  --primary: var(--brand-primary);
+  --primary-dark: var(--brand-primary-active);
+  --primary-light: var(--brand-primary-hover);
+  --success: var(--status-success);
+  --danger: var(--status-error);
+  --warning: var(--status-warning);
   --text: var(--text-primary);
-  --text-secondary: var(--text-secondary);
   --background: var(--bg-primary);
   --surface: var(--bg-secondary);
   --surface-hover: var(--bg-tertiary);
   --border: var(--border-primary);
-  --shadow: rgba(0, 0, 0, 0.08);
-  --focus-ring: rgba(0, 113, 227, 0.35);
+  --shadow: var(--shadow-sm);
+  --focus-ring: var(--border-focus);
+
+  /* Legacy spacing (map to new scale) */
+  --spacing-xs: var(--spacing-1);
+  --spacing-sm: var(--spacing-2);
+  --spacing-md: var(--spacing-4);
+  --spacing-lg: var(--spacing-6);
+  --spacing-xl: var(--spacing-8);
 }
 
-/* Dark theme (triggered by html.dark) */
-html.dark, .dark {
-  --primary: #3b82f6;
-  --primary-dark: #2563eb;
-  --primary-light: #60a5fa;
-  --text: #f3f4f6;
-  --text-secondary: #9ca3af;
-  --background: #111827;
-  --surface: #1f2937;
-  --surface-hover: #374151;
-  --border: #374151;
-  --shadow: rgba(0, 0, 0, 0.5);
-  --focus-ring: rgba(59, 130, 246, 0.5);
+/* ========== GLOBAL BASE STYLES (accessibility, performance, clarity) ========== */
+* {
+  box-sizing: border-box;
 }
 
-/* Global styles */
-body {
-  background-color: var(--background);
-  color: var(--text);
-  transition: background-color 0.3s, color 0.3s;
-  line-height: 1.5;
+html {
+  font-size: 16px; /* Base for rem calculations */
+  line-height: var(--line-height-base);
+  -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
-  font-family: var(--font-sans);
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
 }
 
-/* Focus styles for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color var(--transition-base), color var(--transition-base);
+  min-height: 100vh;
+}
+
+/* ========== ACCESSIBILITY (focus, keyboard navigation, screen readers) ========== */
+*:focus {
+  outline: none; /* Remove default */
+}
+
 *:focus-visible {
-  outline: 2px solid var(--focus-ring);
+  outline: 2px solid var(--border-focus);
   outline-offset: 2px;
-  border-radius: 0.375rem;
+  border-radius: var(--radius-sm);
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Skip to main content link (accessibility) */
+.skip-to-main {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  background: var(--brand-primary);
+  color: var(--text-on-brand);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-md);
+  z-index: var(--z-tooltip);
+  transition: top var(--transition-fast);
+}
+
+.skip-to-main:focus {
+  top: var(--spacing-2);
 }
 
 /* Components */

@@ -22,6 +22,8 @@ export default function Header({
   const [q, setQ] = useState('')
   const inputRef = useRef(null)
   const chromeRef = useRef(null)
+  const menuBtnRef = useRef(null)
+  const helpBtnRef = useRef(null)
 
   const t = {
     appName: 'Synterra',
@@ -54,19 +56,30 @@ export default function Header({
     try { localStorage.setItem('lang', lang) } catch {}
   }, [lang])
 
-  // Close dropdowns on outside click
+  // Close dropdowns on outside click with proper focus management
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (!chromeRef.current) return
       if (!chromeRef.current.contains(e.target)) {
-        setMenuOpen(false)
-        setShowHelp(false)
+        if (menuOpen) {
+          setMenuOpen(false)
+          menuBtnRef.current?.focus()
+        }
+        if (showHelp) {
+          setShowHelp(false)
+          helpBtnRef.current?.focus()
+        }
       }
     }
     const handleKey = (e) => {
       if (e.key === 'Escape') {
-        setMenuOpen(false)
-        setShowHelp(false)
+        if (menuOpen) {
+          setMenuOpen(false)
+          menuBtnRef.current?.focus()
+        } else if (showHelp) {
+          setShowHelp(false)
+          helpBtnRef.current?.focus()
+        }
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -75,7 +88,7 @@ export default function Header({
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('keydown', handleKey)
     }
-  }, [])
+  }, [menuOpen, showHelp])
 
   // Lazy-load orders when search first opens
   useEffect(() => {
@@ -114,32 +127,45 @@ export default function Header({
   }
 
   return (
-    <header className={styles.shell}>
-      <div className={styles.chrome} ref={chromeRef}>
+    <>
+      {/* Skip to main content link for keyboard users (accessibility) */}
+      <a href="#main-content" className="skip-to-main">
+        {lang === 'pl' ? 'Przejdź do treści' : 'Skip to main content'}
+      </a>
+
+      <header className={styles.shell} role="banner">
+        <div className={styles.chrome} ref={chromeRef}>
         {/* FAR LEFT: moving logo */}
         <div className={styles.leftCluster}>
-          <div className={styles.logoWrap}>
-            <SynterraLogo className={styles.logoSvg} />
+          <button
+            className={styles.logoWrap}
+            onClick={() => changeView('dashboard')}
+            aria-label={lang === 'pl' ? 'Wróć do strony głównej' : 'Go to home page'}
+            type="button"
+          >
+            <SynterraLogo className={styles.logoSvg} aria-hidden="true" />
             <div className={styles.logoTextBlock}>
               <span className={styles.logoText}>{t.appName}</span>
               <span className={styles.logoTagline}>{t.tagline}</span>
             </div>
-          </div>
+          </button>
         </div>
 
         {/* CENTER: compact menu + search, positioned away from far left */}
-        <div className={styles.centerCluster}>
+        <nav className={styles.centerCluster} aria-label={lang === 'pl' ? 'Nawigacja główna' : 'Primary navigation'}>
           <div className={styles.menuPill}>
             <button
+              ref={menuBtnRef}
               className={styles.menuTrigger}
               onClick={() => { setMenuOpen((v) => !v); setShowHelp(false) }}
-              aria-haspopup="menu"
+              aria-haspopup="true"
               aria-expanded={menuOpen}
+              aria-label={menuOpen ? (lang === 'pl' ? 'Zamknij menu' : 'Close menu') : (lang === 'pl' ? 'Otwórz menu' : 'Open menu')}
               type="button"
             >
-              <span className={styles.menuDot} />
-              <span className={styles.menuDot} />
-              <span className={styles.menuDot} />
+              <span className={styles.menuDot} aria-hidden="true" />
+              <span className={styles.menuDot} aria-hidden="true" />
+              <span className={styles.menuDot} aria-hidden="true" />
               <span className={styles.menuLabel}>
                 {navItems.find((n) => n.id === currentView)?.label || t.menu}
               </span>
@@ -177,27 +203,45 @@ export default function Header({
             type="button"
             className={styles.homeBtn}
             onClick={() => changeView('dashboard')}
+            aria-label={t.home}
+            aria-current={currentView === 'dashboard' ? 'page' : undefined}
           >
             {t.home}
           </button>
+        </nav>
 
           <div className={styles.searchShell}>
+            <label htmlFor="global-search" className="visually-hidden">
+              {t.search}
+            </label>
             <input
+              id="global-search"
               ref={inputRef}
               className={styles.searchInput}
               placeholder={t.search}
               value={q}
               onChange={(e) => setQ(e.target.value)}
               aria-label={t.search}
+              aria-autocomplete="list"
+              aria-controls={results.length > 0 ? 'search-results' : undefined}
+              type="search"
+              autoComplete="off"
             />
             {results.length > 0 && (
-              <div className={styles.searchDropdown}>
+              <div
+                id="search-results"
+                className={styles.searchDropdown}
+                role="listbox"
+                aria-label={lang === 'pl' ? 'Wyniki wyszukiwania' : 'Search results'}
+              >
                 {results.map((r) => (
                   <button
                     key={r.order_id}
                     className={styles.searchItem}
                     type="button"
+                    role="option"
                     onClick={() => selectResult(r.order_id)}
+                    aria-label={`${lang === 'pl' ? 'Zamówienie' : 'Order'} ${r.order_id}`}
                   >
                     <span className={styles.searchItemPrimary}>#{r.order_id}</span>
                     <span className={styles.searchItemMeta}>
@@ -212,11 +256,13 @@ export default function Header({
 
         {/* RIGHT: language, help, profile */}
         <div className={styles.rightCluster}>
-          <div className={styles.langSwitch}>
+          <div className={styles.langSwitch} role="group" aria-label={lang === 'pl' ? 'Wybór języka' : 'Language selection'}>
             <button
               className={lang === 'pl' ? styles.langActive : styles.langBtn}
               onClick={() => setLang('pl')}
               type="button"
+              aria-pressed={lang === 'pl'}
+              aria-label="Polski"
             >
               PL
             </button>
@@ -224,6 +270,8 @@ export default function Header({
               className={lang === 'en' ? styles.langActive : styles.langBtn}
               onClick={() => setLang('en')}
               type="button"
+              aria-pressed={lang === 'en'}
+              aria-label="English"
             >
               EN
             </button>
@@ -231,19 +279,21 @@ export default function Header({
 
           <div className={styles.helpCluster}>
             <button
+              ref={helpBtnRef}
               className={styles.helpBtn}
               onClick={() => { setShowHelp((v) => !v); setMenuOpen(false) }}
-              aria-haspopup="menu"
+              aria-haspopup="true"
               aria-expanded={showHelp}
+              aria-label={showHelp ? (lang === 'pl' ? 'Zamknij pomoc' : 'Close help') : t.help}
               type="button"
             >
-              ?
+              <span aria-hidden="true">?</span>
             </button>
             {showHelp && (
-              <div className={styles.helpDropdown} role="menu">
+              <div className={styles.helpDropdown} role="menu" aria-label={lang === 'pl' ? 'Menu pomocy' : 'Help menu'}>
                 <button
                   className={styles.helpItem}
-                  onClick={() => { setShowHelp(false); onOpenGuide?.() }}
+                  onClick={() => { setShowHelp(false); helpBtnRef.current?.focus(); onOpenGuide?.() }}
                   role="menuitem"
                   type="button"
                 >
@@ -295,5 +345,6 @@ export default function Header({
         </div>
       </div>
     </header>
+    </>
   )
 }
