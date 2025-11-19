@@ -28,11 +28,11 @@
   --font-weight-bold: 700;
 
   /* ========== COLORS — Apple-like Light Theme (WCAG AA+) ========== */
-  /* Primary Brand */
-  --brand-primary: #0071e3;       /* Apple blue */
-  --brand-primary-hover: #0077ed;
-  --brand-primary-active: #005bb5;
-  --brand-accent: #ff3b30;        /* Red accent */
+  /* Primary Brand - Synterra Teal/Cyan */
+  --brand-primary: #0891b2;       /* Cyan-600 - Synterra brand color */
+  --brand-primary-hover: #06b6d4; /* Cyan-500 - lighter on hover */
+  --brand-primary-active: #0e7490; /* Cyan-700 - darker when active */
+  --brand-accent: #f59e0b;        /* Amber accent for premium features */
 
   /* Neutral Palette */
   --bg-primary: #f5f5f7;          /* Page background */
@@ -43,13 +43,14 @@
   --text-primary: #1d1d1f;        /* Headings, body — WCAG AAA */
   --text-secondary: #6e6e73;      /* Muted text — WCAG AA */
   --text-tertiary: #86868b;       /* Disabled text */
+  --text-disabled: #d1d5db;       /* Fully disabled state */
   --text-on-brand: #ffffff;       /* White text on brand colors */
-  --text-link: #0071e3;           /* Link color */
-  --text-link-hover: #0077ed;
+  --text-link: #0891b2;           /* Link color - matches brand */
+  --text-link-hover: #06b6d4;     /* Link hover - lighter */
 
   --border-primary: #d2d2d7;      /* Subtle borders */
   --border-secondary: #e5e5ea;    /* Lighter borders */
-  --border-focus: #0071e3;        /* Focus ring */
+  --border-focus: #0891b2;        /* Focus ring - matches brand */
 
   /* Status Colors (semantic, WCAG compliant) */
   --status-success: #34c759;
@@ -75,12 +76,14 @@
   --spacing-16: 4rem;    /* 64px */
 
   /* ========== BORDER RADIUS ========== */
-  --radius-xs: 0.25rem;  /* 4px */
-  --radius-sm: 0.375rem; /* 6px */
-  --radius-md: 0.5rem;   /* 8px */
-  --radius-lg: 0.75rem;  /* 12px */
-  --radius-xl: 1rem;     /* 16px */
-  --radius-full: 9999px; /* Pill shape */
+  --radius-xs: 0.25rem;   /* 4px */
+  --radius-sm: 0.375rem;  /* 6px */
+  --radius-md: 0.5rem;    /* 8px */
+  --radius-lg: 0.75rem;   /* 12px */
+  --radius-xl: 1rem;      /* 16px */
+  --radius-2xl: 1.5rem;   /* 24px - for larger buttons/cards */
+  --radius-3xl: 2rem;     /* 32px - for hero elements */
+  --radius-full: 9999px;  /* Pill shape */
 
   /* ========== SHADOWS (depth hierarchy) ========== */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -88,6 +91,7 @@
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
   --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.15), 0 10px 20px rgba(0, 0, 0, 0.1);
 
   /* ========== TRANSITIONS (motion & microinteractions) ========== */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -99,6 +103,9 @@
   --z-sticky: 1020;
   --z-fixed: 1030;
   --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
   --z-modal: 1050;
   --z-popover: 1060;
   --z-tooltip: 1070;
