@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { adminListUsers, adminCreateUser, setAdminKey, getToken } from '../services/api';
 import { useAuth } from '../auth/AuthProvider';
+import styles from './Admin.module.css';
 
 export default function Admin({ lang }) {
   const { profile } = useAuth();
@@ -13,6 +14,8 @@ export default function Admin({ lang }) {
   const [success, setSuccess] = useState('');
   const [isAuthed, setIsAuthed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showErrorDetails, setShowErrorDetails] = useState(false);
+  const emailInputRef = useRef(null);
 
   const t = (key) => {
     const translations = {
@@ -82,17 +85,21 @@ export default function Admin({ lang }) {
       setSuccess('');
       setLoading(true);
       try {
-        const result = await adminListUsers();
-        setUsers(result || []);
-        setIsAuthed(true);
-        setSuccess(' ' + t('authenticate'));
-      } catch (err) { console.error(err); try { window.lastAdminError = err?.message || String(err) } catch {}
-        setIsAuthed(false);
-        setError(' ' + t('error_generic'));
-        try { document.getElementById('admin-error-details').textContent = err?.message || String(err) } catch {}
-      } finally {
-        setLoading(false);
-      }
+      const result = await adminListUsers();
+      setUsers(result || []);
+      setIsAuthed(true);
+      setSuccess('✅ ' + t('authenticate'));
+      // Focus email input after successful auth
+      setTimeout(() => emailInputRef.current?.focus(), 100);
+    } catch (err) {
+      console.error(err);
+      const errorMsg = err?.message || String(err);
+      window.lastAdminError = errorMsg;
+      setIsAuthed(false);
+      setError('❌ ' + t('error_generic') + ' - ' + errorMsg);
+    } finally {
+      setLoading(false);
+    }
       return;
     }
     const trimmedKey = adminKey.trim();
@@ -196,173 +203,306 @@ export default function Admin({ lang }) {
 
   if (!isAuthed && !profile?.is_admin) {
     return (
-      <div className="page page--admin">
-        <div className="card card--admin-auth">
-          <h2>🔐 {t('admin_key')}</h2>
-          <p style={{ color: '#6b7280', marginBottom: '1.5rem' }}>
-            {t('enter_admin_key')}
-          </p>
+      <div className={styles.page}>
+        <div className={styles.container}>
+          <div className={`${styles.card} ${styles.authCard}`}>
+            <h1 className={styles.authTitle}>
+              <span aria-hidden="true">🔐</span>
+              {t('admin_key')}
+            </h1>
+            <p className={styles.authDescription}>
+              {t('enter_admin_key')}
+            </p>
 
-          {error && (
-            <div className="error-msg" style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-              <span>{error}</span>
+            {error && (
+              <div className={`${styles.alert} ${styles.alertError}`} role="alert">
+                <span className={styles.alertIcon} aria-hidden="true">⚠️</span>
+                <div className={styles.alertContent}>
+                  <div>{error}</div>
+                  {window.lastAdminError && (
+                    <>
+                      <div className={styles.alertActions}>
+                        <button
+                          type="button"
+                          className={styles.alertBtn}
+                          onClick={() => setShowErrorDetails(!showErrorDetails)}
+                          aria-expanded={showErrorDetails}
+                        >
+                          {showErrorDetails ? 'Hide' : 'Show'} details
+                        </button>
+                      </div>
+                      {showErrorDetails && (
+                        <div className={styles.errorDetails}>
+                          {window.lastAdminError}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {success && (
+              <div className={`${styles.alert} ${styles.alertSuccess}`} role="status">
+                <span className={styles.alertIcon} aria-hidden="true">✅</span>
+                <div className={styles.alertContent}>{success}</div>
+              </div>
+            )}
+
+            <form
+              onSubmit={(e) => { e.preventDefault(); authenticate(); }}
+              className={styles.form}
+            >
+              <div className={styles.fieldGroup}>
+                <label htmlFor="admin-key" className={styles.label}>
+                  {t('admin_key')} <span className={styles.required}>*</span>
+                </label>
+                <input
+                  id="admin-key"
+                  type="password"
+                  className={styles.input}
+                  placeholder="••••••••••••••"
+                  value={adminKey}
+                  onChange={(e) => setAdminKeyInput(e.target.value)}
+                  disabled={loading}
+                  autoComplete="off"
+                  required
+                  aria-required="true"
+                  autoFocus
+                />
+              </div>
+
               <button
-                type="button"
-                onClick={(e)=>{
-                  e.preventDefault();
-                  const el = document.getElementById('admin-error-details');
-                  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-                }}
-                style={{ marginLeft: 8, background:'transparent', border:'none', color:'#6e6e73', cursor:'pointer' }}
+                type="submit"
+                className={`${styles.btn} ${styles.btnPrimary}`}
+                disabled={loading || !adminKey.trim()}
+                aria-busy={loading}
               >
-                details
+                {loading && <span className={styles.spinner} aria-hidden="true" />}
+                <span>{loading ? '⏳ Authenticating...' : '🔓 ' + t('authenticate')}</span>
               </button>
-            </div>
-          )}
-          <pre id="admin-error-details" style={{display:'none', whiteSpace:'pre-wrap', background:'#f5f5f7', border:'1px solid #d2d2d7', padding:'8px', borderRadius:'8px', color:'#1d1d1f'}}>
-          </pre>
-          {success && <div className="success-msg">{success}</div>}
-
-          <input
-            type="password"
-            placeholder={t('admin_key')}
-            value={adminKey}
-            onChange={(e) => setAdminKeyInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !loading && authenticate()}
-            disabled={loading}
-            autoComplete="off"
-          />
-          <button
-            onClick={authenticate}
-            disabled={loading || !adminKey.trim()}
-          >
-            {loading ? '⏳' : '🔓'} {t('authenticate')}
-          </button>
+            </form>
+          </div>
         </div>
       </div>
     );
   }
 
+  const adminCount = users.filter(u => u.is_admin).length;
+  const regularCount = users.length - adminCount;
+
   return (
-    <div className="page page--admin">
-      <div className="card card--admin-main">
-        <h2>
-          👨‍💼 {t('admin_panel')}
-        </h2>
+    <div className={styles.page}>
+      <div className={styles.container}>
+        <div className={styles.card}>
+          {/* Header */}
+          <div className={styles.header}>
+            <h1 className={styles.title}>
+              <span className={styles.titleIcon} aria-hidden="true">👨‍💼</span>
+              {t('admin_panel')}
+            </h1>
+            <p className={styles.subtitle}>
+              {lang === 'pl'
+                ? 'Zarządzaj użytkownikami systemu'
+                : 'Manage system users'}
+            </p>
+          </div>
 
-        {/* Intentionally hide the generic error banner to reduce noise in Admin */}
-        {success && <div className="success-msg">{success}</div>}
-
-        <section className="card-section card-section--stacked">
-          <div className="create-key-section">
-            <h3>➕ {t('add_user')}</h3>
-            <div className="create-key-form">
-              <input
-                placeholder={t('email')}
-                type="email"
-                value={newUserEmail}
-                onChange={(e) => setNewUserEmail(e.target.value)}
-                disabled={loading}
-                required
-                autoComplete="email"
-              />
-              <input
-                placeholder={t('password')}
-                type="password"
-                value={newUserPassword}
-                onChange={(e) => setNewUserPassword(e.target.value)}
-                disabled={loading}
-                title={t('password_requirements')}
-                required
-                autoComplete="new-password"
-              />
-              <label
-                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-              >
-                <input
-                  type="checkbox"
-                  checked={newUserIsAdmin}
-                  onChange={(e) => setNewUserIsAdmin(e.target.checked)}
-                  disabled={loading}
-                />
-                {t('is_admin')}
-              </label>
-              <button
-                onClick={createUser}
-                disabled={
-                  loading ||
-                  !newUserEmail.trim() ||
-                  !newUserPassword.trim()
-                }
-              >
-                {loading ? '⏳' : '✨'} {t('create')}
-              </button>
+          {/* Alerts */}
+          {(error || success) && (
+            <div className={styles.alerts}>
+              {success && (
+                <div className={`${styles.alert} ${styles.alertSuccess}`} role="status">
+                  <span className={styles.alertIcon} aria-hidden="true">✅</span>
+                  <div className={styles.alertContent}>{success}</div>
+                </div>
+              )}
+              {error && (
+                <div className={`${styles.alert} ${styles.alertError}`} role="alert">
+                  <span className={styles.alertIcon} aria-hidden="true">⚠️</span>
+                  <div className={styles.alertContent}>{error}</div>
+                </div>
+              )}
             </div>
-          </div>
-        </section>
+          )}
 
-        <section className="card-section card-section--flush">
-          <div className="keys-list">
-            <h3>
-              👥 {t('users')} ({users.length})
-            </h3>
-            {users.length === 0 ? (
-              <p
-                style={{
-                  textAlign: 'center',
-                  color: '#9ca3af',
-                  padding: '2rem'
-                }}
-              >
-                {t('no_users')}
+          <div className={styles.content}>
+            {/* Stats */}
+            <div className={styles.stats}>
+              <div className={styles.statCard}>
+                <div className={styles.statLabel}>{t('users')}</div>
+                <div className={styles.statValue}>
+                  <span className={styles.statIcon} aria-hidden="true">👥</span>
+                  {users.length}
+                </div>
+              </div>
+              <div className={styles.statCard}>
+                <div className={styles.statLabel}>{lang === 'pl' ? 'Administratorzy' : 'Administrators'}</div>
+                <div className={styles.statValue}>
+                  <span className={styles.statIcon} aria-hidden="true">👑</span>
+                  {adminCount}
+                </div>
+              </div>
+              <div className={styles.statCard}>
+                <div className={styles.statLabel}>{lang === 'pl' ? 'Zwykli użytkownicy' : 'Regular Users'}</div>
+                <div className={styles.statValue}>
+                  <span className={styles.statIcon} aria-hidden="true">👤</span>
+                  {regularCount}
+                </div>
+              </div>
+            </div>
+
+            {/* Add User Section */}
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>
+                <span className={styles.sectionIcon} aria-hidden="true">➕</span>
+                {t('add_user')}
+              </h2>
+              <p className={styles.sectionDescription}>
+                {lang === 'pl'
+                  ? 'Utwórz nowego użytkownika z dostępem do systemu'
+                  : 'Create a new user with access to the system'}
               </p>
-            ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>{t('email')}</th>
-                    <th>{t('is_admin')}</th>
-                    <th>{t('created_at')}</th>
-                    <th style={{ textAlign: 'right' }}>{t('actions')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((user) => (
-                    <tr key={user.id}>
-                      <td>
-                        <strong>{user.email}</strong>
-                      </td>
-                      <td>
-                        {user.is_admin ? `✅ ${t('yes')}` : `❌ ${t('no')}`}
-                      </td>
-                      <td
-                        style={{
-                          fontSize: '0.85rem',
-                          color: '#6b7280'
-                        }}
-                      >
-                        {user.created_at
-                          ? new Date(user.created_at).toLocaleDateString(
-                              lang === 'pl' ? 'pl-PL' : 'en-US'
-                            )
-                          : '—'}
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <button
-                          className="delete-btn"
-                          onClick={() => deleteUser(user.id)}
-                          disabled={loading}
-                        >
-                          🗑️ {t('delete')}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+
+              <form
+                onSubmit={(e) => { e.preventDefault(); createUser(); }}
+                className={styles.form}
+              >
+                <div className={styles.formGrid}>
+                  <div className={styles.fieldGroup}>
+                    <label htmlFor="new-email" className={styles.label}>
+                      {t('email')} <span className={styles.required}>*</span>
+                    </label>
+                    <input
+                      ref={emailInputRef}
+                      id="new-email"
+                      type="email"
+                      className={styles.input}
+                      placeholder={lang === 'pl' ? 'uzytkownik@example.com' : 'user@example.com'}
+                      value={newUserEmail}
+                      onChange={(e) => setNewUserEmail(e.target.value)}
+                      disabled={loading}
+                      required
+                      autoComplete="email"
+                      aria-required="true"
+                    />
+                  </div>
+
+                  <div className={styles.fieldGroup}>
+                    <label htmlFor="new-password" className={styles.label}>
+                      {t('password')} <span className={styles.required}>*</span>
+                    </label>
+                    <input
+                      id="new-password"
+                      type="password"
+                      className={styles.input}
+                      placeholder="••••••••"
+                      value={newUserPassword}
+                      onChange={(e) => setNewUserPassword(e.target.value)}
+                      disabled={loading}
+                      required
+                      minLength={8}
+                      title={t('password_requirements')}
+                      autoComplete="new-password"
+                      aria-required="true"
+                    />
+                    <span className={styles.helpText}>
+                      {t('password_requirements')}
+                    </span>
+                  </div>
+                </div>
+
+                <div className={styles.checkboxGroup}>
+                  <input
+                    id="new-is-admin"
+                    type="checkbox"
+                    className={styles.checkbox}
+                    checked={newUserIsAdmin}
+                    onChange={(e) => setNewUserIsAdmin(e.target.checked)}
+                    disabled={loading}
+                  />
+                  <label htmlFor="new-is-admin" className={styles.checkboxLabel}>
+                    <span aria-hidden="true">👑</span> {t('is_admin')}
+                  </label>
+                </div>
+
+                <button
+                  type="submit"
+                  className={`${styles.btn} ${styles.btnPrimary}`}
+                  disabled={loading || !newUserEmail.trim() || !newUserPassword.trim()}
+                  aria-busy={loading}
+                >
+                  {loading && <span className={styles.spinner} aria-hidden="true" />}
+                  <span>{loading ? '⏳' : '✨'} {t('create')}</span>
+                </button>
+              </form>
+            </section>
+
+            {/* Users List Section */}
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>
+                <span className={styles.sectionIcon} aria-hidden="true">👥</span>
+                {t('users')} ({users.length})
+              </h2>
+
+              {users.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <div className={styles.emptyIcon} aria-hidden="true">📭</div>
+                  <div className={styles.emptyTitle}>{t('no_users')}</div>
+                  <div className={styles.emptyDescription}>
+                    {lang === 'pl'
+                      ? 'Dodaj pierwszego użytkownika używając formularza powyżej'
+                      : 'Add your first user using the form above'}
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.tableContainer}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>{t('email')}</th>
+                        <th>{t('is_admin')}</th>
+                        <th>{t('created_at')}</th>
+                        <th>{t('actions')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users.map((user) => (
+                        <tr key={user.id}>
+                          <td className={styles.tableEmail}>{user.email}</td>
+                          <td>
+                            <span className={`${styles.tableBadge} ${user.is_admin ? styles.badgeYes : styles.badgeNo}`}>
+                              <span aria-hidden="true">{user.is_admin ? '✅' : '❌'}</span>
+                              {user.is_admin ? t('yes') : t('no')}
+                            </span>
+                          </td>
+                          <td className={styles.tableDate}>
+                            {user.created_at
+                              ? new Date(user.created_at).toLocaleDateString(
+                                  lang === 'pl' ? 'pl-PL' : 'en-US'
+                                )
+                              : '—'}
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className={`${styles.btn} ${styles.btnDanger}`}
+                              onClick={() => deleteUser(user.id)}
+                              disabled={loading}
+                              aria-label={`${t('delete')} ${user.email}`}
+                            >
+                              <span aria-hidden="true">🗑️</span> {t('delete')}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
           </div>
-        </section>
+        </div>
       </div>
     </div>
   );
