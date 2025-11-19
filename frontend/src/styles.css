@@ -4,10 +4,11 @@
   /* Font Family */
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
-  /* Colors */
-  --brand-primary: #4F46E5; /* A modern, vibrant indigo */
-  --brand-primary-hover: #4338CA;
-  --brand-accent: #EC4899; /* A complementary pink for highlights */
+  /* Colors - Synterra Teal/Cyan Brand */
+  --brand-primary: #0891b2; /* Teal/Cyan 600 - Synterra brand color */
+  --brand-primary-hover: #06b6d4; /* Cyan 500 - lighter on hover */
+  --brand-primary-active: #0e7490; /* Cyan 700 - darker when active */
+  --brand-accent: #f59e0b; /* Amber accent for premium features */
 
   /* Neutral Palette (Grays) */
   --bg-primary: #F9FAFB;      /* Lightest gray for main background */
@@ -19,7 +20,7 @@
   --text-on-brand: #FFFFFF;   /* White text for use on primary brand color backgrounds */
 
   --border-primary: #E5E7EB;  /* Standard border color */
-  --border-focus: #4F46E5;    /* Border color for focused elements */
+  --border-focus: #0891b2;    /* Border color for focused elements - matches brand teal */
 
   /* Status Colors */
   --status-success: #10B981;

@@ -12,7 +12,7 @@
 }
 
 .welcome-header {
-  color: #2c5282;
+  color: #0891b2; /* Synterra teal */
   margin-bottom: 2rem;
 }
 
@@ -34,7 +34,7 @@ body {
 }
 
 .nav-link:hover {
-  color: #2c5282;
+  color: #0891b2; /* Synterra teal */
 }
 
 /* Language selector styling */
@@ -57,9 +57,9 @@ body {
 }
 
 .lang-btn.active {
-  background: #2c5282;
+  background: #0891b2; /* Synterra teal */
   color: #ffffff;
-  border-color: #2c5282;
+  border-color: #0891b2;
 }
 
 /* Menu button styling */

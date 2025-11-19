@@ -57,7 +57,7 @@
 .card:hover {
   transform: translateY(-4px);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-  border-color: #3b82f6;
+  border-color: #0891b2; /* Synterra teal */
 }
 
 .cardIcon {

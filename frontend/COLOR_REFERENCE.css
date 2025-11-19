@@ -9,9 +9,14 @@ OLD COLORS:
 - Pre background: #fafbfc
 */
 
-/* UPDATED COLOR SCHEME (AA-safe) */
+/* UPDATED COLOR SCHEME (AA-safe) - Synterra Teal Brand */
 :root {
-  /* Primary Brand Colors - Deep Blues */
+  /* Synterra Brand Colors - Teal/Cyan */
+  --brand-primary: #0891b2;      /* Teal/Cyan 600 - Synterra brand color */
+  --brand-primary-hover: #06b6d4; /* Cyan 500 - lighter on hover */
+  --brand-primary-active: #0e7490; /* Cyan 700 - darker when active */
+
+  /* Legacy Deep Blues (kept for reference) */
   --primary-dark: #1e3a5f;      /* Darkest blue - header gradient start, important text */
   --primary-blue: #2c5282;      /* Main blue - header gradient end, buttons, section headers */
 
