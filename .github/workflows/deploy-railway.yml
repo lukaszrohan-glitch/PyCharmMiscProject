@@ -36,17 +36,31 @@ jobs:
       - name: Install Railway CLI
         run: npm i -g @railway/cli
 
-      - name: Link project/service
-        run: |
-          railway link --project "$RAILWAY_PROJECT_ID"
-          if [ -n "$RAILWAY_ENVIRONMENT_ID" ]; then
-            railway environment --environment "$RAILWAY_ENVIRONMENT_ID"
-          fi
-          railway service --service "$RAILWAY_SERVICE_ID"
+      - name: Reset Railway CLI cache
+        run: rm -rf ~/.railway
 
-      - name: Deploy (railway up)
+      - name: Non-interactive Railway login
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
-          railway up --service "$RAILWAY_SERVICE_ID" --ci
+          set -euo pipefail
+          railway logout || true
+          railway login --token "$RAILWAY_TOKEN"
+          railway whoami
+
+      - name: Deploy (railway up with explicit ids)
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+          RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }}
+        run: |
+          set -euo pipefail
+          EXTRA_ENV_FLAG=""
+          if [ -n "${RAILWAY_ENVIRONMENT_ID:-}" ]; then
+            EXTRA_ENV_FLAG="--environment \"$RAILWAY_ENVIRONMENT_ID\""
+          fi
+          eval railway up --project "$RAILWAY_PROJECT_ID" --service "$RAILWAY_SERVICE_ID" $EXTRA_ENV_FLAG --ci
 
   smoke:
     name: Smoke After Deploy
