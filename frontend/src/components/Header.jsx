@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import styles from './Header.module.css'
 import { useI18n } from '../i18n'
 import * as api from '../services/api'
+import SynterraLogo from './SynterraLogo'
 
 export default function Header({
   lang,
@@ -125,8 +126,11 @@ export default function Header({
               &#9776;
             </button>
             <div className={styles.logo}>
-              <span className={styles.logoText}>{t.appName}</span>
-              <span className={styles.logoTagline}>{t.tagline}</span>
+              <SynterraLogo className={styles.logoSvg} />
+              <div className={styles.logoTextBlock}>
+                <span className={styles.logoText}>{t.appName}</span>
+                <span className={styles.logoTagline}>{t.tagline}</span>
+              </div>
             </div>
           </div>
 
@@ -236,4 +240,3 @@ export default function Header({
     </header>
   )
 }
-
