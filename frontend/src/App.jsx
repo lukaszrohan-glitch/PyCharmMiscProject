@@ -11,7 +11,6 @@ import Reports from './components/Reports';
 import Financials from './components/Financials';
 import Clients from './components/Clients';
 import Admin from './components/Admin';
-import ShortcutsModal from './components/ShortcutsModal';
 import UserGuide from './components/UserGuide';
 import { useAuth } from './auth/AuthProvider';
 import styles from './App.module.css';
@@ -25,7 +24,6 @@ export default function App() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [isSettingsOpen, setSettingsOpen] = useState(false);
   const [initialFinanceOrderId, setInitialFinanceOrderId] = useState(null);
-  const [showShortcuts, setShowShortcuts] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const { profile, checkingAuth, setAuth, logout } = useAuth();
 
@@ -137,7 +135,6 @@ export default function App() {
         onSettings={handleSettings}
         onLogout={handleLogout}
         onSearchSelect={jumpToFinance}
-        onOpenShortcuts={() => setShowShortcuts(true)}
         onOpenGuide={() => setShowGuide(true)}
       />
       <main id="main-content" className={styles.mainContent}>
@@ -154,7 +151,6 @@ export default function App() {
           lang={lang}
         />
       )}
-      {showShortcuts && <ShortcutsModal lang={lang} onClose={() => setShowShortcuts(false)} />}
       {showGuide && <UserGuide lang={lang} onClose={() => setShowGuide(false)} />}
     </div>
   );

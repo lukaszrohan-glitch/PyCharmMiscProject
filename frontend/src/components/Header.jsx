@@ -177,7 +177,6 @@ export default function Header({
               {showHelp && (
                 <div className={styles.helpDropdown} role="menu">
                   <button className={styles.helpItem} onClick={() => { setShowHelp(false); onOpenGuide?.() }}>📘 {t.docs}</button>
-                  <button className={styles.helpItem} onClick={() => { setShowHelp(false); onOpenShortcuts?.() }}>⌨️ {t.shortcuts}</button>
                 </div>
               )}
             </div>
