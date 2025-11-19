@@ -29,10 +29,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install Python deps
+      - name: Install Python deps (dev + postgres)
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-postgres.txt
+          pip install -r requirements-postgres.txt -r requirements-dev.txt
       - name: Run unit tests (pytest)
         run: pytest -q
       - name: Archive pytest results
@@ -56,10 +56,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install backend deps
+      - name: Install backend deps (dev + postgres)
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-postgres.txt
+          pip install -r requirements-postgres.txt -r requirements-dev.txt
       - name: Start backend
         env:
           DATABASE_URL: postgresql://smb_user:smb_password@localhost:5432/smbtool
