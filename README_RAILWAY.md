@@ -1,9 +1,7 @@
 # Synterra - Railway.app Deployment
 
 **Simple, Direct Deployment to Railway.app**
-
 This document provides step-by-step instructions for deploying Synterra to Railway.app without cloudflared, tunnels, or complex infrastructure.
-
 ## Quick Commands (Build/Start)
 
 - Build command (Service → Settings → Build):
@@ -380,3 +378,66 @@ As traffic grows:
 ---
 
 **Status: Ready for Railway.app deployment** ✅
+
+---
+
+## Quick Railway How‑To (EN)
+
+### Redeploy from latest GitHub commit
+
+1. Push your changes to the tracked branch (usually `main`).
+2. In Railway, open your project and then the **app** service.
+3. Go to the **Deployments** tab.
+4. Click the three dots next to the newest build and choose **Rerun Deployment** (or **Deploy** if it has not run yet).
+5. Wait until the status turns **Success** and then refresh your app URL.
+
+### Where to look when something fails
+
+1. **Build fails**
+   - Open the failed deployment in **Deployments**.
+   - Scroll through **Build logs** – look for red error lines (missing package, failed `npm run build`, migration errors).
+2. **App starts but returns 5xx errors**
+   - Go to **Monitoring → Logs** for the **app** service.
+   - Filter for `ERROR` or `Traceback`.
+   - Typical causes: wrong `DATABASE_URL`, Alembic migration failure, port issues.
+3. **Page loads but API calls fail (CORS, 404)**
+   - Check **Variables** for `CORS_ORIGINS` and API‑related settings.
+   - Confirm the frontend is calling `/api/...` on the same origin (no hard‑coded localhost).
+4. **Nothing changes after a code update**
+   - Verify that:
+     - The correct branch is connected in **Settings → Source**.
+     - The latest commit actually built (check timestamp in **Deployments**).
+
+> Tip: If you are ever unsure, you can always trigger a fresh deployment from **Deployments → New Deployment → Deploy from GitHub**.
+
+---
+
+## Krótki przewodnik Railway (PL)
+
+### Jak ponownie wdrożyć najnowszy kod z GitHuba
+
+1. Wypchnij zmiany do gałęzi śledzonej przez Railway (zwykle `main`).
+2. W Railway otwórz swój projekt, a następnie usługę **app**.
+3. Przejdź do zakładki **Deployments (Wdrożenia)**.
+4. Kliknij trzy kropki przy najnowszym wdrożeniu i wybierz **Rerun Deployment** (lub **Deploy**, jeśli jeszcze nie startowało).
+5. Poczekaj aż status zmieni się na **Success**, potem odśwież adres URL aplikacji.
+
+### Gdzie szukać przyczyny błędów
+
+1. **Błąd podczas budowania (build failed)**
+   - Wejdź w nieudane wdrożenie w zakładce **Deployments**.
+   - Przejrzyj **Build logs** – szukaj czerwonych linii (brakująca paczka, błąd `npm run build`, problem z migracjami).
+2. **Aplikacja się uruchamia, ale zwraca 5xx (500, 502)**
+   - Otwórz **Monitoring → Logs** dla usługi **app**.
+   - Filtrowanie po `ERROR` lub `Traceback` zwykle szybko pokazuje błąd.
+   - Typowe przyczyny: zły `DATABASE_URL`, nieudane migracje Alembic, problem z portem.
+3. **Strona się ładuje, ale API nie działa (CORS, 404)**
+   - Sprawdź zakładkę **Variables** – szczególnie `CORS_ORIGINS` i inne zmienne API.
+   - Upewnij się, że frontend wysyła żądania na `/api/...` do tej samej domeny (bez twardo wpisanego `localhost`).
+4. **Po wdrożeniu nic się nie zmieniło**
+   - Sprawdź, czy:
+     - W **Settings → Source** ustawiona jest właściwa gałąź.
+     - Ostatni commit faktycznie się zbudował (czas w zakładce **Deployments**).
+
+> Wskazówka: w razie wątpliwości możesz zawsze wymusić nowe wdrożenie z **Deployments → New Deployment → Deploy from GitHub**.
+
