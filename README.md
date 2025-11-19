@@ -452,3 +452,9 @@ Proprietary - Synterra
 ## Support
 
 For issues and questions, contact: admin@arkuszowniasmb.pl
+
+## Live Demo (GitHub Pages)
+
+- URL: https://lukaszrohan-glitch.github.io/PyCharmMiscProject/
+- Built via `.github/workflows/deploy-frontend.yml` with `--base=/$REPO/`.
+- If the link 404s, enable GitHub Pages in repo settings and rerun the workflow.
