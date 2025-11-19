@@ -39,13 +39,11 @@ jobs:
       - name: Reset Railway CLI cache
         run: rm -rf ~/.railway
 
-      - name: Non-interactive Railway login
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      - name: Verify Railway auth via token
         run: |
           set -euo pipefail
-          railway logout || true
-          railway login --token "$RAILWAY_TOKEN"
+          railway --version
+          # Railway CLI auto-uses RAILWAY_TOKEN env var; no interactive login required
           railway whoami
 
       - name: Deploy (railway up with explicit ids)
