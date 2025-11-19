@@ -208,7 +208,6 @@ export default function Header({
           >
             {t.home}
           </button>
-        </nav>
 
           <div className={styles.searchShell}>
             <label htmlFor="global-search" className="visually-hidden">
@@ -252,7 +251,7 @@ export default function Header({
               </div>
             )}
           </div>
-        </div>
+        </nav>
 
         {/* RIGHT: language, help, profile */}
         <div className={styles.rightCluster}>
