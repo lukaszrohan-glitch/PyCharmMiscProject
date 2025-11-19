@@ -70,64 +70,74 @@ export default function AdminPage({ onClose }){
   useEffect(()=>{ refresh() }, [])
 
   return (
-    <div style={{padding:12, border:'1px solid #e1e4e8', borderRadius:8, background:'#fafbfc'}}>
-      <h2>{t('admin')}</h2>
-      <div style={{marginBottom:8}}>
-        <input placeholder={t('admin_key')} value={adminKeyInput} onChange={e=>setAdminKeyInput(e.target.value)} />
-        <button onClick={refresh}>{t('refresh')}</button>
-        <button onClick={onClose} style={{marginLeft:8}}>{t('close')}</button>
-      </div>
-      <div style={{marginBottom:8}}>
-        <form onSubmit={createKey} style={{display:'flex', gap:8}}>
-          <input placeholder={t('new_key_label_placeholder')} value={label} onChange={e=>setLabel(e.target.value)} />
-          <button type="submit">{t('create')}</button>
-        </form>
-        {lastKey && (
-          <div style={{marginTop:8, padding:8, background:'#fff', border:'1px dashed #6c6c6c', borderRadius:6}} title="Click to copy" onClick={()=>{navigator.clipboard.writeText(lastKey); toast.show(t('copied_new_key'))}}>
-            <strong>{t('new_key_once')}</strong>
-            <div style={{marginTop:4}}><code>{lastKey}</code></div>
+    <div className="page page--admin">
+      <div className="card card--admin-main">
+        <header className="card-header card-header--split">
+          <h2>{t('admin')}</h2>
+          <div className="admin-controls">
+            <input
+              placeholder={t('admin_key')}
+              value={adminKeyInput}
+              onChange={e=>setAdminKeyInput(e.target.value)}
+            />
+            <button onClick={refresh}>{t('refresh')}</button>
+            <button onClick={onClose} className="btn-secondary">{t('close')}</button>
           </div>
-        )}
-      </div>
-      {msg && <div style={{color:'green'}}>{msg}</div>}
-      {err && <div style={{color:'crimson'}}>{err}</div>}
-      <h3>{t('existing_keys')}</h3>
-      <div style={{overflowX:'auto'}}>
-        <table style={{borderCollapse:'collapse', width:'100%'}}>
-          <thead>
-            <tr style={{background:'#f0f2f4'}}>
-              <th style={{textAlign:'left', padding:'6px'}}>{t('id')}</th>
-              <th style={{textAlign:'left', padding:'6px'}}>{t('label')}</th>
-              <th style={{textAlign:'left', padding:'6px'}}>{t('status')}</th>
-              <th style={{textAlign:'left', padding:'6px'}}>{t('created')}</th>
-              <th style={{textAlign:'left', padding:'6px'}}>{t('actions')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {keys.map(k => (
-              <tr key={k.id} style={{borderBottom:'1px solid #e1e4e8'}}>
-                <td style={{padding:'6px'}}>{k.id}</td>
-                <td style={{padding:'6px'}}>{k.label || <em style={{color:'#888'}}>—</em>}</td>
-                <td style={{padding:'6px'}}><span style={{display:'inline-block', padding:'2px 6px', borderRadius:12, background: k.active? '#dcfce7':'#ffe2e2', fontSize:12}}>{k.active? t('active'):t('inactive')}</span></td>
-                <td style={{padding:'6px'}}>{k.created_at || ''}</td>
-                <td style={{padding:'6px'}}>
-                  <button onClick={()=>rotateKey(k.id)}>{t('rotate')}</button>
-                  <button style={{marginLeft:6}} onClick={()=>deleteKey(k.id)}>{t('delete')}</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+        </header>
 
-      <div style={{marginTop:16}}>
-        <AdminImport />
-      </div>
-      <div style={{marginTop:16}}>
-        <AdminAudit />
-      </div>
-      <div style={{marginTop:16}}>
-        <Approvals />
+        <section className="card-section">
+          <div style={{marginBottom:8}}>
+            <form onSubmit={createKey} style={{display:'flex', gap:8}}>
+              <input placeholder={t('new_key_label_placeholder')} value={label} onChange={e=>setLabel(e.target.value)} />
+              <button type="submit">{t('create')}</button>
+            </form>
+            {lastKey && (
+              <div style={{marginTop:8, padding:8, background:'#fff', border:'1px dashed #6c6c6c', borderRadius:6}} title="Click to copy" onClick={()=>{navigator.clipboard.writeText(lastKey); toast.show(t('copied_new_key'))}}>
+                <strong>{t('new_key_once')}</strong>
+                <div style={{marginTop:4}}><code>{lastKey}</code></div>
+              </div>
+            )}
+          </div>
+          {msg && <div className="notice notice--success">{msg}</div>}
+          {err && <div className="notice notice--error">{err}</div>}
+        </section>
+
+        <section className="card-section">
+          <h3>{t('existing_keys')}</h3>
+          <div style={{overflowX:'auto'}}>
+            <table style={{borderCollapse:'collapse', width:'100%'}}>
+              <thead>
+                <tr style={{background:'#f0f2f4'}}>
+                  <th style={{textAlign:'left', padding:'6px'}}>{t('id')}</th>
+                  <th style={{textAlign:'left', padding:'6px'}}>{t('label')}</th>
+                  <th style={{textAlign:'left', padding:'6px'}}>{t('status')}</th>
+                  <th style={{textAlign:'left', padding:'6px'}}>{t('created')}</th>
+                  <th style={{textAlign:'left', padding:'6px'}}>{t('actions')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {keys.map(k => (
+                  <tr key={k.id} style={{borderBottom:'1px solid #e1e4e8'}}>
+                    <td style={{padding:'6px'}}>{k.id}</td>
+                    <td style={{padding:'6px'}}>{k.label || <em style={{color:'#888'}}>—</em>}</td>
+                    <td style={{padding:'6px'}}><span style={{display:'inline-block', padding:'2px 6px', borderRadius:12, background: k.active? '#dcfce7':'#ffe2e2', fontSize:12}}>{k.active? t('active'):t('inactive')}</span></td>
+                    <td style={{padding:'6px'}}>{k.created_at || ''}</td>
+                    <td style={{padding:'6px'}}>
+                      <button onClick={()=>rotateKey(k.id)}>{t('rotate')}</button>
+                      <button style={{marginLeft:6}} onClick={()=>deleteKey(k.id)}>{t('delete')}</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="card-section card-section--stacked">
+          <AdminImport />
+          <AdminAudit />
+          <Approvals />
+        </section>
       </div>
     </div>
   )

@@ -64,7 +64,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .menuPill {
@@ -138,6 +138,20 @@
 .menuDivider {
   margin: 4px 6px;
   border-top: 1px solid rgba(75,85,99,0.8);
+}
+
+.homeBtn {
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,0.45);
+  background: rgba(15,23,42,0.9);
+  color: #f9fafb;
+  padding: 4px 12px;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.homeBtn:hover {
+  background: rgba(55,65,81,0.95);
 }
 
 .searchShell {
@@ -334,8 +348,14 @@
 }
 
 .profileRole {
+  display: flex;
+  flex-direction: column;
   font-size: 0.72rem;
   color: #9ca3af;
+}
+
+.profileEmail {
+  color: #e5e7eb;
 }
 
 .logoutIconBtn {
@@ -369,6 +389,10 @@
   .centerCluster {
     order: 3;
     width: 100%;
+    justify-content: space-between;
+  }
+  .homeBtn {
+    margin-left: 8px;
   }
   .searchShell {
     display: none;

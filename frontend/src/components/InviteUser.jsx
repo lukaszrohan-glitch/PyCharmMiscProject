@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import { adminCreateUser } from '../services/api'
 
-// Lightweight helper to invite a user (admin only). If JWT/admin key not present, shows a note.
+// Admin-only helper to invite a user. Uses the same card / button styling
+// as the rest of the app so it visually matches the dashboard.
 export default function InviteUser({ lang = 'pl' }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -11,56 +12,122 @@ export default function InviteUser({ lang = 'pl' }) {
   const [error, setError] = useState('')
 
   const t = lang === 'pl' ? {
-    title: 'Zaproś użytkownika',
+    title: 'Dodaj użytkownika',
+    subtitle: 'Twórz konta użytkowników i przydzielaj im uprawnienia administratora.',
     email: 'E‑mail',
     password: 'Hasło (min. 8 znaków)',
     admin: 'Administrator',
-    invite: 'Zaproś',
-    note: 'Wymagane uprawnienia administratora (JWT lub klucz admina).',
-    ok: 'Użytkownik dodany.'
+    invite: 'Utwórz',
+    note: 'Operacja wymaga uprawnień administratora (JWT lub klucz admina).',
+    ok: 'Użytkownik został dodany.'
   } : {
-    title: 'Invite user',
+    title: 'Add user',
+    subtitle: 'Create user accounts and assign administrator privileges.',
     email: 'Email',
     password: 'Password (min 8 chars)',
-    admin: 'Admin',
-    invite: 'Invite',
-    note: 'Admin privileges required (JWT or admin key).',
-    ok: 'User created.'
+    admin: 'Administrator',
+    invite: 'Create',
+    note: 'Requires administrator privileges (JWT or admin key).',
+    ok: 'User has been created.'
   }
 
   const submit = async (e) => {
     e.preventDefault()
     if (loading) return
-    setError(''); setMessage('')
+    setError('')
+    setMessage('')
+
     try {
+      if (!email || !password || password.length < 8) {
+        throw new Error(lang === 'pl' ? 'Uzupełnij poprawnie wszystkie pola.' : 'Please fill in all fields correctly.')
+      }
+
       setLoading(true)
-      if (!email || !password || password.length < 8) throw new Error('Invalid input')
       await adminCreateUser({ email, password, is_admin: !!isAdmin })
       setMessage(t.ok)
-      setEmail(''); setPassword(''); setIsAdmin(false)
+      setEmail('')
+      setPassword('')
+      setIsAdmin(false)
     } catch (err) {
       setError(err?.message || 'Error')
-    } finally { setLoading(false) }
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <div style={{ maxWidth: 520, margin: '20px auto', padding: 12 }}>
-      <h3 style={{ marginTop: 0 }}>{t.title}</h3>
-      <p style={{ color: '#6b7280', marginTop: 0 }}>{t.note}</p>
-      {message && <div style={{ background:'#ecfdf5', border:'1px solid #a7f3d0', color:'#065f46', padding:10, borderRadius:8 }}>{message}</div>}
-      {error && <div style={{ background:'#fee2e2', border:'1px solid #fecaca', color:'#991b1b', padding:10, borderRadius:8 }}>{error}</div>}
-      <form onSubmit={submit} style={{ display: 'grid', gap: 8 }}>
-        <label>{t.email}</label>
-        <input type="email" value={email} onChange={e=>setEmail(e.target.value)} required />
-        <label>{t.password}</label>
-        <input type="password" value={password} onChange={e=>setPassword(e.target.value)} required minLength={8} />
-        <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-          <input type="checkbox" checked={isAdmin} onChange={e=>setIsAdmin(e.target.checked)} /> {t.admin}
+    <section className="card admin-invite-card">
+      <header className="card-header">
+        <div className="card-title-row">
+          <span className="card-icon" aria-hidden="true">➕</span>
+          <div>
+            <h2 className="card-title">{t.title}</h2>
+            <p className="card-subtitle">{t.subtitle}</p>
+          </div>
+        </div>
+      </header>
+
+      <p className="card-hint">{t.note}</p>
+
+      {message && (
+        <div className="alert alert-success" role="status">
+          {message}
+        </div>
+      )}
+      {error && (
+        <div className="alert alert-error" role="alert">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={submit} className="form-grid">
+        <label className="field">
+          <span className="field-label">{t.email}</span>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="field-input"
+          />
         </label>
-        <div>
-          <button type="submit" disabled={loading || !email || !password || password.length < 8}>{t.invite}</button>
+
+        <label className="field">
+          <span className="field-label">{t.password}</span>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={8}
+            className="field-input"
+          />
+        </label>
+
+        <label className="field field-inline">
+          <input
+            type="checkbox"
+            checked={isAdmin}
+            onChange={(e) => setIsAdmin(e.target.checked)}
+          />
+          <span className="field-label">{t.admin}</span>
+        </label>
+
+        <div className="form-actions">
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={
+              loading ||
+              !email ||
+              !password ||
+              password.length < 8
+            }
+          >
+            {loading ? '…' : t.invite}
+          </button>
         </div>
       </form>
-    </div>
+    </section>
   )
 }

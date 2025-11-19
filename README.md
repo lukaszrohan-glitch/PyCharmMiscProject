@@ -2,6 +2,27 @@
 
 Manufacturing and order management system for small and medium businesses.
 
+## Frontend navigation overview
+
+- Global header inspired by Apple design:
+  - Brand logo on the far left, light on dark where applicable.
+  - Compact primary navigation with a **Home** button that always returns to the main dashboard.
+  - Language switcher (PL/EN) on the right, with high-contrast pills.
+  - Help menu that opens a lightweight panel and now closes correctly on outside click / `Esc`.
+  - Profile menu with cleaner layout (avatar + dropdown) that exposes **Settings**, **Logout**, and admin-only links.
+- All pages (Dashboard, Admin, User Guide) use a shared `.page` / `.card` layout so the header, admin panel and guide feel consistent.
+
+## CSV import & export behaviour
+
+- **Import (admin only)**
+  - Available from the Admin panel under *Import/CSV*.
+  - Supports uploading CSV/JSON for: orders, products, customers, employees, timesheets, inventory.
+  - Files must include header rows matching API field names; invalid rows are reported back to the user.
+- **Export (read-only)**
+  - Orders, Warehouse/Inventory and Timesheets screens expose an **Export CSV** button.
+  - Export endpoints now stream the actual records from the filters currently applied in the UI (date range, status, etc.), so CSV files are no longer empty.
+  - CSV encoding is UTF‑8 with header row; safe to open in Excel/LibreOffice.
+
 ## Refactor & Features – 2025-11-16
 
 This session focused on sustainability and usability. Summary of the changes:

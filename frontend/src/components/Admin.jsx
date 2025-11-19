@@ -196,8 +196,8 @@ export default function Admin({ lang }) {
 
   if (!isAuthed && !profile?.is_admin) {
     return (
-      <div className="api-key-auth">
-        <div className="auth-card">
+      <div className="page page--admin">
+        <div className="card card--admin-auth">
           <h2>🔐 {t('admin_key')}</h2>
           <p style={{ color: '#6b7280', marginBottom: '1.5rem' }}>
             {t('enter_admin_key')}
@@ -244,120 +244,126 @@ export default function Admin({ lang }) {
   }
 
   return (
-    <div className="api-key-manager">
-      <h2>👨‍💼 {t('admin_panel')}</h2>
+    <div className="page page--admin">
+      <div className="card card--admin-main">
+        <h2>
+          👨‍💼 {t('admin_panel')}
+        </h2>
 
-      {/* Intentionally hide the generic error banner to reduce noise in Admin */}
-      {success && <div className="success-msg">{success}</div>}
+        {/* Intentionally hide the generic error banner to reduce noise in Admin */}
+        {success && <div className="success-msg">{success}</div>}
 
-      <div className="create-key-section">
-        <h3>➕ {t('add_user')}</h3>
-        <div className="create-key-form">
-          <input
-            placeholder={t('email')}
-            type="email"
-            value={newUserEmail}
-            onChange={(e) => setNewUserEmail(e.target.value)}
-            disabled={loading}
-            required
-            autoComplete="email"
-          />
-          <input
-            placeholder={t('password')}
-            type="password"
-            value={newUserPassword}
-            onChange={(e) => setNewUserPassword(e.target.value)}
-            disabled={loading}
-            title={t('password_requirements')}
-            required
-            autoComplete="new-password"
-          />
-          <label
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-          >
-            <input
-              type="checkbox"
-              checked={newUserIsAdmin}
-              onChange={(e) => setNewUserIsAdmin(e.target.checked)}
-              disabled={loading}
-            />
-            {t('is_admin')}
-          </label>
-          <button
-            onClick={createUser}
-            disabled={
-              loading ||
-              !newUserEmail.trim() ||
-              !newUserPassword.trim()
-            }
-          >
-            {loading ? '⏳' : '✨'} {t('create')}
-          </button>
-        </div>
-      </div>
+        <section className="card-section card-section--stacked">
+          <div className="create-key-section">
+            <h3>➕ {t('add_user')}</h3>
+            <div className="create-key-form">
+              <input
+                placeholder={t('email')}
+                type="email"
+                value={newUserEmail}
+                onChange={(e) => setNewUserEmail(e.target.value)}
+                disabled={loading}
+                required
+                autoComplete="email"
+              />
+              <input
+                placeholder={t('password')}
+                type="password"
+                value={newUserPassword}
+                onChange={(e) => setNewUserPassword(e.target.value)}
+                disabled={loading}
+                title={t('password_requirements')}
+                required
+                autoComplete="new-password"
+              />
+              <label
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+              >
+                <input
+                  type="checkbox"
+                  checked={newUserIsAdmin}
+                  onChange={(e) => setNewUserIsAdmin(e.target.checked)}
+                  disabled={loading}
+                />
+                {t('is_admin')}
+              </label>
+              <button
+                onClick={createUser}
+                disabled={
+                  loading ||
+                  !newUserEmail.trim() ||
+                  !newUserPassword.trim()
+                }
+              >
+                {loading ? '⏳' : '✨'} {t('create')}
+              </button>
+            </div>
+          </div>
+        </section>
 
-      <div className="keys-list">
-        <h3>
-          👥 {t('users')} ({users.length})
-        </h3>
-        {users.length === 0 ? (
-          <p
-            style={{
-              textAlign: 'center',
-              color: '#9ca3af',
-              padding: '2rem'
-            }}
-          >
-            {t('no_users')}
-          </p>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>{t('email')}</th>
-                <th>{t('is_admin')}</th>
-                <th>{t('created_at')}</th>
-                <th style={{ textAlign: 'right' }}>{t('actions')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user.id}>
-                  <td>
-                    <strong>{user.email}</strong>
-                  </td>
-                  <td>
-                    {user.is_admin ? `✅ ${t('yes')}` : `❌ ${t('no')}`}
-                  </td>
-                  <td
-                    style={{
-                      fontSize: '0.85rem',
-                      color: '#6b7280'
-                    }}
-                  >
-                    {user.created_at
-                      ? new Date(user.created_at).toLocaleDateString(
-                          lang === 'pl' ? 'pl-PL' : 'en-US'
-                        )
-                      : '—'}
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <button
-                      className="delete-btn"
-                      onClick={() => deleteUser(user.id)}
-                      disabled={loading}
-                    >
-                      🗑️ {t('delete')}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <section className="card-section card-section--flush">
+          <div className="keys-list">
+            <h3>
+              👥 {t('users')} ({users.length})
+            </h3>
+            {users.length === 0 ? (
+              <p
+                style={{
+                  textAlign: 'center',
+                  color: '#9ca3af',
+                  padding: '2rem'
+                }}
+              >
+                {t('no_users')}
+              </p>
+            ) : (
+              <table>
+                <thead>
+                  <tr>
+                    <th>{t('email')}</th>
+                    <th>{t('is_admin')}</th>
+                    <th>{t('created_at')}</th>
+                    <th style={{ textAlign: 'right' }}>{t('actions')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((user) => (
+                    <tr key={user.id}>
+                      <td>
+                        <strong>{user.email}</strong>
+                      </td>
+                      <td>
+                        {user.is_admin ? `✅ ${t('yes')}` : `❌ ${t('no')}`}
+                      </td>
+                      <td
+                        style={{
+                          fontSize: '0.85rem',
+                          color: '#6b7280'
+                        }}
+                      >
+                        {user.created_at
+                          ? new Date(user.created_at).toLocaleDateString(
+                              lang === 'pl' ? 'pl-PL' : 'en-US'
+                            )
+                          : '—'}
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button
+                          className="delete-btn"
+                          onClick={() => deleteUser(user.id)}
+                          disabled={loading}
+                        >
+                          🗑️ {t('delete')}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </section>
       </div>
     </div>
   );
 }
-
-

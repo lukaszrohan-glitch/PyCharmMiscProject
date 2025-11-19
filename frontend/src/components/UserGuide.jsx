@@ -7,7 +7,18 @@ export default function UserGuide() {
   const content = {
     pl: {
       title: 'Przewodnik Użytkownika',
-      intro: 'Witamy w Synterra - kompleksowym systemie zarządzania produkcją. Ten przewodnik pomoże Ci w pełni wykorzystać możliwości aplikacji.',
+      intro:
+        'Witamy w Synterra – systemie zarządzania produkcją dla małych i średnich przedsiębiorstw. Ten przewodnik pomoże Ci wykorzystać wszystkie kluczowe funkcje aplikacji.',
+      navigationIntro:
+        'Górny pasek nawigacji działa podobnie jak w nowoczesnych aplikacjach webowych. Logo po lewej przenosi Cię na stronę główną, a przycisk „Panel główny” (Home) zawsze wraca do kafelkowego widoku startowego – niezależnie od tego, w której sekcji aktualnie pracujesz.',
+      navigationItems: [
+        'Panel główny – szybki powrót do ekranu kafelków z najważniejszymi modułami.',
+        'Zamówienia, Klienci, Magazyn, Czas pracy, Raporty – przełączanie między głównymi widokami systemu.',
+        'Szukaj – pasek wyszukiwania u góry ułatwia znajdowanie zamówień lub klientów.',
+        'PL / EN – przełączanie języka interfejsu.',
+        'Pomoc – otwiera ten przewodnik użytkownika w aktualnym języku.',
+        'Menu profilu – pozwala przejść do ustawień konta i wylogować się.'
+      ],
       sections: [
         {
           title: '📋 Zarządzanie Zamówieniami',
@@ -122,34 +133,55 @@ export default function UserGuide() {
           ]
         },
         {
-          title: '🛠️ Panel Administracyjny',
+          title: '🧑‍💼 Panel Administratora',
           items: [
             {
-              subtitle: 'Zarządzanie kluczami API (tylko admin)',
+              subtitle: 'Zarządzanie użytkownikami',
               steps: [
-                'Kliknij "Admin" w górnym menu',
-                'Wprowadź klucz administratora',
-                'Zobacz listę wszystkich aktywnych kluczy API',
-                'Utwórz nowy klucz podając etykietę (np. nazwę użytkownika)',
-                'Skopiuj wygenerowany klucz i przekaż użytkownikowi',
-                'Usuń nieużywane klucze klikając "Usuń"',
-                'Użyj "Rotuj klucz" aby wygenerować nowy klucz dla istniejącego użytkownika'
+                'Otwórz panel „Admin” w górnym pasku nawigacji.',
+                'Uwierzytelnij się kluczem administratora (lub kontem z rolą admin).',
+                'W sekcji „Dodaj użytkownika” wpisz adres e‑mail i hasło (min. 8 znaków).',
+                'Zaznacz opcję „Administrator”, jeśli konto ma mieć pełne uprawnienia.',
+                'Kliknij „Utwórz”, aby dodać użytkownika do systemu.',
+                'Na liście poniżej zobaczysz wszystkich użytkowników wraz z rolami – możesz ich usuwać jednym kliknięciem.'
+              ]
+            },
+            {
+              subtitle: 'Najlepsze praktyki haseł',
+              list: [
+                'Używaj unikalnych, długich haseł – co najmniej 12 znaków.',
+                'Nie wysyłaj haseł zwykłym mailem – lepiej poproś użytkownika o zmianę hasła przy pierwszym logowaniu.',
+                'Nigdy nie zakładaj wspólnych kont współdzielonych przez wiele osób.'
               ]
             }
           ]
         },
         {
-          title: '💡 Wskazówki i Najlepsze Praktyki',
+          title: '📤 Eksport danych (CSV)',
+          items: [
+            {
+              subtitle: 'Eksport zamówień i magazynu',
+              steps: [
+                'Przejdź do sekcji „Zamówienia” lub „Magazyn”.',
+                'Upewnij się, że widzisz listę rekordów, które chcesz wyeksportować.',
+                'Kliknij przycisk „Eksportuj CSV” w prawym górnym rogu listy.',
+                'Pobierz plik .csv i otwórz go w Excelu, LibreOffice lub Power BI / Power Query.',
+                'Jeśli plik jest pusty, upewnij się, że w tabeli znajdują się zapisane rekordy.'
+              ]
+            }
+          ]
+        },
+        {
+          title: '💡 Wskazówki i najlepsze praktyki',
           items: [
             {
               list: [
-                'Regularnie aktualizuj statusy zamówień',
-                'Rejestruj czas pracy na bieżąco',
-                'Używaj opisowych ID zamówień i produktów',
-                'Sprawdzaj panel finansowy przed zakończeniem zamówienia',
-                'Przechowuj klucz API w bezpiecznym miejscu',
-                'Nie udostępniaj swojego klucza API innym osobom',
-                'Zgłaszaj problemy lub pytania do administratora'
+                'Regularnie aktualizuj statusy zamówień, aby raporty były wiarygodne.',
+                'Rejestruj czas pracy na bieżąco – unikniesz luk w rozliczeniach.',
+                'Używaj czytelnych oznaczeń produktów i zamówień (np. KLIENT-ROK-001).',
+                'Przed zamknięciem zamówienia przejrzyj panel finansowy i raporty.',
+                'Klucze API i hasła przechowuj w menedżerze haseł – nigdy w arkuszach Excela.',
+                'Przy problemach z dostępem korzystaj z panelu „Admin” zamiast ręcznych zmian w bazie.'
               ]
             }
           ]
@@ -171,7 +203,7 @@ export default function UserGuide() {
             },
             {
               subtitle: 'P: Jak mogę eksportować dane?',
-              text: 'O: Użyj przeglądarki do skopiowania danych lub skontaktuj się z administratorem w sprawie eksportu do pliku.'
+              text: 'O: Użyj funkcji „Eksportuj CSV” w sekcji Zamówienia lub Magazyn albo skontaktuj się z administratorem, jeśli potrzebujesz bardziej zaawansowanego eksportu.'
             }
           ]
         }
@@ -179,7 +211,18 @@ export default function UserGuide() {
     },
     en: {
       title: 'User Guide',
-      intro: 'Welcome to Synterra - a comprehensive production management system. This guide will help you fully utilize the application capabilities.',
+      intro:
+        'Welcome to Synterra – a production management system for small and mid‑sized manufacturers. This guide explains all the core features so you can work efficiently.',
+      navigationIntro:
+        'The top navigation bar works like in modern web apps. The logo on the far left takes you back to the main screen and the “Home” / “Panel główny” button always returns to the tile‑based dashboard – no matter which section you are currently in.',
+      navigationItems: [
+        'Home – quick way to return to the dashboard with the main tiles.',
+        'Orders, Customers, Inventory, Time tracking, Reports – switch between the core functional areas.',
+        'Search – the bar at the top helps you quickly find orders or customers.',
+        'PL / EN – switch the interface language.',
+        'Help – opens this User Guide in the current language.',
+        'Profile menu – lets you open account settings and sign out.'
+      ],
       sections: [
         {
           title: '📋 Order Management',
@@ -294,34 +337,55 @@ export default function UserGuide() {
           ]
         },
         {
-          title: '🛠️ Admin Panel',
+          title: '🧑‍💼 Admin Panel',
           items: [
             {
-              subtitle: 'API Key Management (admin only)',
+              subtitle: 'Managing users',
               steps: [
-                'Click "Admin" in the top menu',
-                'Enter administrator key',
-                'View list of all active API keys',
-                'Create new key by providing a label (e.g., user name)',
-                'Copy generated key and share with user',
-                'Delete unused keys by clicking "Delete"',
-                'Use "Rotate Key" to generate a new key for existing user'
+                'Open the “Admin” panel from the top navigation bar.',
+                'Authenticate with the administrator key (or an account with admin role).',
+                'In the “Add user” section, enter email and password (min. 8 characters).',
+                'Tick the “Administrator” checkbox if the account should have full privileges.',
+                'Click “Create” to add the user to the system.',
+                'Use the table below to see all users, their roles, and to remove accounts if needed.'
+              ]
+            },
+            {
+              subtitle: 'Password best practices',
+              list: [
+                'Use unique, long passwords – at least 12 characters.',
+                'Avoid sending raw passwords via email – ask the user to change it on first login instead.',
+                'Never use shared accounts for multiple people.'
               ]
             }
           ]
         },
         {
-          title: '💡 Tips and Best Practices',
+          title: '📤 Data export (CSV)',
+          items: [
+            {
+              subtitle: 'Exporting Orders and Inventory',
+              steps: [
+                'Go to the “Orders” or “Inventory” section.',
+                'Make sure you can see the records you want to export.',
+                'Click the “Export CSV” button in the top‑right corner of the list.',
+                'Download the .csv file and open it in Excel, LibreOffice or Power BI / Power Query.',
+                'If the file is empty, verify there are saved records in the table first.'
+              ]
+            }
+          ]
+        },
+        {
+          title: '💡 Tips & best practices',
           items: [
             {
               list: [
-                'Regularly update order statuses',
-                'Log work time promptly',
-                'Use descriptive order and product IDs',
-                'Check finance panel before completing orders',
-                'Store API key in a secure location',
-                'Do not share your API key with others',
-                'Report issues or questions to the administrator'
+                'Keep order statuses up to date so reports stay accurate.',
+                'Log time as you work to avoid missing hours later.',
+                'Use clear, structured IDs for orders and products (e.g. CUSTOMER‑YEAR‑001).',
+                'Review the Finance panel and reports before closing an order.',
+                'Store API keys and passwords in a password manager – never in plain spreadsheets.',
+                'Use the “Admin” panel to manage access instead of manual DB changes.'
               ]
             }
           ]
@@ -338,12 +402,12 @@ export default function UserGuide() {
               text: 'A: Contact the system administrator who can make corrections in the database.'
             },
             {
-              subtitle: 'Q: Why don\'t I see the "Add" button?',
+              subtitle: "Q: Why don't I see the \"Add\" button?",
               text: 'A: Make sure you entered the API key in the appropriate section. Without a key, only read mode is available.'
             },
             {
               subtitle: 'Q: How can I export data?',
-              text: 'A: Use your browser to copy data or contact the administrator for file export.'
+              text: 'A: Use the “Export CSV” button in the Orders or Inventory section, or contact the administrator if you need a more advanced export.'
             }
           ]
         }
@@ -354,39 +418,55 @@ export default function UserGuide() {
   const guide = content[lang]
 
   return (
-    <div className="user-guide">
-      <div className="guide-header">
-        <h1>{guide.title}</h1>
-        <p className="guide-intro">{guide.intro}</p>
-      </div>
+    <div className="page user-guide">
+      <header className="user-guide-header">
+        <h1 className="user-guide-title">{guide.title}</h1>
+        <p className="user-guide-intro">{guide.intro}</p>
+      </header>
 
-      <div className="guide-content">
-        {guide.sections.map((section, idx) => (
-          <section key={idx} className="guide-section">
-            <h2>{section.title}</h2>
-            {section.items.map((item, itemIdx) => (
-              <div key={itemIdx} className="guide-item">
-                {item.subtitle && <h3>{item.subtitle}</h3>}
-                {item.text && <p>{item.text}</p>}
-                {item.steps && (
-                  <ol className="guide-steps">
-                    {item.steps.map((step, stepIdx) => (
-                      <li key={stepIdx}>{step}</li>
-                    ))}
-                  </ol>
-                )}
-                {item.list && (
-                  <ul className="guide-list">
-                    {item.list.map((listItem, listIdx) => (
-                      <li key={listIdx}>{listItem}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ))}
-          </section>
-        ))}
-      </div>
+      <section className="user-guide-section">
+        <h2 className="user-guide-section-title">
+          {lang === 'pl' ? 'Nawigacja i pasek górny' : 'Navigation & top bar'}
+        </h2>
+        <p className="user-guide-text">{guide.navigationIntro}</p>
+        <ul className="user-guide-list">
+          {guide.navigationItems.map((item, idx) => (
+            <li key={idx}>{item}</li>
+          ))}
+        </ul>
+      </section>
+
+      {guide.sections.map((section, index) => (
+        <section key={index} className="user-guide-section">
+          <h2 className="user-guide-section-title">{section.title}</h2>
+
+          {section.items.map((item, itemIndex) => (
+            <article key={itemIndex} className="user-guide-block">
+              {item.subtitle && (
+                <h3 className="user-guide-subtitle">{item.subtitle}</h3>
+              )}
+
+              {item.text && <p className="user-guide-text">{item.text}</p>}
+
+              {item.list && (
+                <ul className="user-guide-list">
+                  {item.list.map((entry, entryIndex) => (
+                    <li key={entryIndex}>{entry}</li>
+                  ))}
+                </ul>
+              )}
+
+              {item.steps && (
+                <ol className="user-guide-steps">
+                  {item.steps.map((step, stepIndex) => (
+                    <li key={stepIndex}>{step}</li>
+                  ))}
+                </ol>
+              )}
+            </article>
+          ))}
+        </section>
+      ))}
 
       <div className="guide-footer">
         <p>
@@ -398,4 +478,3 @@ export default function UserGuide() {
     </div>
   )
 }
-

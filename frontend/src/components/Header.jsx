@@ -13,13 +13,11 @@ export default function Header({
   onSettings,
   onLogout,
   onSearchSelect,
-  onOpenShortcuts,
   onOpenGuide,
 }) {
   const { t: tt } = useI18n(lang)
   const [menuOpen, setMenuOpen] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
-  const [showSearch, setShowSearch] = useState(false)
   const [orders, setOrders] = useState([])
   const [q, setQ] = useState('')
   const inputRef = useRef(null)
@@ -31,7 +29,7 @@ export default function Header({
       tt('brand_tagline') ||
       (lang === 'pl' ? 'System Zarządzania Produkcją' : 'Manufacturing Management System'),
     menu: tt('menu') || 'Menu',
-    dashboard: tt('dashboard') || (lang === 'pl' ? 'Panel główny' : 'Dashboard'),
+    home: lang === 'pl' ? 'Panel główny' : 'Home',
     orders: tt('orders') || (lang === 'pl' ? 'Zamówienia' : 'Orders'),
     inventory: tt('inventory') || (lang === 'pl' ? 'Magazyn' : 'Inventory'),
     timesheets: tt('timesheets') || (lang === 'pl' ? 'Czas pracy' : 'Timesheets'),
@@ -44,7 +42,7 @@ export default function Header({
   }
 
   const navItems = [
-    { id: 'dashboard', label: t.dashboard },
+    { id: 'dashboard', label: t.home },
     { id: 'orders', label: t.orders },
     { id: 'clients', label: lang === 'pl' ? 'Klienci' : 'Clients' },
     { id: 'inventory', label: t.inventory },
@@ -63,43 +61,34 @@ export default function Header({
       if (!chromeRef.current.contains(e.target)) {
         setMenuOpen(false)
         setShowHelp(false)
-        setShowSearch(false)
+      }
+    }
+    const handleKey = (e) => {
+      if (e.key === 'Escape') {
+        setMenuOpen(false)
+        setShowHelp(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKey)
+    }
   }, [])
 
   // Lazy-load orders when search first opens
   useEffect(() => {
-    if (!showSearch || orders.length) return
-    ;(async () => {
-      try {
-        setOrders((await api.getOrders()) || [])
-      } catch {
-        // silent – search is a bonus
-      }
-    })()
-  }, [showSearch, orders.length])
-
-  // Global shortcuts: '/' to focus search, Esc to close overlays
-  useEffect(() => {
-    const onKey = (e) => {
-      const tag = (document.activeElement && document.activeElement.tagName) || ''
-      const typing = ['INPUT', 'TEXTAREA'].includes(tag)
-      if (e.key === '/' && !typing) {
-        e.preventDefault()
-        setShowSearch(true)
-        setTimeout(() => inputRef.current?.focus(), 0)
-      } else if (e.key === 'Escape') {
-        setShowSearch(false)
-        setShowHelp(false)
-        setMenuOpen(false)
-      }
+    if (!orders.length) {
+      ;(async () => {
+        try {
+          setOrders((await api.getOrders()) || [])
+        } catch {
+          // ignore – search is optional
+        }
+      })()
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [orders.length])
 
   const results = q.trim()
     ? orders
@@ -116,7 +105,6 @@ export default function Header({
 
   const selectResult = (orderId) => {
     setQ('')
-    setShowSearch(false)
     onSearchSelect?.(String(orderId))
   }
 
@@ -128,7 +116,7 @@ export default function Header({
   return (
     <header className={styles.shell}>
       <div className={styles.chrome} ref={chromeRef}>
-        {/* Left: logo pinned to far-left */}
+        {/* FAR LEFT: moving logo */}
         <div className={styles.leftCluster}>
           <div className={styles.logoWrap}>
             <SynterraLogo className={styles.logoSvg} />
@@ -139,21 +127,22 @@ export default function Header({
           </div>
         </div>
 
-        {/* Center: compact "pill" menu + search */}
+        {/* CENTER: compact menu + search, positioned away from far left */}
         <div className={styles.centerCluster}>
           <div className={styles.menuPill}>
             <button
               className={styles.menuTrigger}
-              onClick={() => { setMenuOpen(v => !v); setShowHelp(false) }}
+              onClick={() => { setMenuOpen((v) => !v); setShowHelp(false) }}
               aria-haspopup="menu"
               aria-expanded={menuOpen}
+              type="button"
             >
               <span className={styles.menuDot} />
               <span className={styles.menuDot} />
               <span className={styles.menuDot} />
-              <span className={styles.menuLabel}>{
-                navItems.find(n => n.id === currentView)?.label || t.menu
-              }</span>
+              <span className={styles.menuLabel}>
+                {navItems.find((n) => n.id === currentView)?.label || t.menu}
+              </span>
             </button>
             {menuOpen && (
               <div className={styles.menuDropdown} role="menu">
@@ -165,29 +154,43 @@ export default function Header({
                     }
                     onClick={() => changeView(item.id)}
                     role="menuitem"
+                    type="button"
                   >
                     {item.label}
                   </button>
                 ))}
                 <div className={styles.menuDivider} />
-                <button className={styles.menuItem} onClick={onSettings} role="menuitem">
+                <button
+                  className={styles.menuItem}
+                  onClick={onSettings}
+                  role="menuitem"
+                  type="button"
+                >
                   {t.settings}
                 </button>
               </div>
             )}
           </div>
 
+          {/* Explicit Home button to return to main dashboard */}
+          <button
+            type="button"
+            className={styles.homeBtn}
+            onClick={() => changeView('dashboard')}
+          >
+            {t.home}
+          </button>
+
           <div className={styles.searchShell}>
             <input
               ref={inputRef}
               className={styles.searchInput}
-              placeholder={`${t.search} /`}
+              placeholder={t.search}
               value={q}
-              onFocus={() => setShowSearch(true)}
               onChange={(e) => setQ(e.target.value)}
               aria-label={t.search}
             />
-            {showSearch && results.length > 0 && (
+            {results.length > 0 && (
               <div className={styles.searchDropdown}>
                 {results.map((r) => (
                   <button
@@ -207,18 +210,20 @@ export default function Header({
           </div>
         </div>
 
-        {/* Right: language, help, profile */}
+        {/* RIGHT: language, help, profile */}
         <div className={styles.rightCluster}>
           <div className={styles.langSwitch}>
             <button
               className={lang === 'pl' ? styles.langActive : styles.langBtn}
               onClick={() => setLang('pl')}
+              type="button"
             >
               PL
             </button>
             <button
               className={lang === 'en' ? styles.langActive : styles.langBtn}
               onClick={() => setLang('en')}
+              type="button"
             >
               EN
             </button>
@@ -227,7 +232,7 @@ export default function Header({
           <div className={styles.helpCluster}>
             <button
               className={styles.helpBtn}
-              onClick={() => { setShowHelp(v => !v); setMenuOpen(false) }}
+              onClick={() => { setShowHelp((v) => !v); setMenuOpen(false) }}
               aria-haspopup="menu"
               aria-expanded={showHelp}
               type="button"
@@ -240,6 +245,7 @@ export default function Header({
                   className={styles.helpItem}
                   onClick={() => { setShowHelp(false); onOpenGuide?.() }}
                   role="menuitem"
+                  type="button"
                 >
                   {t.docs}
                 </button>
@@ -260,9 +266,18 @@ export default function Header({
                 <span className={styles.profileMeta}>
                   <span className={styles.profileName}>{profile.name || profile.email}</span>
                   <span className={styles.profileRole}>
-                    {profile.is_admin
-                      ? lang === 'pl' ? 'Administrator' : 'Admin'
-                      : lang === 'pl' ? 'Użytkownik' : 'User'}
+                    {profile.email && (
+                      <span className={styles.profileEmail}>{profile.email}</span>
+                    )}
+                    <span>
+                      {profile.is_admin
+                        ? lang === 'pl'
+                          ? 'Administrator'
+                          : 'Admin'
+                        : lang === 'pl'
+                          ? 'Użytkownik'
+                          : 'User'}
+                    </span>
                   </span>
                 </span>
               </button>
