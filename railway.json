@@ -6,7 +6,7 @@
     "buildCommand": "pip install -r requirements.txt && cd frontend && npm ci && npm run build"
   },
   "deploy": {
-    "startCommand": "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port $PORT",
+    "startCommand": "bash start.sh",
     "healthcheckPath": "/healthz",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3
