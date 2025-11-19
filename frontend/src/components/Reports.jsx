@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import * as api from '../services/api'
 
-function BarChart({ data=[], height=140, color='#0071e3', label }){
+function BarChart({ data=[], height=140, color='#0891b2', label }){
   const max = Math.max(1, ...data.map(d=>d.v))
   const w = Math.max(240, data.length*18)
   const barW = Math.floor((w - (data.length+1)*6)/data.length)
@@ -170,7 +170,7 @@ export default function Reports({ lang }){
       <div className="cards">
         <div className="card">
           <div className="card-title">{t.th}</div>
-          <BarChart data={dailyHours.map(d=>({k:d.k?.slice(-5), v:d.v}))} color="#0071e3" />
+          <BarChart data={dailyHours.map(d=>({k:d.k?.slice(-5), v:d.v}))} color="#0891b2" />
         </div>
         <div className="card">
           <div className="card-title">{t.tv}</div>

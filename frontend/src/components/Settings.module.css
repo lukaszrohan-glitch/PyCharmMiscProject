@@ -230,7 +230,7 @@
 .input:focus {
   outline: none;
   border-color: var(--border-focus);
-  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12);
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.12); /* Teal focus ring */
 }
 
 .input:disabled {

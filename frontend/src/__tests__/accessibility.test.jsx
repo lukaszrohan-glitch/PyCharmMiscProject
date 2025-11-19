@@ -103,7 +103,7 @@ describe('accessibility: Color contrast', () => {
         <p style={{ color: '#6e6e73' }}>Secondary text with sufficient contrast</p>
         <button
           style={{
-            background: '#0071e3',
+            background: '#0891b2', // Teal brand color
             color: '#ffffff',
             padding: '8px 16px',
             border: 'none',

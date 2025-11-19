@@ -59,8 +59,8 @@
   --status-warning-bg: #fff8e6;
   --status-error: #ff3b30;
   --status-error-bg: #ffe8e6;
-  --status-info: #007aff;
-  --status-info-bg: #e6f2ff;
+  --status-info: #0891b2; /* Changed to match brand teal */
+  --status-info-bg: #e0f7fa;
 
   /* ========== SPACING & SIZING (8px grid) ========== */
   --spacing-0: 0;
