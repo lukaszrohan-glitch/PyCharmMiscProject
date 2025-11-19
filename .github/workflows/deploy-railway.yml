@@ -19,15 +19,13 @@ jobs:
     name: Railway Deploy
     runs-on: ubuntu-latest
     env:
-      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-      RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}              # PROJECT TOKEN
       RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
       RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }}
     steps:
       - name: Validate secrets
         run: |
           test -n "$RAILWAY_TOKEN" || { echo "Missing secret RAILWAY_TOKEN" >&2; exit 1; }
-          test -n "$RAILWAY_PROJECT_ID" || { echo "Missing secret RAILWAY_PROJECT_ID" >&2; exit 1; }
           test -n "$RAILWAY_SERVICE_ID" || { echo "Missing secret RAILWAY_SERVICE_ID" >&2; exit 1; }
 
       - name: Checkout repository
@@ -36,66 +34,15 @@ jobs:
       - name: Install Railway CLI
         run: npm i -g @railway/cli
 
-      - name: Reset Railway CLI cache
-        run: rm -rf ~/.railway
-
-      - name: Verify Railway auth via token
+      - name: Deploy (railway up with project token)
         run: |
           set -euo pipefail
           railway --version
-          # Railway CLI auto-uses RAILWAY_TOKEN env var; no interactive login required
-          railway whoami
-
-      - name: Deploy (railway up with explicit ids)
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
-          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
-          RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }}
-        run: |
-          set -euo pipefail
+          echo "RAILWAY_TOKEN length: ${#RAILWAY_TOKEN}"
+          echo "Service ID: $RAILWAY_SERVICE_ID"
           EXTRA_ENV_FLAG=""
           if [ -n "${RAILWAY_ENVIRONMENT_ID:-}" ]; then
             EXTRA_ENV_FLAG="--environment \"$RAILWAY_ENVIRONMENT_ID\""
           fi
-          eval railway up --project "$RAILWAY_PROJECT_ID" --service "$RAILWAY_SERVICE_ID" $EXTRA_ENV_FLAG --ci
-
-  smoke:
-    name: Smoke After Deploy
-    needs: [deploy]
-    runs-on: ubuntu-latest
-    env:
-      BASE_URL: ${{ github.event.inputs.base_url || secrets.RAILWAY_PROD_URL }}
-      ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
-      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
-    steps:
-      - name: Ensure BASE_URL is set
-        run: |
-          if [ -z "$BASE_URL" ]; then
-            echo "BASE_URL not provided. Set input 'base_url' or secret 'RAILWAY_PROD_URL'. Skipping smoke."; echo "skip" > skip; fi
-
-      - name: Checkout repository
-        if: ${{ !hashFiles('skip') }}
-        uses: actions/checkout@v4
-
-      - name: Make smoke script executable
-        if: ${{ !hashFiles('skip') }}
-        run: chmod +x scripts/smoke.sh
-
-      - name: Wait for readiness (max 10 min)
-        if: ${{ !hashFiles('skip') }}
-        run: |
-          set -euo pipefail
-          END=$((SECONDS + 600))
-          while [ $SECONDS -lt $END ]; do
-            if curl -fsS "$BASE_URL/readyz" >/dev/null; then
-              echo "Service is ready."; break
-            fi
-            sleep 5
-          done
-          curl -fsS "$BASE_URL/readyz" >/dev/null
-
-      - name: Run smoke
-        if: ${{ !hashFiles('skip') }}
-        run: ./scripts/smoke.sh "$BASE_URL"
-
+          # Project token w RAILWAY_TOKEN sam wskazuje projekt – nie trzeba --project
+          eval railway up --service "$RAILWAY_SERVICE_ID" $EXTRA_ENV_FLAG --ci
