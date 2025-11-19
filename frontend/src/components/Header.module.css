@@ -57,9 +57,14 @@
 }
 
 .logoSvg {
-  height: 32px;
+  height: 48px; /* Increased from 32px - optimal for brand recognition (1.5x scale) */
   width: auto;
   flex-shrink: 0;
+  transition: transform var(--transition-fast);
+}
+
+.logoSvg:hover {
+  transform: scale(1.02); /* Subtle interactive feedback */
 }
 
 .logoTextBlock {
@@ -581,6 +586,10 @@
     font-size: var(--font-size-xs);
   }
 
+  .logoSvg {
+    height: 40px; /* Slightly smaller on tablet - maintains hierarchy */
+  }
+
   .logoText {
     font-size: var(--font-size-sm);
   }
@@ -600,6 +609,10 @@
 @media (max-width: 480px) {
   .chrome {
     gap: var(--spacing-1);
+  }
+
+  .logoSvg {
+    height: 36px; /* Compact on mobile - optimal for small screens */
   }
 
   .searchShell {

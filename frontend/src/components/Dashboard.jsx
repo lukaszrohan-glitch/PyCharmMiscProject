@@ -1,5 +1,6 @@
 import React from 'react';
 import styles from '../App.module.css';
+import RotatingQuotes from './RotatingQuotes';
 
 const IconOrders = () => (
   <svg viewBox="0 0 24 24" width="32" height="32" aria-hidden="true">
@@ -85,14 +86,7 @@ export default function Dashboard({ lang, setCurrentView }) {
   return (
     <>
       <div className={styles.hero}>
-        <h1 className={styles.heroTitle}>
-          {lang === 'pl' ? 'Witamy w Synterra' : 'Welcome to Synterra'}
-        </h1>
-        <p className={styles.heroSubtitle}>
-          {lang === 'pl'
-            ? 'System zarządzania produkcją dla małych i średnich przedsiębiorstw'
-            : 'Manufacturing management system for small and medium enterprises'}
-        </p>
+        <RotatingQuotes lang={lang} />
       </div>
 
       <div className={styles.cards}>
