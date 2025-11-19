@@ -203,9 +203,9 @@ h3 {
 
 /* Primary actions */
 .btn--primary {
-  background: var(--primary-blue);
+  background: var(--brand-primary);
   color: #ffffff;
-  border-color: var(--primary-blue);
+  border-color: var(--brand-primary);
 }
 
 .btn--primary:hover {
