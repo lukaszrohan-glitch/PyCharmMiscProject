@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../auth/AuthProvider'
 import ForgotPassword from './ForgotPassword'
 import SynterraLogo from './SynterraLogo'
@@ -12,6 +12,12 @@ export default function Login({ lang, setLang }) {
   const [remember, setRemember] = useState(false)
   const [error, setError] = useState('')
   const [mode, setMode] = useState('login') // 'login' | 'forgot'
+  const emailRef = useRef(null)
+
+  // Focus email input on mount (accessibility)
+  useEffect(() => {
+    emailRef.current?.focus()
+  }, [])
 
   const t = lang === 'pl' ? {
     tagline: 'System Zarządzania Produkcją',
@@ -114,45 +120,62 @@ export default function Login({ lang, setLang }) {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className={styles.form} autoComplete="off">
-          <label htmlFor="email" className={styles.label}>
-            {t.email}
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder={lang === 'pl' ? 'Adres email' : 'Email address'}
-            required
-            disabled={loading}
-            className={styles.input}
-            autoComplete="off"
-          />
+        <form onSubmit={handleSubmit} className={styles.form} noValidate>
+          <div className={styles.fieldGroup}>
+            <label htmlFor="email" className={styles.label}>
+              {t.email}
+            </label>
+            <input
+              ref={emailRef}
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={lang === 'pl' ? 'twoj.email@example.com' : 'your.email@example.com'}
+              required
+              disabled={loading}
+              className={styles.input}
+              autoComplete="email"
+              aria-label={t.email}
+              aria-required="true"
+              aria-invalid={error ? 'true' : 'false'}
+            />
+          </div>
 
-          <label htmlFor="password" className={styles.label}>
-            {t.password}
-          </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder={lang === 'pl' ? 'Wpisz hasło' : 'Enter password'}
-            required
-            disabled={loading}
-            className={styles.input}
-            autoComplete="new-password"
-          />
+          <div className={styles.fieldGroup}>
+            <label htmlFor="password" className={styles.label}>
+              {t.password}
+            </label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              disabled={loading}
+              className={styles.input}
+              autoComplete="current-password"
+              aria-label={t.password}
+              aria-required="true"
+              aria-invalid={error ? 'true' : 'false'}
+              minLength={8}
+            />
+          </div>
 
           <div className={styles.remember}>
-            <label>
+            <label className={styles.checkboxLabel}>
               <input
+                id="remember"
                 type="checkbox"
                 checked={remember}
                 onChange={(e) => setRemember(e.target.checked)}
-              />{' '}
-              <span>{lang === 'pl' ? 'Zapamiętaj mnie' : 'Remember me'}</span>
+                className={styles.checkbox}
+                disabled={loading}
+              />
+              <span className={styles.checkboxText}>
+                {lang === 'pl' ? 'Zapamiętaj mnie' : 'Remember me'}
+              </span>
             </label>
           </div>
 
@@ -160,8 +183,10 @@ export default function Login({ lang, setLang }) {
             type="submit"
             className={styles.submit}
             disabled={loading || !email || !password}
+            aria-busy={loading}
           >
-            {loading ? t.loading : t.signIn}
+            {loading && <span className={styles.spinner} aria-hidden="true" />}
+            <span>{loading ? t.loading : t.signIn}</span>
           </button>
         </form>
 
@@ -175,16 +200,22 @@ export default function Login({ lang, setLang }) {
           </button>
         </div>
 
-        <div className={styles.lang}>
+        <div className={styles.lang} role="group" aria-label={lang === 'pl' ? 'Wybór języka' : 'Language selection'}>
           <button
+            type="button"
             className={lang === 'pl' ? styles.langActive : styles.langBtn}
             onClick={() => setLang('pl')}
+            aria-pressed={lang === 'pl'}
+            aria-label="Polski"
           >
             PL
           </button>
           <button
+            type="button"
             className={lang === 'en' ? styles.langActive : styles.langBtn}
             onClick={() => setLang('en')}
+            aria-pressed={lang === 'en'}
+            aria-label="English"
           >
             EN
           </button>
