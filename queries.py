@@ -76,3 +76,93 @@ CREATE INDEX IF NOT EXISTS idx_timesheets_order ON timesheets(order_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_product ON inventory(product_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_date ON inventory(txn_date);
 """
+
+# ANALYTICS QUERIES
+SQL_REVENUE_BY_MONTH = """
+SELECT
+  DATE_TRUNC('month', order_date)::date AS month,
+  SUM(revenue) AS revenue,
+  SUM(gross_margin) AS margin
+FROM v_order_finance
+GROUP BY DATE_TRUNC('month', order_date)
+ORDER BY DATE_TRUNC('month', order_date);
+"""
+
+SQL_TOP_CUSTOMERS = """
+SELECT
+  c.customer_id,
+  c.name,
+  SUM(f.revenue) AS revenue,
+  SUM(f.gross_margin) AS margin,
+  COUNT(DISTINCT f.order_id) AS orders_count
+FROM v_order_finance f
+JOIN customers c ON c.customer_id = f.customer_id
+WHERE (%s IS NULL OR f.order_date >= %s)
+  AND (%s IS NULL OR f.order_date <= %s)
+GROUP BY c.customer_id, c.name
+ORDER BY revenue DESC
+LIMIT %s;
+"""
+
+SQL_TOP_ORDERS = """
+SELECT
+  f.order_id,
+  f.customer_id,
+  c.name AS customer_name,
+  f.revenue,
+  f.gross_margin AS margin
+FROM v_order_finance f
+LEFT JOIN customers c ON c.customer_id = f.customer_id
+WHERE (%s IS NULL OR f.order_date >= %s)
+  AND (%s IS NULL OR f.order_date <= %s)
+ORDER BY f.revenue DESC
+LIMIT %s;
+"""
+
+SQL_ANALYTICS_SUMMARY = """
+WITH period AS (
+  SELECT
+    COALESCE(%s::date, CURRENT_DATE - INTERVAL '90 days') AS date_from,
+    COALESCE(%s::date, CURRENT_DATE) AS date_to
+),
+current_period AS (
+  SELECT
+    SUM(revenue) AS revenue,
+    SUM(gross_margin) AS margin
+  FROM v_order_finance f, period p
+  WHERE f.order_date BETWEEN p.date_from AND p.date_to
+),
+prev_period AS (
+  SELECT
+    SUM(revenue) AS revenue
+  FROM v_order_finance f, period p
+  WHERE f.order_date BETWEEN (p.date_from - (p.date_to - p.date_from)) AND (p.date_from - INTERVAL '1 day')
+),
+ top_customer AS (
+  SELECT
+    c.customer_id,
+    c.name,
+    SUM(f.revenue) AS revenue,
+    SUM(f.gross_margin) AS margin,
+    COUNT(DISTINCT f.order_id) AS orders_count
+  FROM v_order_finance f
+  JOIN customers c ON c.customer_id = f.customer_id, period p
+  WHERE f.order_date BETWEEN p.date_from AND p.date_to
+  GROUP BY c.customer_id, c.name
+  ORDER BY revenue DESC
+  LIMIT 1
+)
+SELECT
+  COALESCE(cp.revenue, 0) AS total_revenue,
+  COALESCE(cp.margin, 0) AS total_margin,
+  CASE WHEN COALESCE(cp.revenue,0) = 0 THEN NULL ELSE (cp.margin / cp.revenue) END AS margin_pct,
+  CASE WHEN COALESCE(pp.revenue,0) = 0 THEN NULL ELSE ((cp.revenue - pp.revenue) / pp.revenue) END AS revenue_yoy_change_pct,
+  tc.customer_id,
+  tc.name,
+  COALESCE(tc.revenue,0) AS tc_revenue,
+  COALESCE(tc.margin,0) AS tc_margin,
+  COALESCE(tc.orders_count,0) AS tc_orders_count
+FROM current_period cp
+LEFT JOIN prev_period pp ON TRUE
+LEFT JOIN top_customer tc ON TRUE;
+"""

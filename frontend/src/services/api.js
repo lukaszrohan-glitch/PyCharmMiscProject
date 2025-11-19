@@ -312,6 +312,9 @@ export const exportTimesheetsSummaryCSV = async ({ fromDate, toDate, empId } = {
   return request(`/api/timesheets/export-summary.csv${qs}`, { method: 'GET', parse: 'blob' })
 }
 
+export const exportOrdersCSV = () => request('/api/orders/export', { method: 'GET', parse: 'blob' })
+export const exportInventoryCSV = () => request('/api/inventory/export', { method: 'GET', parse: 'blob' })
+
 export const updateInventory = (txnId, payload) => {
   const headers = { 'Content-Type': 'application/json' }
   if (API_KEY) headers['x-api-key'] = API_KEY
@@ -347,4 +350,39 @@ export const adminImportCSV = async (entityType, file) => {
   fd.append('entity_type', entityType)
   fd.append('file', file)
   return request('/api/import/csv', { method: 'POST', body: fd })
+}
+
+export const importOrdersCSV = async (file) => {
+  const fd = new FormData()
+  fd.append('file', file)
+  return request('/api/orders/import', { method: 'POST', body: fd })
+}
+
+export const importInventoryCSV = async (file) => {
+  const fd = new FormData()
+  fd.append('file', file)
+  return request('/api/inventory/import', { method: 'POST', body: fd })
+}
+
+export async function getAnalyticsSummary(params = {}) {
+  const usp = new URLSearchParams(params)
+  const res = await apiClient.get(`/api/analytics/summary?${usp.toString()}`)
+  return res.data
+}
+
+export async function getRevenueByMonth() {
+  const res = await apiClient.get('/api/analytics/revenue-by-month')
+  return res.data
+}
+
+export async function getTopCustomers(params = {}) {
+  const usp = new URLSearchParams(params)
+  const res = await apiClient.get(`/api/analytics/top-customers?${usp.toString()}`)
+  return res.data
+}
+
+export async function getTopOrders(params = {}) {
+  const usp = new URLSearchParams(params)
+  const res = await apiClient.get(`/api/analytics/top-orders?${usp.toString()}`)
+  return res.data
 }

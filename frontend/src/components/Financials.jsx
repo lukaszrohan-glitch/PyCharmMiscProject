@@ -8,8 +8,8 @@ export default function Financials({ lang, initialOrderId }){
   const [loading, setLoading] = useState(false)
 
   const t = lang==='pl' ? {
-    title:'Finanse', select:'Wybierz zamówienie', order:'Zamówienie', revenue:'Przychód', material:'Koszt materiałów', labor:'Koszt pracy', margin:'Marża brutto'
-  } : { title:'Financials', select:'Select order', order:'Order', revenue:'Revenue', material:'Material cost', labor:'Labor cost', margin:'Gross margin' }
+    title:'Finanse', select:'Wybierz zamówienie', order:'Zamówienie', revenue:'Przychód', material:'Koszt materiałów', labor:'Koszt pracy', margin:'Marża brutto', marginPct:'Marża %'
+  } : { title:'Financials', select:'Select order', order:'Order', revenue:'Revenue', material:'Material cost', labor:'Labor cost', margin:'Gross margin', marginPct:'Margin %' }
 
   useEffect(()=>{ (async()=>{ try{ setOrders(await api.getOrders()||[]) }catch{}})() },[])
 
@@ -23,6 +23,13 @@ export default function Financials({ lang, initialOrderId }){
 
   async function load(o){ setSelected(o); setLoading(true); try{ setFinance(await api.getFinance(o.order_id)) } catch(e){ alert(e.message) } finally{ setLoading(false) } }
   const fmt = (n)=> new Intl.NumberFormat(undefined,{style:'currency',currency:'PLN'}).format(n||0)
+  const fmtPct = (n)=>{
+    if (!finance || !finance.revenue) return '–'
+    const rev = Number(finance.revenue||0)
+    const mar = Number(finance.gross_margin||0)
+    if (!rev) return '–'
+    return `${((mar/rev)*100).toFixed(1)}%`
+  }
 
   return (
     <div className="financials-container">
@@ -40,6 +47,7 @@ export default function Financials({ lang, initialOrderId }){
           <div className="card"><div className="label">{t.material}</div><div className="val">{fmt(finance?.material_cost)}</div></div>
           <div className="card"><div className="label">{t.labor}</div><div className="val">{fmt(finance?.labor_cost)}</div></div>
           <div className="card"><div className="label">{t.margin}</div><div className="val">{fmt(finance?.gross_margin)}</div></div>
+          <div className="card"><div className="label">{t.marginPct}</div><div className="val">{fmtPct()}</div></div>
         </div>
       )}
       <style jsx>{`
@@ -52,4 +60,3 @@ export default function Financials({ lang, initialOrderId }){
     </div>
   )
 }
-

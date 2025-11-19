@@ -1,4 +1,3 @@
-
 """Pydantic models (schemas) for data validation and serialization."""
 
 from pydantic import BaseModel, Field, condecimal, field_validator, ConfigDict
@@ -317,3 +316,35 @@ class InventoryUpdate(BaseModel):
     reason: Optional[InventoryReason] = None
     lot: Optional[str] = None
     location: Optional[str] = None
+
+
+class RevenueByMonth(BaseModel):
+    month: date
+    revenue: Decimal = Decimal("0")
+    margin: Decimal = Decimal("0")
+    margin_pct: Optional[Decimal] = None
+
+
+class TopCustomer(BaseModel):
+    customer_id: str
+    name: Optional[str] = None
+    revenue: Decimal = Decimal("0")
+    margin: Decimal = Decimal("0")
+    orders_count: int = 0
+
+
+class TopOrder(BaseModel):
+    order_id: str
+    customer_id: Optional[str] = None
+    customer_name: Optional[str] = None
+    revenue: Decimal = Decimal("0")
+    margin: Decimal = Decimal("0")
+
+
+class AnalyticsSummary(BaseModel):
+    total_revenue: Decimal = Decimal("0")
+    total_margin: Decimal = Decimal("0")
+    margin_pct: Optional[Decimal] = None
+    revenue_yoy_change_pct: Optional[Decimal] = None
+    top_customer: Optional[TopCustomer] = None
+

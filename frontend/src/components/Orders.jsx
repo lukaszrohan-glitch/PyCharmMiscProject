@@ -14,6 +14,9 @@ export default function Orders({ lang }) {
     status: 'Planned',
     due_date: ''
   });
+  const [importing, setImporting] = useState(false)
+  const [importFile, setImportFile] = useState(null)
+  const [importResult, setImportResult] = useState(null)
   const selectedCustomer = customers.find(c => String(c.customer_id) === String(formData.customer_id));
 
   const t = lang === 'pl' ? {
@@ -136,14 +139,75 @@ export default function Orders({ lang }) {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleExport = async () => {
+    try {
+      const blob = await api.exportOrdersCSV()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'orders.csv'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      alert((lang === 'pl' ? 'Błąd eksportu: ' : 'Export error: ') + err.message)
+    }
+  }
+
+  const handleImportSubmit = async () => {
+    if (!importFile) return
+    try {
+      const res = await api.importOrdersCSV(importFile)
+      setImportResult(res)
+      await loadOrders()
+    } catch (err) {
+      alert((lang === 'pl' ? 'Błąd importu: ' : 'Import error: ') + err.message)
+    }
+  }
+
   if (loading) return <div className="loading">{t.loading}</div>;
 
   return (
     <div className="orders-container">
       <div className="orders-header">
         <h2>{t.title}</h2>
-        <button className="btn btn-primary" onClick={handleAddClick}>{t.add}</button>
+        <div className="header-actions">
+          <button className="btn" onClick={handleExport}>{lang==='pl' ? 'Eksport CSV' : 'Export CSV'}</button>
+          <button className="btn" onClick={() => { setImporting(true); setImportResult(null); setImportFile(null); }}>
+            {lang==='pl' ? 'Import CSV' : 'Import CSV'}
+          </button>
+          <button className="btn btn-primary" onClick={handleAddClick}>{t.add}</button>
+        </div>
       </div>
+      {importing && (
+        <div className="modal-overlay" onClick={() => setImporting(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>{lang==='pl' ? 'Import zamówień' : 'Import orders'}</h3>
+              <button className="close-btn" onClick={() => setImporting(false)}>×</button>
+            </div>
+            <div className="form">
+              <input
+                type="file"
+                accept=".csv"
+                onChange={e => setImportFile(e.target.files?.[0] || null)}
+              />
+              <div className="form-actions" style={{marginTop:'1rem'}}>
+                <button className="btn btn-primary" disabled={!importFile} onClick={handleImportSubmit}>
+                  {lang==='pl' ? 'Wyślij' : 'Upload'}
+                </button>
+                <button className="btn" type="button" onClick={() => setImporting(false)}>{t.cancel}</button>
+              </div>
+              {importResult && (
+                <pre className="import-result" style={{marginTop:'1rem', maxHeight:200, overflow:'auto'}}>
+                  {JSON.stringify(importResult, null, 2)}
+                </pre>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {error && <div className="error-message">{t.error}: {error}</div>}
 

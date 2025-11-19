@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
+from fastapi.responses import StreamingResponse
 
 from db import fetch_all, fetch_one, execute
 from schemas import Order, OrderCreate, OrderUpdate, OrderLineCreate
@@ -206,3 +207,73 @@ def migrate_contact_person(_ok: bool = Depends(check_api_key)):
         return {"ok": True}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.get("/api/orders/export", summary="Export orders as CSV")
+def export_orders_csv(_ok: bool = Depends(check_api_key)):
+    """Export all orders as a CSV for Excel/import workflows."""
+    try:
+        rows = fetch_all(SQL_ORDERS, None) or []
+        import io, csv
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        header = ["order_id", "customer_id", "status", "order_date", "due_date", "contact_person"]
+        writer.writerow(header)
+        for r in rows:
+            writer.writerow([r.get(col, "") for col in header])
+        buf.seek(0)
+        return StreamingResponse(
+            buf,
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": "attachment; filename=orders.csv",
+            },
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.post("/api/orders/import", summary="Import orders from CSV")
+def import_orders_csv(file: UploadFile = File(...), _ok: bool = Depends(check_api_key)):
+    """Import orders from a CSV file with columns: order_id, customer_id, status, due_date, contact_person"""
+    import csv, io
+    try:
+        content = file.file.read().decode("utf-8-sig")
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Cannot read file: {exc}") from exc
+
+    reader = csv.DictReader(io.StringIO(content))
+    created = 0
+    skipped = 0
+    errors: list[str] = []
+
+    for idx, row in enumerate(reader, start=2):  # header is line 1
+        order_id = (row.get("order_id") or "").strip()
+        customer_id = (row.get("customer_id") or "").strip()
+        if not order_id or not customer_id:
+            skipped += 1
+            errors.append(f"Line {idx}: missing order_id or customer_id")
+            continue
+
+        status = (row.get("status") or "Planned").strip() or "Planned"
+        due_date = (row.get("due_date") or "").strip() or None
+        contact_person = (row.get("contact_person") or "").strip() or None
+
+        # skip duplicates for now (insert-only behavior)
+        existing = fetch_one("SELECT 1 FROM orders WHERE order_id = %s", (order_id,))
+        if existing:
+            skipped += 1
+            errors.append(f"Line {idx}: order {order_id} already exists, skipped")
+            continue
+
+        try:
+            execute(
+                SQL_INSERT_ORDER,
+                (order_id, customer_id, status, due_date, contact_person),
+            )
+            created += 1
+        except Exception as exc:
+            skipped += 1
+            errors.append(f"Line {idx}: failed to insert {order_id}: {exc}")
+
+    return {"created": created, "skipped": skipped, "errors": errors}

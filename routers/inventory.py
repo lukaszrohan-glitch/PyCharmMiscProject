@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
+from fastapi.responses import StreamingResponse
 
 from db import fetch_all, fetch_one, execute
 from queries import SQL_INSERT_INVENTORY
@@ -120,3 +121,92 @@ def delete_inventory(txn_id: str, _ok: bool = Depends(check_api_key)):
         return {"deleted": True}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.get("/api/inventory/export", summary="Export inventory as CSV")
+def export_inventory_csv(_ok: bool = Depends(check_api_key)):
+    """Export all inventory transactions as CSV for Excel/import workflows."""
+    try:
+        rows = fetch_all(
+            "SELECT txn_id, txn_date, product_id, qty_change, reason, lot, location FROM inventory ORDER BY txn_date DESC",
+            None,
+        ) or []
+        import io, csv
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        header = ["txn_id", "txn_date", "product_id", "qty_change", "reason", "lot", "location"]
+        writer.writerow(header)
+        for r in rows:
+            writer.writerow([r.get(col, "") for col in header])
+        buf.seek(0)
+        return StreamingResponse(
+            buf,
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=inventory.csv"},
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.post("/api/inventory/import", summary="Import inventory from CSV")
+def import_inventory_csv(file: UploadFile = File(...), _ok: bool = Depends(check_api_key)):
+    """Import inventory transactions from CSV: txn_id, txn_date, product_id, qty_change, reason, lot, location"""
+    import csv, io
+    try:
+        content = file.file.read().decode("utf-8-sig")
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Cannot read file: {exc}") from exc
+
+    reader = csv.DictReader(io.StringIO(content))
+    created = 0
+    skipped = 0
+    errors: list[str] = []
+
+    for idx, row in enumerate(reader, start=2):
+        txn_id = (row.get("txn_id") or "").strip()
+        product_id = (row.get("product_id") or "").strip()
+        if not txn_id or not product_id:
+            skipped += 1
+            errors.append(f"Line {idx}: missing txn_id or product_id")
+            continue
+
+        existing = fetch_one("SELECT 1 FROM inventory WHERE txn_id = %s", (txn_id,))
+        if existing:
+            skipped += 1
+            errors.append(f"Line {idx}: txn {txn_id} already exists, skipped")
+            continue
+
+        raw_date = (row.get("txn_date") or "").strip()
+        raw_qty = (row.get("qty_change") or "").strip()
+        if not raw_date or not raw_qty:
+            skipped += 1
+            errors.append(f"Line {idx}: missing txn_date or qty_change")
+            continue
+        try:
+            d = date.fromisoformat(raw_date)
+        except Exception:
+            skipped += 1
+            errors.append(f"Line {idx}: invalid date '{raw_date}'")
+            continue
+        try:
+            qty = Decimal(raw_qty)
+        except Exception:
+            skipped += 1
+            errors.append(f"Line {idx}: invalid qty '{raw_qty}'")
+            continue
+
+        reason = (row.get("reason") or "PO").strip() or "PO"
+        lot = (row.get("lot") or "").strip() or None
+        location = (row.get("location") or "").strip() or None
+
+        try:
+            execute(
+                SQL_INSERT_INVENTORY,
+                (txn_id, d, product_id, qty, reason, lot, location),
+            )
+            created += 1
+        except Exception as exc:
+            skipped += 1
+            errors.append(f"Line {idx}: failed to insert {txn_id}: {exc}")
+
+    return {"created": created, "skipped": skipped, "errors": errors}
