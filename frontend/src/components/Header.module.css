@@ -214,6 +214,31 @@
 .logoutBtn { background: transparent; border:1px solid var(--border-primary); color: var(--text-primary); padding:6px 10px; border-radius:8px; cursor:pointer; margin-left:.5rem; }
 .logoutBtn:hover { background: var(--surface-hover); }
 
+/* Search */
+.searchBox { position: relative; width: 280px; }
+.searchInput {
+  width: 100%; height: 40px; border-radius: 8px;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-secondary); color: var(--text-primary);
+  padding: 0 12px; outline: none;
+}
+.searchInput:focus { border-color: var(--brand-primary); box-shadow: 0 0 0 2px rgba(59,130,246,.15); }
+.searchResults {
+  position: absolute; top: 44px; left: 0; right: 0;
+  background: var(--bg-secondary); border:1px solid var(--border-primary);
+  border-radius: 10px; box-shadow: 0 10px 24px rgba(0,0,0,.12);
+  max-height: 280px; overflow: auto; padding: 6px;
+}
+.resultItem { padding: 8px 10px; border-radius: 8px; cursor: pointer; display:flex; justify-content:space-between; gap:8px; }
+.resultItem:hover { background: var(--surface-hover); }
+
+/* Help dropdown */
+.helpMenu { position: relative; }
+.helpBtn { background: var(--bg-secondary); border:1px solid var(--border-primary); border-radius:8px; height:40px; padding:0 10px; cursor:pointer; }
+.helpDropdown { position:absolute; right:0; top: 44px; background: var(--bg-secondary); border:1px solid var(--border-primary); border-radius:10px; box-shadow:0 10px 24px rgba(0,0,0,.12); min-width:180px; padding:6px; }
+.helpItem { display:block; width:100%; text-align:left; border:0; background:transparent; padding:8px 10px; border-radius:8px; cursor:pointer; }
+.helpItem:hover { background: var(--surface-hover); }
+
 /* Responsive */
 @media (max-width: 768px) {
   .logoTagline {

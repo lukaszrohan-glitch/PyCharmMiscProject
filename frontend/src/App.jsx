@@ -11,6 +11,8 @@ import Reports from './components/Reports';
 import Financials from './components/Financials';
 import Clients from './components/Clients';
 import Admin from './components/Admin';
+import ShortcutsModal from './components/ShortcutsModal';
+import UserGuide from './components/UserGuide';
 import { useAuth } from './auth/AuthProvider';
 import styles from './App.module.css';
 
@@ -22,6 +24,9 @@ export default function App() {
   );
   const [currentView, setCurrentView] = useState('dashboard');
   const [isSettingsOpen, setSettingsOpen] = useState(false);
+  const [initialFinanceOrderId, setInitialFinanceOrderId] = useState(null);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const { profile, checkingAuth, setAuth, logout } = useAuth();
 
   // zapisujemy język przy zmianie
@@ -72,6 +77,11 @@ export default function App() {
     setSettingsOpen(true);
   };
 
+  const jumpToFinance = (orderId) => {
+    setInitialFinanceOrderId(orderId);
+    setCurrentView('financials');
+  };
+
   const renderView = () => {
     switch (currentView) {
       case 'orders':
@@ -85,7 +95,7 @@ export default function App() {
       case 'reports':
         return <Reports lang={lang} />;
       case 'financials':
-        return <Financials lang={lang} />;
+        return <Financials lang={lang} initialOrderId={initialFinanceOrderId} />;
       case 'admin':
         // prosty guard po stronie frontu – backend i tak musi sprawdzać
         if (profile?.is_admin) {
@@ -126,6 +136,9 @@ export default function App() {
         profile={profile}
         onSettings={handleSettings}
         onLogout={handleLogout}
+        onSearchSelect={jumpToFinance}
+        onOpenShortcuts={() => setShowShortcuts(true)}
+        onOpenGuide={() => setShowGuide(true)}
       />
       <main id="main-content" className={styles.mainContent}>
         <div className={styles.container}>{renderView()}</div>
@@ -141,6 +154,8 @@ export default function App() {
           lang={lang}
         />
       )}
+      {showShortcuts && <ShortcutsModal lang={lang} onClose={() => setShowShortcuts(false)} />}
+      {showGuide && <UserGuide lang={lang} onClose={() => setShowGuide(false)} />}
     </div>
   );
 }

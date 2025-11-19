@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import * as api from '../services/api'
 
-export default function Financials({ lang }){
+export default function Financials({ lang, initialOrderId }){
   const [orders, setOrders] = useState([])
   const [selected, setSelected] = useState(null)
   const [finance, setFinance] = useState(null)
@@ -12,6 +12,14 @@ export default function Financials({ lang }){
   } : { title:'Financials', select:'Select order', order:'Order', revenue:'Revenue', material:'Material cost', labor:'Labor cost', margin:'Gross margin' }
 
   useEffect(()=>{ (async()=>{ try{ setOrders(await api.getOrders()||[]) }catch{}})() },[])
+
+  // If initialOrderId is provided, preselect and load it once orders fetched
+  useEffect(() => {
+    if (!initialOrderId || !orders?.length) return
+    const o = orders.find(x => String(x.order_id) === String(initialOrderId))
+    if (o) { load(o) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialOrderId, orders])
 
   async function load(o){ setSelected(o); setLoading(true); try{ setFinance(await api.getFinance(o.order_id)) } catch(e){ alert(e.message) } finally{ setLoading(false) } }
   const fmt = (n)=> new Intl.NumberFormat(undefined,{style:'currency',currency:'PLN'}).format(n||0)
