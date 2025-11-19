@@ -24,6 +24,7 @@ export default function Header({
   const [showSearch, setShowSearch] = useState(false)
   const inputRef = useRef(null)
   const [showHelp, setShowHelp] = useState(false)
+  const wrapperRef = useRef(null)
 
   const t = {
     appName: 'Synterra',
@@ -50,13 +51,15 @@ export default function Header({
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (menuOpen && menuRef.current && !menuRef.current.contains(event.target)) {
+      if (!wrapperRef.current) return
+      if (!wrapperRef.current.contains(event.target)) {
+        setShowHelp(false)
         setMenuOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [menuOpen])
+  }, [])
 
   // Load orders once when the search box is first opened
   useEffect(() => {
@@ -68,7 +71,7 @@ export default function Header({
     })()
   }, [showSearch, orders.length])
 
-  // Global shortcuts: '/', '?', 'Esc'
+  // Global shortcuts: '/', 'Esc'
   useEffect(() => {
     const onKey = (e) => {
       const tag = (document.activeElement && document.activeElement.tagName) || ''
@@ -77,9 +80,6 @@ export default function Header({
         e.preventDefault()
         setShowSearch(true)
         setTimeout(() => inputRef.current?.focus(), 0)
-      } else if (e.key === '?' && !typing) {
-        e.preventDefault()
-        onOpenShortcuts?.()
       } else if (e.key === 'Escape') {
         setShowSearch(false)
         setShowHelp(false)
@@ -87,7 +87,7 @@ export default function Header({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onOpenShortcuts])
+  }, [])
 
   const results = (q || '').trim()
     ? orders
@@ -120,7 +120,7 @@ export default function Header({
   return (
     <header className={styles.header}>
       <div className={styles.headerTop}>
-        <div className={styles.headerContent}>
+        <div className={styles.headerContent} ref={wrapperRef}>
           <div className={styles.leftSection}>
             <button className={styles.menuBtn} onClick={() => setMenuOpen(!menuOpen)} aria-label={t.menu}>
               &#9776;
