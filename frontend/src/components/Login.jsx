@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useAuth } from '../auth/AuthProvider'
 import ForgotPassword from './ForgotPassword'
 import SynterraLogo from './SynterraLogo'
+import styles from './Login.module.css'
 
 export default function Login({ lang, setLang }) {
   const { loginWithCredentials } = useAuth()
@@ -69,53 +70,52 @@ export default function Login({ lang, setLang }) {
 
   if (mode === 'forgot') {
     return (
-      <div className="login-root">
-        <div className="login-card">
-          <div className="login-header">
-            <div className="login-logo-wrap">
-              <SynterraLogo className="login-logo" />
+      <div className={styles.root}>
+        <div className={styles.card}>
+          <div className={styles.header}>
+            <div className={styles.logoWrap}>
+              <SynterraLogo className={styles.logo} />
             </div>
-            <div className="login-tagline"><em>{t.tagline}</em></div>
+            <div className={styles.tagline}><em>{t.tagline}</em></div>
           </div>
           <ForgotPassword lang={lang} onBack={() => setMode('login')} />
-          <div className="login-lang">
+          <div className={styles.lang}>
             <button
-              className={lang === 'pl' ? 'login-lang-active' : 'login-lang-btn'}
+              className={lang === 'pl' ? styles.langActive : styles.langBtn}
               onClick={() => setLang('pl')}
             >
               PL
             </button>
             <button
-              className={lang === 'en' ? 'login-lang-active' : 'login-lang-btn'}
+              className={lang === 'en' ? styles.langActive : styles.langBtn}
               onClick={() => setLang('en')}
             >
               EN
             </button>
           </div>
         </div>
-        {/* styles stay shared with main mode below */}
       </div>
     )
   }
 
   return (
-    <div className="login-root">
-      <div className="login-card">
-        <div className="login-header">
-          <div className="login-logo-wrap">
-            <SynterraLogo className="login-logo" />
+    <div className={styles.root}>
+      <div className={styles.card}>
+        <div className={styles.header}>
+          <div className={styles.logoWrap}>
+            <SynterraLogo className={styles.logo} />
           </div>
-          <div className="login-tagline"><em>{t.tagline}</em></div>
+          <div className={styles.tagline}><em>{t.tagline}</em></div>
         </div>
 
         {error && (
-          <div className="login-error" role="alert">
+          <div className={styles.error} role="alert">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="login-form" autoComplete="off">
-          <label htmlFor="email" className="login-label">
+        <form onSubmit={handleSubmit} className={styles.form} autoComplete="off">
+          <label htmlFor="email" className={styles.label}>
             {t.email}
           </label>
           <input
@@ -126,11 +126,11 @@ export default function Login({ lang, setLang }) {
             placeholder={lang === 'pl' ? 'Adres email' : 'Email address'}
             required
             disabled={loading}
-            className="login-input"
+            className={styles.input}
             autoComplete="off"
           />
 
-          <label htmlFor="password" className="login-label">
+          <label htmlFor="password" className={styles.label}>
             {t.password}
           </label>
           <input
@@ -141,11 +141,11 @@ export default function Login({ lang, setLang }) {
             placeholder={lang === 'pl' ? 'Wpisz hasło' : 'Enter password'}
             required
             disabled={loading}
-            className="login-input"
+            className={styles.input}
             autoComplete="new-password"
           />
 
-          <div className="login-remember">
+          <div className={styles.remember}>
             <label>
               <input
                 type="checkbox"
@@ -158,206 +158,38 @@ export default function Login({ lang, setLang }) {
 
           <button
             type="submit"
-            className="login-submit"
+            className={styles.submit}
             disabled={loading || !email || !password}
           >
             {loading ? t.loading : t.signIn}
           </button>
         </form>
 
-        <div className="login-footerRow">
+        <div className={styles.footerRow}>
           <button
             type="button"
             onClick={() => setMode('forgot')}
-            className="login-forgot"
+            className={styles.forgot}
           >
             {t.forgot}
           </button>
         </div>
 
-        <div className="login-lang">
+        <div className={styles.lang}>
           <button
-            className={lang === 'pl' ? 'login-lang-active' : 'login-lang-btn'}
+            className={lang === 'pl' ? styles.langActive : styles.langBtn}
             onClick={() => setLang('pl')}
           >
             PL
           </button>
           <button
-            className={lang === 'en' ? 'login-lang-active' : 'login-lang-btn'}
+            className={lang === 'en' ? styles.langActive : styles.langBtn}
             onClick={() => setLang('en')}
           >
             EN
           </button>
         </div>
       </div>
-
-      <style jsx>{`
-        .login-root {
-          min-height: 100vh;
-          display: grid;
-          place-items: center;
-          background: radial-gradient(circle at top, #111827 0, #020617 55%, #000 100%);
-          color: #f5f5f7;
-          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI',
-            Roboto, Helvetica, Arial, sans-serif;
-          padding: 24px 16px;
-        }
-        .login-card {
-          width: 100%;
-          max-width: 420px;
-          background: rgba(15, 23, 42, 0.96);
-          border-radius: 18px;
-          padding: 28px 26px 22px;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
-          border: 1px solid rgba(148, 163, 184, 0.3);
-          backdrop-filter: blur(26px);
-        }
-        .login-header {
-          margin-bottom: 20px;
-          text-align: center;
-        }
-        .login-logo-wrap {
-          display: flex;
-          justify-content: center;
-          margin-bottom: 6px;
-        }
-        .login-logo {
-          height: 46px;
-        }
-        .login-tagline {
-          color: #9ca3af;
-          font-size: 13px;
-        }
-        .login-error {
-          background: #7f1d1d;
-          color: #fee2e2;
-          border: 1px solid #b91c1c;
-          padding: 10px 12px;
-          border-radius: 10px;
-          margin-bottom: 12px;
-          font-size: 13px;
-        }
-        .login-form {
-          display: grid;
-          gap: 10px;
-        }
-        .login-label {
-          font-size: 12px;
-          color: #d1d5db;
-        }
-        .login-input {
-          height: 42px;
-          padding: 0 12px;
-          border-radius: 10px;
-          border: 1px solid #374151;
-          background: #020617;
-          color: #f9fafb;
-          transition: box-shadow 0.2s, border-color 0.2s, background 0.2s;
-        }
-        .login-input:focus {
-          outline: none;
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
-          background: #020617;
-        }
-        .login-input:disabled {
-          background: #111827;
-          color: #6b7280;
-        }
-        .login-remember {
-          display: flex;
-          justify-content: flex-start;
-          align-items: center;
-          margin: 4px 0 6px;
-          color: #9ca3af;
-          font-size: 12px;
-        }
-        .login-remember input[type='checkbox'] {
-          accent-color: #0a84ff;
-        }
-        .login-submit {
-          height: 44px;
-          border-radius: 12px;
-          border: 1px solid #0a84ff;
-          background: #0a84ff;
-          color: #ffffff;
-          font-weight: 600;
-          cursor: pointer;
-          transition: background 0.18s, transform 0.02s, box-shadow 0.18s;
-          box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.8);
-        }
-        .login-submit:hover:not(:disabled) {
-          background: #2563eb;
-          box-shadow: 0 18px 38px rgba(15, 23, 42, 0.7);
-        }
-        .login-submit:active:not(:disabled) {
-          transform: translateY(1px);
-        }
-        .login-submit:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-        .login-footerRow {
-          margin-top: 10px;
-          text-align: right;
-          font-size: 12px;
-        }
-        .login-forgot {
-          border: none;
-          background: transparent;
-          color: #38bdf8;
-          cursor: pointer;
-          padding: 0;
-          text-decoration: underline;
-        }
-        .login-lang {
-          display: flex;
-          gap: 8px;
-          justify-content: center;
-          margin-top: 16px;
-        }
-        .login-lang-btn,
-        .login-lang-active {
-          padding: 6px 14px;
-          border-radius: 999px;
-          border: 1px solid #374151;
-          background: #020617;
-          color: #e5e7eb;
-          font-size: 12px;
-        }
-        .login-lang-active {
-          background: #f5f5f7;
-          color: #020617;
-          border-color: #f5f5f7;
-        }
-        @media (prefers-color-scheme: dark) {
-          .login-root {
-            background: radial-gradient(circle at top, #111827 0, #020617 55%, #000 100%);
-          }
-          .login-card {
-            background: rgba(22, 22, 26, 0.98);
-            border-color: #2c2c2e;
-          }
-          .login-input {
-            background: #1c1c1e;
-            border-color: #3a3a3c;
-          }
-          .login-submit {
-            border-color: #0a84ff;
-            background: #0a84ff;
-          }
-          .login-lang-btn {
-            background: #1c1c1e;
-            color: #f5f5f7;
-            border-color: #3a3a3c;
-          }
-          .login-lang-active {
-            background: #f5f5f7;
-            color: #000;
-            border-color: #f5f5f7;
-          }
-        }
-      `}</style>
     </div>
   )
 }
