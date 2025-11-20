@@ -12,6 +12,9 @@ from fastapi.responses import JSONResponse, FileResponse, PlainTextResponse
 from fastapi.encoders import jsonable_encoder
 from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from db import execute, fetch_one, _get_pool
 import auth
@@ -33,6 +36,9 @@ from routers.inventory import router as inventory_router
 # Initialize logging early
 setup_logging()
 
+# Initialize rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI(
     title="Synterra API",
     version="1.0.0",
@@ -41,12 +47,17 @@ app = FastAPI(
     redoc_url="/api/redoc",
 )
 
+# Add rate limiter to app state
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 # Metrics collection (simple in-memory)
 request_metrics = {
     "total_requests": 0,
     "total_errors": 0,
     "requests_by_endpoint": defaultdict(int),
     "errors_by_endpoint": defaultdict(int),
+    "rate_limited": 0,
 }
 
 

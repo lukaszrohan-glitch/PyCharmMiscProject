@@ -18,15 +18,34 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: smb-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   app:
     build: .
     container_name: smb-app
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       # Używamy PRIVATE_URL, bo masz już logikę w entrypoint.sh
       DATABASE_PRIVATE_URL: "postgresql+psycopg://postgres:postgres@db:5432/railway"
+
+      # Redis for caching
+      REDIS_URL: "redis://redis:6379/0"
 
       # JWT / admin – pod dev możesz tak zostawić
       JWT_SECRET: "changeme-dev-secret"
@@ -35,6 +54,10 @@ services:
 
       # CORS – frontend dev (Vite) + backend
       CORS_ORIGINS: "http://localhost:5173,http://127.0.0.1:5173,http://localhost:8000,http://127.0.0.1:8000"
+
+      # Logging configuration
+      LOG_LEVEL: "INFO"
+      LOG_FORMAT: "json"
 
       # FastAPI / uvicorn
       APP_MODULE: "main:app"
@@ -52,3 +75,4 @@ services:
 
 volumes:
   db-data:
+  redis-data:

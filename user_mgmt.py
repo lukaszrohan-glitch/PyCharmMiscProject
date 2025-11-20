@@ -297,18 +297,31 @@ def create_user(
     subscription_plan: Optional[str],
     initial_password: Optional[str] = None
 ) -> Dict:
+    from password_validator import validate_password_strength
+
     # Basic email validation
     if not email or not email.strip():
         raise Exception('Email is required')
     e = email.strip()
     if '@' not in e or '.' not in e.split('@')[-1]:
         raise Exception('Invalid email format')
-    # If caller supplies a password use it (trim to 72 bytes for hash libs that warn)
-    raw_password = initial_password.strip() if initial_password else secrets.token_hex(8)
+
+    # Generate or validate password
+    raw_password = initial_password.strip() if initial_password else secrets.token_hex(16)
+
+    # Validate password strength (only if user-provided, skip for auto-generated)
+    if initial_password:
+        is_valid, errors = validate_password_strength(raw_password)
+        if not is_valid:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Password does not meet security requirements: {'; '.join(errors)}"
+            )
+
+    # Truncate to 72 chars for bcrypt
     if len(raw_password) > 72:
         raw_password = raw_password[:72]
-    if len(raw_password) < 8:
-        raise HTTPException(status_code=400, detail='Password too short (min 8 chars)')
+
     pwd_hash = hasher.hash(raw_password)
     user_id = f'U-{secrets.token_hex(3)}'
     try:

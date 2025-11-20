@@ -1,8 +1,15 @@
 import logging
 import os
+import sys
 from logging.handlers import RotatingFileHandler
 from typing import Dict, Any, Optional
 from datetime import datetime
+
+try:
+    from pythonjsonlogger import jsonlogger
+    HAS_JSON_LOGGER = True
+except ImportError:
+    HAS_JSON_LOGGER = False
 
 LOG_NAME = "smb_tool"
 
@@ -10,19 +17,41 @@ def setup_logging() -> logging.Logger:
     """Configure application logging in a consistent way.
 
     - Writes to logs/app.log with rotation (5MB x 3)
-    - Console logs at WARNING+
+    - Console logs based on environment
+    - JSON format in production (LOG_FORMAT=json)
     - Avoids duplicate handlers and unifies uvicorn/fastapi loggers
     """
     os.makedirs("logs", exist_ok=True)
+    
+    use_json = os.getenv("LOG_FORMAT", "text").lower() == "json"
+    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+
+    # Determine formatter
+    if use_json and HAS_JSON_LOGGER:
+        formatter = jsonlogger.JsonFormatter(
+            fmt="%(asctime)s %(name)s %(levelname)s %(message)s %(pathname)s %(lineno)d",
+            rename_fields={
+                "asctime": "timestamp",
+                "name": "logger",
+                "levelname": "level",
+                "pathname": "file",
+                "lineno": "line"
+            }
+        )
+    else:
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S"
+        )
 
     # Shared handlers
     file_handler = RotatingFileHandler("logs/app.log", maxBytes=5_000_000, backupCount=3)
     file_handler.setLevel(logging.INFO)
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.WARNING)
-    fmt = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    file_handler.setFormatter(fmt)
-    console_handler.setFormatter(fmt)
+    file_handler.setFormatter(formatter)
+    
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(getattr(logging, log_level, logging.INFO))
+    console_handler.setFormatter(formatter)
 
     # App logger
     logger = logging.getLogger(LOG_NAME)
