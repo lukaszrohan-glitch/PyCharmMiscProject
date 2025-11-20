@@ -255,6 +255,24 @@ app.include_router(timesheets_router)
 app.include_router(inventory_router)
 
 
+# ---- Apply Route-Specific Rate Limits ----
+# Apply rate limits to sensitive endpoints after routers are included
+try:
+    # Login endpoint: 5 attempts per minute
+    for route in app.routes:
+        if hasattr(route, 'path') and route.path == "/api/auth/login":
+            route.endpoint = limiter.limit("5/minute")(route.endpoint)
+            app_logger.info("Applied rate limit to /api/auth/login: 5/minute")
+
+    # Password reset request: 3 attempts per hour
+    for route in app.routes:
+        if hasattr(route, 'path') and route.path == "/api/auth/request-reset":
+            route.endpoint = limiter.limit("3/hour")(route.endpoint)
+            app_logger.info("Applied rate limit to /api/auth/request-reset: 3/hour")
+except Exception as e:
+    app_logger.warning(f"Failed to apply route-specific rate limits: {e}")
+
+
 # --- Error handlers ---
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):

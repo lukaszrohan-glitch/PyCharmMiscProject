@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Request
-from slowapi import Limiter
-from slowapi.util import get_remote_address
+from fastapi import APIRouter, Depends
 
 from schemas import UserLogin, PasswordChange, PasswordResetRequest, PasswordReset
 from user_mgmt import (
@@ -15,18 +13,16 @@ from user_mgmt import (
 
 
 router = APIRouter(tags=["Auth"])
-limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/api/auth/login", summary="Login with email and password")
-@limiter.limit("5/minute")  # Max 5 login attempts per minute per IP
-async def auth_login(request: Request, payload: UserLogin):
+def auth_login(payload: UserLogin):
     """
     Zwraca:
       - tokens: {access_token, refresh_token, expires_in}
       - user: podstawowe informacje o użytkowniku
 
-    Rate limit: 5 attempts per minute to prevent brute force attacks.
+    Note: Rate limiting is handled by slowapi middleware at the app level.
     """
     return login_user(payload.email, payload.password)
 
@@ -51,12 +47,11 @@ def auth_change_password(payload: PasswordChange, user=Depends(get_current_user)
 
 
 @router.post("/api/auth/request-reset", summary="Request password reset")
-@limiter.limit("3/hour")  # Max 3 reset requests per hour per IP
-async def auth_request_reset(request: Request, payload: PasswordResetRequest):
+def auth_request_reset(payload: PasswordResetRequest):
     """
     Tworzy token resetu hasła (obsługa wysyłki maila leży po Twojej stronie / w logach).
 
-    Rate limit: 3 requests per hour to prevent abuse.
+    Note: Rate limiting is handled by slowapi middleware at the app level.
     """
     return request_password_reset(payload.email)
 
