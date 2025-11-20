@@ -221,10 +221,12 @@ def export_orders_csv(_ok: bool = Depends(check_api_key)):
         writer.writerow(header)
         for r in rows:
             writer.writerow([r.get(col, "") for col in header])
-        buf.seek(0)
+        csv_bytes = buf.getvalue().encode("utf-8-sig")
+        mem = io.BytesIO(csv_bytes)
+        mem.seek(0)
         return StreamingResponse(
-            buf,
-            media_type="text/csv",
+            mem,
+            media_type="text/csv; charset=utf-8",
             headers={
                 "Content-Disposition": "attachment; filename=orders.csv",
             },

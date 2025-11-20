@@ -1,11 +1,14 @@
 import logging
 import time
+import uuid
 from datetime import datetime
 from pathlib import Path
+from collections import defaultdict
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
+from starlette.middleware.gzip import GZipMiddleware
+from fastapi.responses import JSONResponse, FileResponse, PlainTextResponse
 from fastapi.encoders import jsonable_encoder
 from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
@@ -30,8 +33,25 @@ from routers.inventory import router as inventory_router
 # Initialize logging early
 setup_logging()
 
-app = FastAPI(title="Synterra API", version="1.0", openapi_tags=tags_metadata)
+app = FastAPI(
+    title="Synterra API",
+    version="1.0.0",
+    openapi_tags=tags_metadata,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+)
 
+# Metrics collection (simple in-memory)
+request_metrics = {
+    "total_requests": 0,
+    "total_errors": 0,
+    "requests_by_endpoint": defaultdict(int),
+    "errors_by_endpoint": defaultdict(int),
+}
+
+
+# ---- GZIP Compression ----
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # ---- CORS ----
 origins_list = settings.cors_origins_list()
@@ -51,17 +71,74 @@ app.add_middleware(
 )
 
 
-# ---- Request logging middleware ----
+# ---- Security Headers Middleware ----
 @app.middleware("http")
-async def log_requests(request: Request, call_next):
-    # Skip extremely noisy health checks
-    if request.url.path in ("/healthz", "/api/healthz"):
-        return await call_next(request)
-    start = time.monotonic()
+async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
-    duration_ms = (time.monotonic() - start) * 1000
-    app_logger.info(f"{request.method} {request.url.path} -> {response.status_code} in {duration_ms:.1f}ms")
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    # Add Content-Security-Policy for additional protection
+    if not request.url.path.startswith("/api/docs"):
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data: https:; "
+            "font-src 'self' data:;"
+        )
     return response
+
+
+# ---- Request ID Middleware ----
+@app.middleware("http")
+async def add_request_id(request: Request, call_next):
+    request_id = str(uuid.uuid4())
+    request.state.request_id = request_id
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    return response
+
+
+# ---- Request logging & metrics middleware ----
+@app.middleware("http")
+async def log_requests_and_metrics(request: Request, call_next):
+    # Skip extremely noisy health checks
+    if request.url.path in ("/healthz", "/api/healthz", "/metrics"):
+        return await call_next(request)
+
+    start = time.monotonic()
+    request_id = getattr(request.state, "request_id", "unknown")
+
+    try:
+        response = await call_next(request)
+        duration_ms = (time.monotonic() - start) * 1000
+
+        # Update metrics
+        request_metrics["total_requests"] += 1
+        request_metrics["requests_by_endpoint"][request.url.path] += 1
+
+        if response.status_code >= 400:
+            request_metrics["total_errors"] += 1
+            request_metrics["errors_by_endpoint"][request.url.path] += 1
+
+        # Structured logging
+        app_logger.info(
+            f"[{request_id}] {request.method} {request.url.path} -> "
+            f"{response.status_code} in {duration_ms:.1f}ms"
+        )
+        return response
+    except Exception as exc:
+        duration_ms = (time.monotonic() - start) * 1000
+        request_metrics["total_errors"] += 1
+        request_metrics["errors_by_endpoint"][request.url.path] += 1
+        app_logger.error(
+            f"[{request_id}] {request.method} {request.url.path} FAILED "
+            f"in {duration_ms:.1f}ms: {exc}"
+        )
+        raise
 
 
 # Admin: ensure api_keys table exists on startup
@@ -118,6 +195,41 @@ def readyz():
             return {"ready": False, "db": "postgres", "alembic_version": None}
     except Exception as e:
         return JSONResponse(status_code=503, content={"ready": False, "error": str(e)})
+
+
+@app.get("/metrics", tags=["Monitoring"], summary="Prometheus metrics endpoint")
+def metrics():
+    """
+    Export metrics in Prometheus text format for monitoring.
+    Includes: total requests, errors, per-endpoint counters.
+    """
+    lines = [
+        "# HELP http_requests_total Total HTTP requests",
+        "# TYPE http_requests_total counter",
+        f"http_requests_total {request_metrics['total_requests']}",
+        "",
+        "# HELP http_errors_total Total HTTP errors (4xx/5xx)",
+        "# TYPE http_errors_total counter",
+        f"http_errors_total {request_metrics['total_errors']}",
+        "",
+        "# HELP http_requests_by_endpoint Total requests by endpoint",
+        "# TYPE http_requests_by_endpoint counter",
+    ]
+
+    for endpoint, count in request_metrics["requests_by_endpoint"].items():
+        # Sanitize endpoint for Prometheus label
+        safe_endpoint = endpoint.replace('"', '\\"')
+        lines.append(f'http_requests_by_endpoint{{endpoint="{safe_endpoint}"}} {count}')
+
+    lines.append("")
+    lines.append("# HELP http_errors_by_endpoint Total errors by endpoint")
+    lines.append("# TYPE http_errors_by_endpoint counter")
+
+    for endpoint, count in request_metrics["errors_by_endpoint"].items():
+        safe_endpoint = endpoint.replace('"', '\\"')
+        lines.append(f'http_errors_by_endpoint{{endpoint="{safe_endpoint}"}} {count}')
+
+    return PlainTextResponse("\n".join(lines))
 
 
 # ---- Include Routers ----

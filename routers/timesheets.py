@@ -482,7 +482,7 @@ def timesheets_export_csv(
         for r in rows or []:
             writer.writerow(r)
 
-        csv_bytes = output.getvalue().encode("utf-8")
+        csv_bytes = output.getvalue().encode("utf-8-sig")
         mem = io.BytesIO(csv_bytes)
         fname_parts = ["timesheets"]
         if from_date:
@@ -496,7 +496,8 @@ def timesheets_export_csv(
             "Content-Disposition": f'attachment; filename="{filename}"',
             "Content-Type": "text/csv; charset=utf-8",
         }
-        return StreamingResponse(mem, headers=headers)
+        mem.seek(0)
+        return StreamingResponse(mem, media_type="text/csv; charset=utf-8", headers=headers)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
@@ -596,7 +597,7 @@ def timesheets_export_summary_csv(
                 }
             )
 
-        csv_bytes = output.getvalue().encode("utf-8")
+        csv_bytes = output.getvalue().encode("utf-8-sig")
         mem = io.BytesIO(csv_bytes)
         fname_parts = ["timesheets_summary"]
         if from_date:
@@ -610,7 +611,8 @@ def timesheets_export_summary_csv(
             "Content-Disposition": f'attachment; filename="{filename}"',
             "Content-Type": "text/csv; charset=utf-8",
         }
-        return StreamingResponse(mem, headers=headers)
+        mem.seek(0)
+        return StreamingResponse(mem, media_type="text/csv; charset=utf-8", headers=headers)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 

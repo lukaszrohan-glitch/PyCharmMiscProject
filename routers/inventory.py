@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from typing import List, Optional
+from datetime import date
+from decimal import Decimal
 
 from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
 from fastapi.responses import StreamingResponse
@@ -132,16 +134,19 @@ def export_inventory_csv(_ok: bool = Depends(check_api_key)):
             None,
         ) or []
         import io, csv
+        # use StringIO then encode to bytes with BOM so Excel opens it well
         buf = io.StringIO()
         writer = csv.writer(buf)
         header = ["txn_id", "txn_date", "product_id", "qty_change", "reason", "lot", "location"]
         writer.writerow(header)
         for r in rows:
             writer.writerow([r.get(col, "") for col in header])
-        buf.seek(0)
+        csv_bytes = buf.getvalue().encode("utf-8-sig")
+        mem = io.BytesIO(csv_bytes)
+        mem.seek(0)
         return StreamingResponse(
-            buf,
-            media_type="text/csv",
+            mem,
+            media_type="text/csv; charset=utf-8",
             headers={"Content-Disposition": "attachment; filename=inventory.csv"},
         )
     except Exception as exc:
