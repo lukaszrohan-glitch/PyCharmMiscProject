@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { adminListUsers, adminCreateUser, setAdminKey, getToken } from '../services/api';
 import { useAuth } from '../auth/AuthProvider';
 import styles from './Admin.module.css';
+import classNames from 'classnames';
 
 export default function Admin({ lang }) {
   const { profile } = useAuth();
@@ -203,8 +204,8 @@ export default function Admin({ lang }) {
 
   if (!isAuthed && !profile?.is_admin) {
     return (
-      <div className={styles.page}>
-        <div className={styles.container}>
+      <div className={classNames('page', 'page--admin', styles.page)}>
+        <div className={classNames('card--admin-main', styles.container)}>
           <div className={`${styles.card} ${styles.authCard}`}>
             <h1 className={styles.authTitle}>
               <span aria-hidden="true">🔐</span>
@@ -292,11 +293,11 @@ export default function Admin({ lang }) {
   const regularCount = users.length - adminCount;
 
   return (
-    <div className={styles.page}>
-      <div className={styles.container}>
-        <div className={styles.card}>
+    <div className={classNames('page', 'page--admin', styles.page)}>
+      <div className={classNames('card--admin-main', styles.container)}>
+        <div className={classNames('card-section--stacked', styles.card)}>
           {/* Header */}
-          <div className={styles.header}>
+          <div className={classNames('card-header--split', styles.header)}>
             <h1 className={styles.title}>
               <span className={styles.titleIcon} aria-hidden="true">👨‍💼</span>
               {t('admin_panel')}
@@ -326,7 +327,7 @@ export default function Admin({ lang }) {
             </div>
           )}
 
-          <div className={styles.content}>
+          <div className={classNames('card-section--stacked', styles.content)}>
             {/* Stats */}
             <div className={styles.stats}>
               <div className={styles.statCard}>
@@ -353,7 +354,7 @@ export default function Admin({ lang }) {
             </div>
 
             {/* Add User Section */}
-            <section className={styles.section}>
+            <section className={classNames('card-section--stacked', styles.section)}>
               <h2 className={styles.sectionTitle}>
                 <span className={styles.sectionIcon} aria-hidden="true">➕</span>
                 {t('add_user')}
@@ -439,7 +440,7 @@ export default function Admin({ lang }) {
             </section>
 
             {/* Users List Section */}
-            <section className={styles.section}>
+            <section className={classNames('card-section--stacked', styles.section)}>
               <h2 className={styles.sectionTitle}>
                 <span className={styles.sectionIcon} aria-hidden="true">👥</span>
                 {t('users')} ({users.length})
@@ -456,7 +457,7 @@ export default function Admin({ lang }) {
                   </div>
                 </div>
               ) : (
-                <div className={styles.tableContainer}>
+                <div className={classNames('table-shell--admin', styles.tableContainer)}>
                   <table className={styles.table}>
                     <thead>
                       <tr>
@@ -471,7 +472,7 @@ export default function Admin({ lang }) {
                         <tr key={user.id}>
                           <td className={styles.tableEmail}>{user.email}</td>
                           <td>
-                            <span className={`${styles.tableBadge} ${user.is_admin ? styles.badgeYes : styles.badgeNo}`}>
+                            <span className={classNames('admin-chip', styles.tableBadge, user.is_admin ? styles.badgeYes : styles.badgeNo)}>
                               <span aria-hidden="true">{user.is_admin ? '✅' : '❌'}</span>
                               {user.is_admin ? t('yes') : t('no')}
                             </span>
@@ -486,7 +487,7 @@ export default function Admin({ lang }) {
                           <td>
                             <button
                               type="button"
-                              className={`${styles.btn} ${styles.btnDanger}`}
+                              className={classNames('admin-actions-row', styles.btn, styles.btnDanger)}
                               onClick={() => deleteUser(user.id)}
                               disabled={loading}
                               aria-label={`${t('delete')} ${user.email}`}

@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
+from fastapi.responses import StreamingResponse
+from psycopg2.errors import UniqueViolation
 
 from db import fetch_all, fetch_one, execute
 from schemas import Customer, CustomerCreate, CustomerUpdate
@@ -46,6 +48,12 @@ def customer_get(customer_id: str):
 @router.post("/api/customers", response_model=Customer, status_code=201, summary="Create customer")
 def create_customer(payload: CustomerCreate, _ok: bool = Depends(check_api_key)):
     try:
+        existing = fetch_one(
+            "SELECT 1 FROM customers WHERE customer_id = %s OR LOWER(email) = LOWER(%s)",
+            (payload.customer_id, payload.email),
+        )
+        if existing:
+            raise HTTPException(status_code=409, detail="Customer already exists")
         rows = execute(
             "INSERT INTO customers (customer_id, name, nip, address, email, contact_person) "
             "VALUES (%s, %s, %s, %s, %s, %s) "
@@ -61,10 +69,12 @@ def create_customer(payload: CustomerCreate, _ok: bool = Depends(check_api_key))
             returning=True,
         )
         if not rows:
-            raise HTTPException(status_code=409, detail="Customer already exists")
+            raise HTTPException(status_code=500, detail="Failed to create customer")
         return rows[0]
     except HTTPException:
         raise
+    except UniqueViolation:
+        raise HTTPException(status_code=409, detail="Customer already exists")
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
@@ -112,5 +122,81 @@ def delete_customer(customer_id: str, _ok: bool = Depends(check_api_key)):
     try:
         execute("DELETE FROM customers WHERE customer_id = %s", (customer_id,))
         return {"deleted": True}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.post("/api/customers/import", summary="Import customers from CSV")
+def import_customers_csv(file: UploadFile = File(...), _ok: bool = Depends(check_api_key)):
+    import csv, io
+    try:
+        content = file.file.read().decode("utf-8-sig")
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Cannot read file: {exc}") from exc
+
+    reader = csv.DictReader(io.StringIO(content))
+    created = 0
+    skipped = 0
+    errors: list[str] = []
+
+    for idx, row in enumerate(reader, start=2):
+        customer_id = (row.get("customer_id") or "").strip()
+        email = (row.get("email") or "").strip()
+        if not customer_id or not email:
+            skipped += 1
+            errors.append(f"Line {idx}: missing customer_id or email")
+            continue
+
+        exists = fetch_one(
+            "SELECT 1 FROM customers WHERE customer_id = %s OR LOWER(email) = LOWER(%s)",
+            (customer_id, email),
+        )
+        if exists:
+            skipped += 1
+            errors.append(f"Line {idx}: customer {customer_id} already exists, skipped")
+            continue
+
+        try:
+            execute(
+                "INSERT INTO customers (customer_id, name, nip, address, email, contact_person) VALUES (%s,%s,%s,%s,%s,%s)",
+                (
+                    customer_id,
+                    (row.get("name") or "").strip() or None,
+                    (row.get("nip") or "").strip() or None,
+                    (row.get("address") or "").strip() or None,
+                    email,
+                    (row.get("contact_person") or "").strip() or None,
+                ),
+            )
+            created += 1
+        except Exception as exc:
+            skipped += 1
+            errors.append(f"Line {idx}: failed to insert {customer_id}: {exc}")
+
+    return {"created": created, "skipped": skipped, "errors": errors}
+
+
+@router.get("/api/customers/export", summary="Export customers as CSV")
+def export_customers_csv(_ok: bool = Depends(check_api_key)):
+    try:
+        rows = fetch_all(
+            "SELECT customer_id, name, nip, address, email, contact_person FROM customers ORDER BY customer_id",
+            None,
+        ) or []
+        import csv, io
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        header = ["customer_id", "name", "nip", "address", "email", "contact_person"]
+        writer.writerow(header)
+        for r in rows:
+            writer.writerow([r.get(col) if r.get(col) is not None else "" for col in header])
+        csv_bytes = buf.getvalue().encode("utf-8-sig")
+        mem = io.BytesIO(csv_bytes)
+        mem.seek(0)
+        return StreamingResponse(
+            mem,
+            media_type="text/csv; charset=utf-8",
+            headers={"Content-Disposition": "attachment; filename=customers.csv"},
+        )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))

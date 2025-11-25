@@ -24,6 +24,7 @@ export default function Header({
   const chromeRef = useRef(null)
   const menuBtnRef = useRef(null)
   const helpBtnRef = useRef(null)
+  const menuListRef = useRef(null)
 
   const t = {
     appName: 'Synterra',
@@ -126,6 +127,13 @@ export default function Header({
     setMenuOpen(false)
   }
 
+  useEffect(() => {
+    if (menuOpen && menuListRef.current) {
+      const first = menuListRef.current.querySelector('[role="menuitem"]')
+      first?.focus()
+    }
+  }, [menuOpen])
+
   return (
     <>
       {/* Skip to main content link for keyboard users (accessibility) */}
@@ -160,6 +168,7 @@ export default function Header({
               onClick={() => { setMenuOpen((v) => !v); setShowHelp(false) }}
               aria-haspopup="true"
               aria-expanded={menuOpen}
+              aria-controls="global-menu"
               aria-label={menuOpen ? (lang === 'pl' ? 'Zamknij menu' : 'Close menu') : (lang === 'pl' ? 'Otwórz menu' : 'Open menu')}
               type="button"
             >
@@ -171,7 +180,25 @@ export default function Header({
               </span>
             </button>
             {menuOpen && (
-              <div className={styles.menuDropdown} role="menu">
+              <div
+                id="global-menu"
+                className={styles.menuDropdown}
+                role="menu"
+                ref={menuListRef}
+                onKeyDown={(e) => {
+                  if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) {
+                    e.preventDefault()
+                    const items = Array.from(menuListRef.current.querySelectorAll('[role="menuitem"]'))
+                    const idx = items.indexOf(document.activeElement)
+                    let next = 0
+                    if (e.key === 'ArrowDown') next = Math.min(idx + 1, items.length - 1)
+                    if (e.key === 'ArrowUp') next = Math.max(idx - 1, 0)
+                    if (e.key === 'Home') next = 0
+                    if (e.key === 'End') next = items.length - 1
+                    items[next]?.focus()
+                  }
+                }}
+              >
                 {navItems.map((item) => (
                   <button
                     key={item.id}
@@ -283,13 +310,14 @@ export default function Header({
               onClick={() => { setShowHelp((v) => !v); setMenuOpen(false) }}
               aria-haspopup="true"
               aria-expanded={showHelp}
+              aria-controls="help-menu"
               aria-label={showHelp ? (lang === 'pl' ? 'Zamknij pomoc' : 'Close help') : t.help}
               type="button"
             >
               <span aria-hidden="true">?</span>
             </button>
             {showHelp && (
-              <div className={styles.helpDropdown} role="menu" aria-label={lang === 'pl' ? 'Menu pomocy' : 'Help menu'}>
+              <div id="help-menu" className={styles.helpDropdown} role="menu" aria-label={lang === 'pl' ? 'Menu pomocy' : 'Help menu'}>
                 <button
                   className={styles.helpItem}
                   onClick={() => { setShowHelp(false); helpBtnRef.current?.focus(); onOpenGuide?.() }}

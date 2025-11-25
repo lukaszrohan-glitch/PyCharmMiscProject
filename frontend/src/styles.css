@@ -488,12 +488,8 @@ div[style*="color: green"] {
   padding: 0 32px 40px;
 }
 
-@media (max-width: 900px) {
-  .page,
-  .page--admin {
-    padding: 24px 16px 32px;
-    margin-top: 16px;
-  }
+.dark .page--admin {
+  background: var(--bg-primary-dark);
 }
 
 .card--admin-main {
@@ -519,21 +515,6 @@ div[style*="color: green"] {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding-bottom: 14px;
-  margin-bottom: 14px;
-  border-bottom: 1px solid rgba(229, 231, 235, 0.9);
-}
-
-.card-header--split h1,
-.card-header--split h2,
-.card-header--split h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.dark .card-header--split {
-  border-bottom-color: rgba(55, 65, 81, 0.9);
 }
 
 .card-section--stacked {
@@ -553,16 +534,14 @@ div[style*="color: green"] {
 }
 
 .notice--success {
-  margin-bottom: 16px;
-  padding: 10px 14px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.14), rgba(5, 150, 105, 0.06));
-  border: 1px solid rgba(16, 185, 129, 0.35);
-  color: #047857;
-  font-size: 0.8rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #0f766e;
 }
 
 .dark .notice--success {

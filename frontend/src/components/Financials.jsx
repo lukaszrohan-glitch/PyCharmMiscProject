@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import * as api from '../services/api'
+import { useToast } from './Toast'
 
-export default function Financials({ lang, initialOrderId }){
+export default function Financials({ orderId, lang }){
+  const toast = useToast()
   const [orders, setOrders] = useState([])
   const [selected, setSelected] = useState(null)
   const [finance, setFinance] = useState(null)
@@ -21,7 +23,17 @@ export default function Financials({ lang, initialOrderId }){
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialOrderId, orders])
 
-  async function load(o){ setSelected(o); setLoading(true); try{ setFinance(await api.getFinance(o.order_id)) } catch(e){ alert(e.message) } finally{ setLoading(false) } }
+  async function load(o){
+    setSelected(o)
+    setLoading(true)
+    try{
+      setFinance(await api.getFinance(o.order_id))
+    } catch(e){
+      toast.show((lang==='pl'?'Błąd: ':'Error: ')+ (e.message || String(e)), 'error')
+    } finally{
+      setLoading(false)
+    }
+  }
   const fmt = (n)=> new Intl.NumberFormat(undefined,{style:'currency',currency:'PLN'}).format(n||0)
   const fmtPct = (n)=>{
     if (!finance || !finance.revenue) return '–'

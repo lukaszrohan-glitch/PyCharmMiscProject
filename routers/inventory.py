@@ -6,6 +6,7 @@ from decimal import Decimal
 
 from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
 from fastapi.responses import StreamingResponse
+from psycopg2.errors import UniqueViolation
 
 from db import fetch_all, fetch_one, execute
 from queries import SQL_INSERT_INVENTORY
@@ -53,6 +54,9 @@ def inventory_get(txn_id: str):
 @router.post("/api/inventory", status_code=201, summary="Create inventory transaction")
 def create_inventory_txn(payload: InventoryCreate, _ok: bool = Depends(check_api_key)):
     try:
+        exists = fetch_one("SELECT 1 FROM inventory WHERE txn_id = %s", (payload.txn_id,))
+        if exists:
+            raise HTTPException(status_code=409, detail="Inventory transaction already exists")
         rows = execute(
             SQL_INSERT_INVENTORY,
             (
@@ -71,6 +75,8 @@ def create_inventory_txn(payload: InventoryCreate, _ok: bool = Depends(check_api
         return rows[0]
     except HTTPException:
         raise
+    except UniqueViolation:
+        raise HTTPException(status_code=409, detail="Inventory transaction already exists")
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
@@ -140,7 +146,8 @@ def export_inventory_csv(_ok: bool = Depends(check_api_key)):
         header = ["txn_id", "txn_date", "product_id", "qty_change", "reason", "lot", "location"]
         writer.writerow(header)
         for r in rows:
-            writer.writerow([r.get(col, "") for col in header])
+            # Preserve NULL values: write empty string only if value is None, otherwise keep the actual value
+            writer.writerow([r.get(col) if r.get(col) is not None else "" for col in header])
         csv_bytes = buf.getvalue().encode("utf-8-sig")
         mem = io.BytesIO(csv_bytes)
         mem.seek(0)
@@ -210,6 +217,9 @@ def import_inventory_csv(file: UploadFile = File(...), _ok: bool = Depends(check
                 (txn_id, d, product_id, qty, reason, lot, location),
             )
             created += 1
+        except UniqueViolation:
+            skipped += 1
+            errors.append(f"Line {idx}: txn {txn_id} already exists, skipped")
         except Exception as exc:
             skipped += 1
             errors.append(f"Line {idx}: failed to insert {txn_id}: {exc}")

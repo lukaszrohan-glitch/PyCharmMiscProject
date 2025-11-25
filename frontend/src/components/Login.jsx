@@ -3,6 +3,7 @@ import { useAuth } from '../auth/AuthProvider'
 import ForgotPassword from './ForgotPassword'
 import SynterraLogo from './SynterraLogo'
 import styles from './Login.module.css'
+import classNames from 'classnames'
 
 export default function Login({ lang, setLang }) {
   const { loginWithCredentials } = useAuth()
@@ -105,8 +106,8 @@ export default function Login({ lang, setLang }) {
   }
 
   return (
-    <div className={styles.root}>
-      <div className={styles.card}>
+    <div className={classNames('page', styles.root)}>
+      <div className={classNames('card--admin-main', styles.card)}>
         <div className={styles.header}>
           <div className={styles.logoWrap}>
             <SynterraLogo className={styles.logo} />

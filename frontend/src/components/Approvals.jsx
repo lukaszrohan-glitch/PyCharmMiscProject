@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import * as api from '../services/api'
+import { useToast } from './Toast'
 
 function fmtLocal(d){
   const dd = new Date(d)
@@ -28,11 +29,29 @@ function isoWeekInfo(dateStr){
   return { year: isoYear, week: String(week).padStart(2,'0'), week_start: fmtLocal(monday), week_label: `${isoYear}-W${String(week).padStart(2,'0')}` }
 }
 
-export default function Approvals(){
-  const lang = (typeof localStorage!=='undefined' && localStorage.getItem('lang')) || 'pl'
+export default function Approvals({ lang }) {
+  const toast = useToast()
   const t = lang==='pl' ? {
-    pending: 'Oczekujące zatwierdzenia', allEmployees: 'Wszyscy pracownicy', apply:'Zastosuj', exportPending:'Eksport oczekujących CSV', approveSelected:'Zatwierdź zaznaczone', weeklyPending:'Podsumowanie tygodniowe (oczekujące)', weeklyApproved:'Podsumowanie tygodniowe (zatwierdzone)', approveWeek:'Zatwierdź tydzień', selectWeek:'Zaznacz tydzień', noPending:'Brak oczekujących pozycji'
-  } : { pending:'Pending Approvals', allEmployees:'All employees', apply:'Apply', exportPending:'Export Pending CSV', approveSelected:'Approve Selected', weeklyPending:'Weekly pending', weeklyApproved:'Weekly approved', approveWeek:'Approve Week', selectWeek:'Select Week', noPending:'No pending items' }
+    title:'Zatwierdzenia', pending:'Do zatwierdzenia', approve:'Zatwierdź', approved:'Zatwierdzone', exportCsv:'Eksport CSV', filter:'Filtruj', error:'Błąd', empty:'Brak pozycji', approveSuccess:'Zatwierdzono', approveFailed:'Nie udało się zatwierdzić', exportFailed:'Błąd eksportu',
+    weeklyPending:'Tygodniówkowe (oczekujące)',
+    weeklyApproved:'Tygodniówkowe (zatwierdzone)',
+    approveWeek:'Zatwierdź tydzień',
+    selectWeek:'Zaznacz tydzień',
+    noPending:'Brak pozycji',
+    exportPending:'Eksport zaległych',
+    apply:'Filtruj',
+    allEmployees:'Wszyscy pracownicy'
+  } : {
+    title:'Approvals', pending:'Pending approvals', approve:'Approve', approved:'Approved', exportCsv:'Export CSV', filter:'Filter', error:'Error', empty:'Nothing to approve', approveSuccess:'Approved', approveFailed:'Approval failed', exportFailed:'Export failed',
+    weeklyPending:'Weekly (pending)',
+    weeklyApproved:'Weekly (approved)',
+    approveWeek:'Approve week',
+    selectWeek:'Select week',
+    noPending:'Nothing pending',
+    exportPending:'Export pending',
+    apply:'Apply',
+    allEmployees:'All employees'
+  }
   const [rows, setRows] = useState([])
   const [selected, setSelected] = useState({})
   const [loading, setLoading] = useState(false)
@@ -101,10 +120,49 @@ export default function Approvals(){
         await api.approveTimesheet(id)
       }
       await load()
-      alert('Approved')
+      toast.show(t.approveSuccess)
     }catch(e){
-      alert('Approval failed: ' + e.message)
+      toast.show(`${t.approveFailed}: ${e.message}`, 'error')
     }finally{ setLoading(false) }
+  }
+
+  async function handleApprove(ts_id){
+    try {
+      await api.approveTimesheet(ts_id)
+      toast.show(t.approveSuccess)
+      await load()
+    } catch(e){
+      toast.show(`${t.approveFailed}: ${e.message}`, 'error')
+    }
+  }
+
+  async function handleApproveAll(ids){
+    try {
+      for(const id of ids){
+        // eslint-disable-next-line no-await-in-loop
+        await api.approveTimesheet(id)
+      }
+      toast.show(t.approveSuccess)
+      await load()
+    } catch(e){
+      toast.show(`${t.approveFailed}: ${e.message}`, 'error')
+    }
+  }
+
+  async function handleExport(){
+    try {
+      const blob = await api.exportApprovalsCSV()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'approvals.csv'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch(e){
+      toast.show(`${t.exportFailed}: ${e.message}`, 'error')
+    }
   }
 
   async function exportPending(){
@@ -120,7 +178,7 @@ export default function Approvals(){
       a.remove()
       URL.revokeObjectURL(url)
     }catch(e){
-      alert('Export failed: ' + e.message)
+      toast.show(`${t.exportFailed}: ${e.message}`, 'error')
     }
   }
 
@@ -133,9 +191,9 @@ export default function Approvals(){
         await api.approveTimesheet(r.ts_id)
       }
       await load()
-      alert('Approved')
+      toast.show(t.approveSuccess)
     }catch(e){
-      alert('Approval failed: ' + e.message)
+      toast.show(`${t.approveFailed}: ${e.message}`, 'error')
     }finally{ setLoading(false) }
   }
 

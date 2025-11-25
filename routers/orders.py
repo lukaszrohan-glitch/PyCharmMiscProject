@@ -4,10 +4,18 @@ from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
 from fastapi.responses import StreamingResponse
+from psycopg2.errors import UniqueViolation
 
 from db import fetch_all, fetch_one, execute
 from schemas import Order, OrderCreate, OrderUpdate, OrderLineCreate
-from queries import SQL_ORDERS, SQL_INSERT_ORDER, SQL_INSERT_ORDER_LINE
+from queries import (
+    SQL_ORDERS,
+    SQL_INSERT_ORDER,
+    SQL_INSERT_ORDER_LINE,
+    SQL_FIND_ORDER,
+    SQL_FIND_CUSTOMER,
+    SQL_NEXT_ORDER_ID,
+)
 from security import check_api_key
 
 
@@ -78,6 +86,12 @@ def order_get(order_id: str):
 )
 def create_order(payload: OrderCreate, _ok: bool = Depends(check_api_key)):
     try:
+        existing = fetch_one(SQL_FIND_ORDER, (payload.order_id,))
+        if existing:
+            raise HTTPException(status_code=409, detail="Order already exists")
+        customer = fetch_one(SQL_FIND_CUSTOMER, (payload.customer_id,))
+        if not customer:
+            raise HTTPException(status_code=404, detail="Customer not found")
         rows = execute(
             SQL_INSERT_ORDER,
             (
@@ -92,10 +106,12 @@ def create_order(payload: OrderCreate, _ok: bool = Depends(check_api_key)):
             returning=True,
         )
         if not rows:
-            raise HTTPException(status_code=409, detail="Order already exists")
+            raise HTTPException(status_code=500, detail="Failed to create order")
         return rows[0]
     except HTTPException:
         raise
+    except UniqueViolation:
+        raise HTTPException(status_code=409, detail="Order already exists")
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
@@ -125,6 +141,8 @@ def create_order_line(payload: OrderLineCreate, _ok: bool = Depends(check_api_ke
         return rows[0]
     except HTTPException:
         raise
+    except UniqueViolation:
+        raise HTTPException(status_code=409, detail="Order line already exists")
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
@@ -220,7 +238,8 @@ def export_orders_csv(_ok: bool = Depends(check_api_key)):
         header = ["order_id", "customer_id", "status", "order_date", "due_date", "contact_person"]
         writer.writerow(header)
         for r in rows:
-            writer.writerow([r.get(col, "") for col in header])
+            # Preserve NULL values: write empty string only if value is None, otherwise keep the actual value
+            writer.writerow([r.get(col) if r.get(col) is not None else "" for col in header])
         csv_bytes = buf.getvalue().encode("utf-8-sig")
         mem = io.BytesIO(csv_bytes)
         mem.seek(0)
@@ -279,3 +298,25 @@ def import_orders_csv(file: UploadFile = File(...), _ok: bool = Depends(check_ap
             errors.append(f"Line {idx}: failed to insert {order_id}: {exc}")
 
     return {"created": created, "skipped": skipped, "errors": errors}
+
+
+@router.get("/api/orders/validate", summary="Validate an order ID before submit")
+def validate_order(order_id: str = Query(..., min_length=1), customer_id: Optional[str] = None):
+    try:
+        exists = fetch_one(SQL_FIND_ORDER, (order_id.strip(),))
+        if exists:
+            raise HTTPException(status_code=409, detail="Order already exists")
+        if customer_id:
+            cust = fetch_one(SQL_FIND_CUSTOMER, (customer_id.strip(),))
+            if not cust:
+                raise HTTPException(status_code=404, detail="Customer not found")
+        suggestion = fetch_one(SQL_NEXT_ORDER_ID, None)
+        return {
+            "order_id": order_id,
+            "available": True,
+            "suggested_next": suggestion.get("next_suffix") if suggestion else None,
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
