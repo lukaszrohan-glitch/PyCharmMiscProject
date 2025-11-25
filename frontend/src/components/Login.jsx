@@ -132,11 +132,11 @@ export default function Login({ lang, setLang }) {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder={lang === 'pl' ? 'twoj.email@example.com' : 'your.email@example.com'}
+              placeholder={lang === 'pl' ? 'twój.email@example.com' : 'your.email@example.com'}
               required
               disabled={loading}
               className={styles.input}
-              autoComplete="email"
+              autoComplete="off"
               aria-label={t.email}
               aria-required="true"
               aria-invalid={error ? 'true' : 'false'}
@@ -152,11 +152,11 @@ export default function Login({ lang, setLang }) {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder=""
               required
               disabled={loading}
               className={styles.input}
-              autoComplete="current-password"
+              autoComplete="off"
               aria-label={t.password}
               aria-required="true"
               aria-invalid={error ? 'true' : 'false'}

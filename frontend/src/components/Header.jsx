@@ -3,6 +3,7 @@ import styles from './Header.module.css'
 import { useI18n } from '../i18n'
 import * as api from '../services/api'
 import SynterraLogo from './SynterraLogo'
+import HelpPanel from './HelpPanel'
 
 export default function Header({
   lang,
@@ -73,14 +74,9 @@ export default function Header({
       }
     }
     const handleKey = (e) => {
-      if (e.key === 'Escape') {
-        if (menuOpen) {
-          setMenuOpen(false)
-          menuBtnRef.current?.focus()
-        } else if (showHelp) {
-          setShowHelp(false)
-          helpBtnRef.current?.focus()
-        }
+      if (e.key === 'Escape' && showHelp) {
+        setShowHelp(false)
+        helpBtnRef.current?.focus()
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -307,27 +303,17 @@ export default function Header({
             <button
               ref={helpBtnRef}
               className={styles.helpBtn}
-              onClick={() => { setShowHelp((v) => !v); setMenuOpen(false) }}
-              aria-haspopup="true"
+              onClick={() => {
+                setShowHelp(true)
+                setMenuOpen(false)
+              }}
+              aria-haspopup="dialog"
               aria-expanded={showHelp}
-              aria-controls="help-menu"
-              aria-label={showHelp ? (lang === 'pl' ? 'Zamknij pomoc' : 'Close help') : t.help}
+              aria-label={t.help}
               type="button"
             >
               <span aria-hidden="true">?</span>
             </button>
-            {showHelp && (
-              <div id="help-menu" className={styles.helpDropdown} role="menu" aria-label={lang === 'pl' ? 'Menu pomocy' : 'Help menu'}>
-                <button
-                  className={styles.helpItem}
-                  onClick={() => { setShowHelp(false); helpBtnRef.current?.focus(); onOpenGuide?.() }}
-                  role="menuitem"
-                  type="button"
-                >
-                  {t.docs}
-                </button>
-              </div>
-            )}
           </div>
 
           {profile && (
@@ -372,6 +358,16 @@ export default function Header({
         </div>
       </div>
     </header>
+    {showHelp && (
+      <HelpPanel
+        lang={lang}
+        onClose={() => {
+          setShowHelp(false)
+          helpBtnRef.current?.focus()
+        }}
+        onOpenGuide={() => onOpenGuide?.()}
+      />
+    )}
     </>
   )
 }
