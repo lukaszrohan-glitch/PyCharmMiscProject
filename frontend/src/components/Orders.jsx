@@ -26,6 +26,7 @@ export default function Orders({ lang }) {
   const [validation, setValidation] = useState({ order: null, customer: null })
   const [autoSuggestion, setAutoSuggestion] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
+  const [lastCreatedId, setLastCreatedId] = useState(null)
   const selectedCustomer = customers.find(c => String(c.customer_id) === String(formData.customer_id))
 
   const t = lang === 'pl' ? {
@@ -150,6 +151,7 @@ export default function Orders({ lang }) {
 
   const handleAddClick = () => {
     setEditingOrder(null)
+    setLastCreatedId(null)
     setFormData({
       order_id: '',
       customer_id: '',
@@ -184,16 +186,15 @@ export default function Orders({ lang }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      if (!editingOrder && validation.order && validation.order.ok === false) {
-        toast.show(validation.order.reason || t.orderExists, 'error')
-        return
-      }
       if (editingOrder) {
         await api.updateOrder?.(formData.order_id, formData)
         toast.show(t.updateSuccess)
       } else {
-        await api.createOrder(formData)
+        const payload = { ...formData }
+        if (!payload.order_id) delete payload.order_id
+        const created = await api.createOrder(payload)
         toast.show(t.createSuccess)
+        setLastCreatedId(created?.order_id || null)
       }
       loadOrders()
       setShowForm(false)
@@ -299,6 +300,14 @@ export default function Orders({ lang }) {
               <button className="close-btn" onClick={() => setShowForm(false)}>×</button>
             </div>
             <form onSubmit={handleSubmit} className="form order-form-grid">
+              <div className="notice" role="status" aria-live="polite">
+                {lang === 'pl'
+                  ? 'ID zamówienia zostanie nadane automatycznie po zapisaniu. Opcjonalnie możesz podać własny numer.'
+                  : 'Order ID will be assigned automatically after save. Optionally enter your own number.'}
+                {lastCreatedId && (
+                  <strong> {lang === 'pl' ? `Ostatnio nadane: ${lastCreatedId}` : `Last created: ${lastCreatedId}`}</strong>
+                )}
+              </div>
               <div className="form-group">
                 <label>{t.orderId}</label>
                 <input
@@ -307,8 +316,7 @@ export default function Orders({ lang }) {
                   value={formData.order_id}
                   onChange={handleInputChange}
                   disabled={!!editingOrder}
-                  required
-                  placeholder={autoSuggestion || 'ORD-0004'}
+                  placeholder={autoSuggestion || 'Auto'}
                 />
                 {renderHint('order_id')}
                 {!editingOrder && autoSuggestion && (

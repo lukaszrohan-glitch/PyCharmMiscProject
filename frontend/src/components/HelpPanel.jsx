@@ -34,6 +34,11 @@ export default function HelpPanel({ lang = 'pl', onClose, onOpenGuide }) {
         { key: 'Esc', label: 'Close active overlay' },
       ]
 
+  const openGuide = () => {
+    onOpenGuide?.()
+    onClose?.()
+  }
+
   return (
     <div className={styles.backdrop} role="dialog" aria-modal="true" aria-label={t.title}>
       <div className={styles.panel}>
@@ -52,10 +57,7 @@ export default function HelpPanel({ lang = 'pl', onClose, onOpenGuide }) {
           <div className={styles.links}>
             <button
               className={styles.linkBtn}
-              onClick={() => {
-                onClose?.()
-                onOpenGuide?.()
-              }}
+              onClick={openGuide}
             >
               <span>{lang === 'pl' ? 'Poradnik użytkownika' : 'User guide'}</span>
               <span aria-hidden="true">→</span>
@@ -83,4 +85,3 @@ export default function HelpPanel({ lang = 'pl', onClose, onOpenGuide }) {
     </div>
   )
 }
-

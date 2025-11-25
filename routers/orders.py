@@ -86,7 +86,12 @@ def order_get(order_id: str):
 )
 def create_order(payload: OrderCreate, _ok: bool = Depends(check_api_key)):
     try:
-        existing = fetch_one(SQL_FIND_ORDER, (payload.order_id,))
+        order_id = (payload.order_id or '').strip() if payload.order_id else None
+        if not order_id:
+            suggestion = fetch_one(SQL_NEXT_ORDER_ID, None)
+            suffix = suggestion.get('next_suffix') if suggestion else '0001'
+            order_id = f"ORD-{suffix}"
+        existing = fetch_one(SQL_FIND_ORDER, (order_id,))
         if existing:
             raise HTTPException(status_code=409, detail="Order already exists")
         customer = fetch_one(SQL_FIND_CUSTOMER, (payload.customer_id,))
@@ -95,7 +100,7 @@ def create_order(payload: OrderCreate, _ok: bool = Depends(check_api_key)):
         rows = execute(
             SQL_INSERT_ORDER,
             (
-                payload.order_id,
+                order_id,
                 payload.customer_id,
                 payload.status.value
                 if hasattr(payload.status, "value")

@@ -1,8 +1,8 @@
 import React from 'react'
 import { useI18n } from '../i18n.jsx'
 
-export default function UserGuide() {
-  const { t, lang } = useI18n()
+export default function UserGuide({ lang, onClose }) {
+  const { t } = useI18n()
 
   const content = {
     pl: {
@@ -418,62 +418,67 @@ export default function UserGuide() {
   const guide = content[lang]
 
   return (
-    <div className="page user-guide">
-      <header className="user-guide-header">
-        <h1 className="user-guide-title">{guide.title}</h1>
-        <p className="user-guide-intro">{guide.intro}</p>
-      </header>
+    <div className="guide-overlay" role="dialog" aria-modal="true" aria-label={guide.title}>
+      <div className="page user-guide">
+        <button className="guide-close" onClick={onClose} aria-label={lang === 'pl' ? 'Zamknij przewodnik' : 'Close guide'}>
+          ×
+        </button>
+        <header className="user-guide-header">
+          <h1 className="user-guide-title">{guide.title}</h1>
+          <p className="user-guide-intro">{guide.intro}</p>
+        </header>
 
-      <section className="user-guide-section">
-        <h2 className="user-guide-section-title">
-          {lang === 'pl' ? 'Nawigacja i pasek górny' : 'Navigation & top bar'}
-        </h2>
-        <p className="user-guide-text">{guide.navigationIntro}</p>
-        <ul className="user-guide-list">
-          {guide.navigationItems.map((item, idx) => (
-            <li key={idx}>{item}</li>
-          ))}
-        </ul>
-      </section>
-
-      {guide.sections.map((section, index) => (
-        <section key={index} className="user-guide-section">
-          <h2 className="user-guide-section-title">{section.title}</h2>
-
-          {section.items.map((item, itemIndex) => (
-            <article key={itemIndex} className="user-guide-block">
-              {item.subtitle && (
-                <h3 className="user-guide-subtitle">{item.subtitle}</h3>
-              )}
-
-              {item.text && <p className="user-guide-text">{item.text}</p>}
-
-              {item.list && (
-                <ul className="user-guide-list">
-                  {item.list.map((entry, entryIndex) => (
-                    <li key={entryIndex}>{entry}</li>
-                  ))}
-                </ul>
-              )}
-
-              {item.steps && (
-                <ol className="user-guide-steps">
-                  {item.steps.map((step, stepIndex) => (
-                    <li key={stepIndex}>{step}</li>
-                  ))}
-                </ol>
-              )}
-            </article>
-          ))}
+        <section className="user-guide-section">
+          <h2 className="user-guide-section-title">
+            {lang === 'pl' ? 'Nawigacja i pasek górny' : 'Navigation & top bar'}
+          </h2>
+          <p className="user-guide-text">{guide.navigationIntro}</p>
+          <ul className="user-guide-list">
+            {guide.navigationItems.map((item, idx) => (
+              <li key={idx}>{item}</li>
+            ))}
+          </ul>
         </section>
-      ))}
 
-      <div className="guide-footer">
-        <p>
-          {lang === 'pl'
-            ? '🆘 Potrzebujesz pomocy? Skontaktuj się z administratorem systemu.'
-            : '🆘 Need help? Contact the system administrator.'}
-        </p>
+        {guide.sections.map((section, index) => (
+          <section key={index} className="user-guide-section">
+            <h2 className="user-guide-section-title">{section.title}</h2>
+
+            {section.items.map((item, itemIndex) => (
+              <article key={itemIndex} className="user-guide-block">
+                {item.subtitle && (
+                  <h3 className="user-guide-subtitle">{item.subtitle}</h3>
+                )}
+
+                {item.text && <p className="user-guide-text">{item.text}</p>}
+
+                {item.list && (
+                  <ul className="user-guide-list">
+                    {item.list.map((entry, entryIndex) => (
+                      <li key={entryIndex}>{entry}</li>
+                    ))}
+                  </ul>
+                )}
+
+                {item.steps && (
+                  <ol className="user-guide-steps">
+                    {item.steps.map((step, stepIndex) => (
+                      <li key={stepIndex}>{step}</li>
+                    ))}
+                  </ol>
+                )}
+              </article>
+            ))}
+          </section>
+        ))}
+
+        <div className="guide-footer">
+          <p>
+            {lang === 'pl'
+              ? '🆘 Potrzebujesz pomocy? Skontaktuj się z administratorem systemu.'
+              : '🆘 Need help? Contact the system administrator.'}
+          </p>
+        </div>
       </div>
     </div>
   )

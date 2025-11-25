@@ -365,7 +365,9 @@ export default function Header({
           setShowHelp(false)
           helpBtnRef.current?.focus()
         }}
-        onOpenGuide={() => onOpenGuide?.()}
+        onOpenGuide={() => {
+          onOpenGuide?.()
+        }}
       />
     )}
     </>

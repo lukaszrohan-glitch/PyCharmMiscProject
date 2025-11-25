@@ -58,7 +58,8 @@ class OrderCreate(BaseModel):
     """Write model for creating a new order."""
     model_config = ConfigDict(from_attributes=True)
 
-    order_id: str = Field(..., min_length=1, max_length=MAX_ORDER_ID_LEN)
+    # order_id becomes optional; backend will auto-assign when omitted
+    order_id: Optional[str] = Field(None, min_length=1, max_length=MAX_ORDER_ID_LEN)
     customer_id: str = Field(..., min_length=1, max_length=MAX_CUSTOMER_ID_LEN)
     status: OrderStatus = OrderStatus.New
     due_date: Optional[date] = None

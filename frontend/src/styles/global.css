@@ -505,6 +505,49 @@ table {
   white-space: nowrap;
 }
 
+/* Notice styling used in Orders modal */
+.notice {
+  grid-column: 1 / -1;
+  padding: 0.75rem 1rem;
+  border-radius: 16px;
+  background: var(--bg-tertiary, #f4f5f7);
+  color: var(--text-secondary, #4b5563);
+  font-size: 0.95rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+/* Guide overlay for user guide modal */
+.guide-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.55);
+  backdrop-filter: blur(8px);
+  display: grid;
+  place-items: center;
+  z-index: 60;
+  padding: var(--spacing-6);
+}
+
+.guide-close {
+  position: absolute;
+  top: var(--spacing-4);
+  right: var(--spacing-4);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-secondary);
+  background: var(--bg-secondary);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.guide-close:hover {
+  background: var(--bg-tertiary);
+}
+
 /* Responsive utilities */
 @media (max-width: 768px) {
   main {
