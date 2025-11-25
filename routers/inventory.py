@@ -6,7 +6,7 @@ from decimal import Decimal
 
 from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
 from fastapi.responses import StreamingResponse
-from psycopg2.errors import UniqueViolation
+from psycopg.errors import UniqueViolation
 
 from db import fetch_all, fetch_one, execute
 from queries import SQL_INSERT_INVENTORY

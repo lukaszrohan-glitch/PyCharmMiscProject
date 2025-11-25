@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
 from fastapi.responses import StreamingResponse
-from psycopg2.errors import UniqueViolation
+from psycopg.errors import UniqueViolation
 
 from db import fetch_all, fetch_one, execute
 from schemas import Order, OrderCreate, OrderUpdate, OrderLineCreate
