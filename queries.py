@@ -166,3 +166,22 @@ FROM current_period cp
 LEFT JOIN prev_period pp ON TRUE
 LEFT JOIN top_customer tc ON TRUE;
 """
+
+SQL_FIND_ORDER = "SELECT 1 FROM orders WHERE order_id = %s"
+SQL_FIND_CUSTOMER = "SELECT 1 FROM customers WHERE customer_id = %s"
+SQL_NEXT_ORDER_ID = """\
+WITH max_suffix AS (
+    SELECT COALESCE(MAX(TO_NUMBER(REGEXP_REPLACE(order_id, '\\D', '', 'g'), '999999999')), 0) AS max_seq
+    FROM orders
+    WHERE order_id ~ '^[A-Z0-9-]+$'
+)
+SELECT LPAD((max_seq + 1)::text, 4, '0') AS next_suffix FROM max_suffix;
+"""
+SQL_NEXT_CUSTOMER_ID = """\
+WITH max_suffix AS (
+    SELECT COALESCE(MAX(TO_NUMBER(REGEXP_REPLACE(customer_id, '\\D', '', 'g'), '999999999')), 0) AS max_seq
+    FROM customers
+    WHERE customer_id ~ '^[A-Z0-9-]+$'
+)
+SELECT 'CUST-' || LPAD((max_seq + 1)::text, 4, '0') AS next_id FROM max_suffix;
+"""

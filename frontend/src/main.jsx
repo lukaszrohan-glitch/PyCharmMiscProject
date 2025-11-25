@@ -6,6 +6,7 @@ import './styles.css';
 import './style-fixes.css';
 import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider } from './auth/AuthProvider';
+import { ToastProvider } from './components/Toast';
 
 // Ensure the root element exists
 // ... existing code
@@ -28,9 +29,11 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <AuthProvider>
-      <ErrorBoundary>
-        <App />
-      </ErrorBoundary>
+      <ToastProvider>
+        <ErrorBoundary>
+          <App />
+        </ErrorBoundary>
+      </ToastProvider>
     </AuthProvider>
   </React.StrictMode>
 );

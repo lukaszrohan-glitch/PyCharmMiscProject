@@ -1,23 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import * as api from '../services/api';
+import React, { useState, useEffect } from 'react'
+import * as api from '../services/api'
+import { useToast } from './Toast'
+
+const ORDER_ID_MAX = 24
+const CUSTOMER_ID_MAX = 24
+const CONTACT_MAX = 80
 
 export default function Orders({ lang }) {
-  const [orders, setOrders] = useState([]);
-  const [customers, setCustomers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [showForm, setShowForm] = useState(false);
-  const [editingOrder, setEditingOrder] = useState(null);
+  const toast = useToast()
+  const [orders, setOrders] = useState([])
+  const [customers, setCustomers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [showForm, setShowForm] = useState(false)
+  const [editingOrder, setEditingOrder] = useState(null)
   const [formData, setFormData] = useState({
     order_id: '',
     customer_id: '',
     status: 'Planned',
     due_date: ''
-  });
+  })
   const [importing, setImporting] = useState(false)
   const [importFile, setImportFile] = useState(null)
   const [importResult, setImportResult] = useState(null)
-  const selectedCustomer = customers.find(c => String(c.customer_id) === String(formData.customer_id));
+  const [validation, setValidation] = useState({ order: null, customer: null })
+  const [autoSuggestion, setAutoSuggestion] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
+  const selectedCustomer = customers.find(c => String(c.customer_id) === String(formData.customer_id))
 
   const t = lang === 'pl' ? {
     title: 'Zamówienia',
@@ -38,7 +47,15 @@ export default function Orders({ lang }) {
     createSuccess: 'Zamówienie dodane',
     updateSuccess: 'Zamówienie zaktualizowane',
     deleteSuccess: 'Zamówienie usunięte',
-    selectCustomer: 'Wybierz klienta'
+    selectCustomer: 'Wybierz klienta',
+    autoNext: 'Sugerowany numer',
+    contact: 'Osoba kontaktowa',
+    orderExists: 'Takie zamówienie już istnieje',
+    createFailed:'Nie udało się zapisać zamówienia',
+    deleteConfirm:'Na pewno chcesz usunąć to zamówienie?',
+    deleteFailed:'Nie udało się usunąć zamówienia',
+    exportFailed:'Błąd eksportu',
+    importFailed:'Błąd importu'
   } : {
     title: 'Orders',
     orderId: 'Order ID',
@@ -58,86 +75,147 @@ export default function Orders({ lang }) {
     createSuccess: 'Order added',
     updateSuccess: 'Order updated',
     deleteSuccess: 'Order deleted',
-    selectCustomer: 'Select customer'
+    selectCustomer: 'Select customer',
+    autoNext: 'Suggested ID',
+    contact: 'Contact person',
+    orderExists: 'Order already exists',
+    createFailed:'Failed to save order',
+    deleteConfirm:'Are you sure you want to delete this order?',
+    deleteFailed:'Failed to delete order',
+    exportFailed:'Export failed',
+    importFailed:'Import failed'
   };
 
   useEffect(() => {
-    loadOrders();
-    loadCustomers();
-  }, []);
+    loadOrders()
+    loadCustomers()
+    fetchAutoSuggestion()
+  }, [])
+
+  useEffect(() => {
+    if (!showForm) {
+      setValidation({ order: null, customer: null })
+      setFieldErrors({})
+      return
+    }
+    if (!formData.order_id) return
+    validateOrder(formData.order_id, formData.customer_id)
+  }, [formData.order_id, formData.customer_id, showForm])
+
+  const fetchAutoSuggestion = async () => {
+    try {
+      const hint = await api.validateOrderId('__probe__').catch(() => null)
+      if (hint?.suggested_next) setAutoSuggestion(`ORD-${hint.suggested_next}`)
+    } catch {}
+  }
+
+  const validateOrder = async (orderId, customerId) => {
+    if (!orderId) return
+    try {
+      await api.validateOrderId(orderId, customerId)
+      setValidation({ order: { ok: true }, customer: customerId ? { ok: true } : null })
+      setFieldErrors((prev) => ({ ...prev, order_id: undefined, customer_id: undefined }))
+    } catch (err) {
+      const detail = err?.message || 'Validation error'
+      if (detail.includes('Order already exists')) {
+        setFieldErrors((prev) => ({ ...prev, order_id: lang === 'pl' ? 'Zamówienie już istnieje' : 'Order already exists' }))
+        setValidation((prev) => ({ ...prev, order: { ok: false, reason: detail } }))
+      } else if (detail.includes('Customer not found')) {
+        setFieldErrors((prev) => ({ ...prev, customer_id: lang === 'pl' ? 'Klient nie istnieje' : 'Customer not found' }))
+        setValidation((prev) => ({ ...prev, customer: { ok: false, reason: detail } }))
+      }
+    }
+  }
 
   const loadOrders = async () => {
     try {
-      setLoading(true);
-      const data = await api.getOrders();
-      setOrders(data || []);
+      setLoading(true)
+      const data = await api.getOrders()
+      setOrders(data || [])
     } catch (err) {
-      setError(err.message);
+      setError(err.message)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const loadCustomers = async () => {
     try {
-      const data = await api.getCustomers();
-      setCustomers(data || []);
+      const data = await api.getCustomers()
+      setCustomers(data || [])
     } catch (err) {
-      console.error('Failed to load customers:', err);
+      console.error('Failed to load customers:', err)
     }
-  };
+  }
 
   const handleAddClick = () => {
-    setEditingOrder(null);
+    setEditingOrder(null)
     setFormData({
       order_id: '',
       customer_id: '',
       status: 'Planned',
       due_date: ''
-    });
-    setShowForm(true);
-  };
+    })
+    setShowForm(true)
+  }
 
   const handleEditClick = (order) => {
-    setEditingOrder(order);
+    setEditingOrder(order)
     setFormData({
       order_id: order.order_id,
       customer_id: order.customer_id,
       status: order.status,
       due_date: order.due_date || ''
-    });
-    setShowForm(true);
-  };
+    })
+    setShowForm(true)
+  }
 
   const handleDeleteClick = async (orderId) => {
-    if (!window.confirm(`${t.deleteSuccess}?`)) return;
+    if (!window.confirm(t.deleteConfirm)) return
     try {
-      await api.deleteOrder?.(orderId);
-      loadOrders();
+      await api.deleteOrder?.(orderId)
+      toast.show(t.deleteSuccess)
+      loadOrders()
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      toast.show(`${t.deleteFailed}: ${err.message}`, 'error')
     }
-  };
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
     try {
-      if (editingOrder) {
-        await api.updateOrder?.(formData.order_id, formData);
-      } else {
-        await api.createOrder(formData);
+      if (!editingOrder && validation.order && validation.order.ok === false) {
+        toast.show(validation.order.reason || t.orderExists, 'error')
+        return
       }
-      loadOrders();
-      setShowForm(false);
+      if (editingOrder) {
+        await api.updateOrder?.(formData.order_id, formData)
+        toast.show(t.updateSuccess)
+      } else {
+        await api.createOrder(formData)
+        toast.show(t.createSuccess)
+      }
+      loadOrders()
+      setShowForm(false)
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      const friendly = err?.message?.includes('already exists')
+        ? (lang === 'pl' ? 'To zamówienie już istnieje. Użyj innego numeru.' : 'This order ID already exists. Pick a different number.')
+        : err.message
+      toast.show(`${t.createFailed}: ${friendly}`, 'error')
     }
-  };
+  }
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+    const { name, value } = e.target
+    if (name === 'order_id' && value.length > ORDER_ID_MAX) return
+    if (name === 'customer_id' && value.length > CUSTOMER_ID_MAX) return
+    if (name === 'contact_person' && value.length > CONTACT_MAX) return
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const renderHint = (key) => fieldErrors[key] && (
+    <p className="form-hint form-hint-error">{fieldErrors[key]}</p>
+  )
 
   const handleExport = async () => {
     try {
@@ -150,8 +228,9 @@ export default function Orders({ lang }) {
       a.click()
       a.remove()
       window.URL.revokeObjectURL(url)
+      toast.show(lang==='pl' ? 'Eksport zakończony' : 'Export complete')
     } catch (err) {
-      alert((lang === 'pl' ? 'Błąd eksportu: ' : 'Export error: ') + err.message)
+      toast.show(`${t.exportFailed}: ${err.message}`, 'error')
     }
   }
 
@@ -161,18 +240,19 @@ export default function Orders({ lang }) {
       const res = await api.importOrdersCSV(importFile)
       setImportResult(res)
       await loadOrders()
+      toast.show(lang==='pl' ? 'Import zakończony' : 'Import complete')
     } catch (err) {
-      alert((lang === 'pl' ? 'Błąd importu: ' : 'Import error: ') + err.message)
+      toast.show(`${t.importFailed}: ${err.message}`, 'error')
     }
   }
 
-  if (loading) return <div className="loading">{t.loading}</div>;
+  if (loading) return <div className="loading">{t.loading}</div>
 
   return (
     <div className="orders-container">
       <div className="orders-header">
         <h2>{t.title}</h2>
-        <div className="header-actions">
+        <div className="header-actions stack-mobile">
           <button className="btn" onClick={handleExport}>{lang==='pl' ? 'Eksport CSV' : 'Export CSV'}</button>
           <button className="btn" onClick={() => { setImporting(true); setImportResult(null); setImportFile(null); }}>
             {lang==='pl' ? 'Import CSV' : 'Import CSV'}
@@ -218,7 +298,7 @@ export default function Orders({ lang }) {
               <h3>{editingOrder ? t.edit : t.add}</h3>
               <button className="close-btn" onClick={() => setShowForm(false)}>×</button>
             </div>
-            <form onSubmit={handleSubmit} className="form">
+            <form onSubmit={handleSubmit} className="form order-form-grid">
               <div className="form-group">
                 <label>{t.orderId}</label>
                 <input
@@ -228,7 +308,12 @@ export default function Orders({ lang }) {
                   onChange={handleInputChange}
                   disabled={!!editingOrder}
                   required
+                  placeholder={autoSuggestion || 'ORD-0004'}
                 />
+                {renderHint('order_id')}
+                {!editingOrder && autoSuggestion && (
+                  <p className="form-hint">{t.autoNext}: {autoSuggestion}</p>
+                )}
               </div>
               <div className="form-group">
                 <label>{t.customer}</label>
@@ -239,20 +324,13 @@ export default function Orders({ lang }) {
                   required
                 >
                   <option value="">{t.selectCustomer}</option>
-                  {customers.map(c => (
+                  {customers.map((c) => (
                     <option key={c.customer_id} value={c.customer_id}>{c.name}</option>
                   ))}
                 </select>
+                {renderHint('customer_id')}
               </div>
-              {selectedCustomer && (
-                <div className="form-group" style={{background:'var(--surface)', border:"1px solid var(--border)", padding:'10px', borderRadius:'10px'}}>
-                  <div style={{fontWeight:600, marginBottom:6}}>{selectedCustomer.name}</div>
-                  <div style={{color:'var(--text-secondary)'}}>{selectedCustomer.address || '-'}</div>
-                  <div style={{color:'var(--text-secondary)'}}>{selectedCustomer.email || '-'}</div>
-                  <div style={{color:'var(--text-secondary)'}}>POC: {selectedCustomer.contact_person || '-'}</div>
-                </div>
-              )}
-              <div className="form-group">
+              <div className="form-group inline">
                 <label>{t.status}</label>
                 <select name="status" value={formData.status} onChange={handleInputChange}>
                   <option value="Planned">{lang==='pl'?'Planowane':'Planned'}</option>
@@ -260,7 +338,7 @@ export default function Orders({ lang }) {
                   <option value="Done">{lang==='pl'?'Zakończone':'Completed'}</option>
                 </select>
               </div>
-              <div className="form-group">
+              <div className="form-group inline">
                 <label>{t.dueDate}</label>
                 <input
                   type="date"
@@ -269,8 +347,27 @@ export default function Orders({ lang }) {
                   onChange={handleInputChange}
                 />
               </div>
-              <div className="form-actions">
-                <button type="submit" className="btn btn-primary">{t.save}</button>
+              <div className="form-group">
+                <label>{t.contact}</label>
+                <input
+                  type="text"
+                  name="contact_person"
+                  value={formData.contact_person || ''}
+                  onChange={handleInputChange}
+                  maxLength={CONTACT_MAX}
+                  placeholder={lang==='pl'?'Np. Anna Nowak':'e.g. Anna Novak'}
+                />
+              </div>
+              {selectedCustomer && (
+                <div className="form-group customer-preview">
+                  <div className="customer-preview-name">{selectedCustomer.name}</div>
+                  <div className="customer-preview-line">{selectedCustomer.address || '-'}</div>
+                  <div className="customer-preview-line">{selectedCustomer.email || '-'}</div>
+                  <div className="customer-preview-line">POC: {selectedCustomer.contact_person || '-'}</div>
+                </div>
+              )}
+              <div className="form-actions sticky">
+                <button type="submit" className="btn btn-primary" disabled={!formData.order_id || !!fieldErrors.order_id}>{t.save}</button>
                 <button type="button" className="btn" onClick={() => setShowForm(false)}>{t.cancel}</button>
               </div>
             </form>
@@ -289,6 +386,7 @@ export default function Orders({ lang }) {
                 <th>{t.customer}</th>
                 <th>{t.status}</th>
                 <th>{t.dueDate}</th>
+                <th>{t.contact}</th>
                 <th>{t.actions}</th>
               </tr>
             </thead>
@@ -298,9 +396,10 @@ export default function Orders({ lang }) {
                   <td>{order.order_id}</td>
                   <td>{(() => { const c = customers.find(x => String(x.customer_id)===String(order.customer_id)); return c ? c.name : order.customer_id })()}</td>
                   <td><span className={`status-badge ${order.status.toLowerCase()}`}>
-                    {lang==='pl' ? (order.status==='Planned'?'Planowane': order.status==='InProd'?'W produkcji': order.status==='Done'?'Zakończone': order.status) : (order.status==='InProd'?'In Production': order.status==='Done'?'Completed': order.status)}
+                    {lang==='pl' ? (order.status==='Planned'?'Planowane': order.status==='InProd'?'W produkcji': order.status==='Done'?'Zakończone': order.status) : (order.status==='InProd'?'In Production': order.status==='Done'?'Completed' : order.status)}
                   </span></td>
                   <td>{order.due_date || '-'}</td>
+                  <td>{order.contact_person || '-'}</td>
                   <td>
                     <button className="btn-sm btn-edit" onClick={() => handleEditClick(order)}>{t.edit}</button>
                     <button className="btn-sm btn-danger" onClick={() => handleDeleteClick(order.order_id)}>{t.delete}</button>
@@ -316,11 +415,16 @@ export default function Orders({ lang }) {
 }
 
 function InlineClientEditor({ lang, customer, onSaved }){
+  const toast = useToast()
   const [form, setForm] = React.useState({ name: customer.name||'', address: customer.address||'', email: customer.email||'', contact_person: customer.contact_person||'' })
   const [saving, setSaving] = React.useState(false)
   async function save(){
     setSaving(true)
-    try { await api.updateCustomer(customer.customer_id, form); onSaved && onSaved() } catch(e) { alert((lang==='pl'?'Błąd: ':'Error: ')+e.message) } finally { setSaving(false) }
+    try { await api.updateCustomer(customer.customer_id, form); onSaved && onSaved() } catch(e) {
+      toast.show((lang==='pl'?'Błąd: ':'Error: ')+e.message, 'error')
+    } finally {
+      setSaving(false)
+    }
   }
   return (
     <div style={{display:'grid', gap:6}}>

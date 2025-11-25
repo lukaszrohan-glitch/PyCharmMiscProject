@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import * as api from '../services/api';
+import { useToast } from './Toast';
 
 export default function Inventory({ lang }) {
+  const toast = useToast();
   const [inventory, setInventory] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +39,14 @@ export default function Inventory({ lang }) {
     loading: 'Ładowanie...',
     error: 'Błąd',
     noItems: 'Brak pozycji w magazynie',
-    selectProduct: 'Wybierz produkt'
+    selectProduct: 'Wybierz produkt',
+    deleteConfirm: 'Czy na pewno chcesz usunąć tę transakcję?',
+    saveFailed: 'Nie udało się zapisać',
+    deleteFailed: 'Nie udało się usunąć',
+    exportSuccess: 'Eksport zakończony',
+    exportFailed: 'Błąd eksportu',
+    importSuccess: 'Import zakończony',
+    importFailed: 'Błąd importu'
   } : {
     title: 'Inventory',
     txnId: 'Transaction ID',
@@ -55,7 +64,14 @@ export default function Inventory({ lang }) {
     loading: 'Loading...',
     error: 'Error',
     noItems: 'No inventory items',
-    selectProduct: 'Select product'
+    selectProduct: 'Select product',
+    deleteConfirm: 'Are you sure you want to delete this transaction?',
+    saveFailed: 'Failed to save transaction',
+    deleteFailed: 'Failed to delete transaction',
+    exportSuccess: 'Export complete',
+    exportFailed: 'Export failed',
+    importSuccess: 'Import complete',
+    importFailed: 'Import failed'
   };
 
   const reasonLabel = (code) => {
@@ -125,12 +141,13 @@ export default function Inventory({ lang }) {
   };
 
   const handleDeleteClick = async (txnId) => {
-    if (!window.confirm('Delete this transaction?')) return;
+    if (!window.confirm(t.deleteConfirm)) return;
     try {
       await api.deleteInventory(txnId);
+      toast.show(t.deleteSuccess || t.delete);
       loadInventory();
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      toast.show(`${t.deleteFailed}: ${err.message}`, 'error');
     }
   };
 
@@ -139,13 +156,15 @@ export default function Inventory({ lang }) {
     try {
       if (editingItem) {
         await api.updateInventory(formData.txn_id, formData);
+        toast.show(lang==='pl'?'Transakcja zaktualizowana':'Transaction updated');
       } else {
         await api.createInventory(formData);
+        toast.show(lang==='pl'?'Transakcja dodana':'Transaction added');
       }
       loadInventory();
       setShowForm(false);
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      toast.show(`${t.saveFailed}: ${err.message}`, 'error');
     }
   };
 
@@ -165,8 +184,9 @@ export default function Inventory({ lang }) {
       a.click()
       a.remove()
       window.URL.revokeObjectURL(url)
+      toast.show(t.exportSuccess)
     } catch (err) {
-      alert((lang === 'pl' ? 'Błąd eksportu: ' : 'Export error: ') + err.message)
+      toast.show(`${t.exportFailed}: ${err.message}`, 'error')
     }
   }
 
@@ -176,8 +196,9 @@ export default function Inventory({ lang }) {
       const res = await api.importInventoryCSV(importFile)
       setImportResult(res)
       await loadInventory()
+      toast.show(t.importSuccess)
     } catch (err) {
-      alert((lang === 'pl' ? 'Błąd importu: ' : 'Import error: ') + err.message)
+      toast.show(`${t.importFailed}: ${err.message}`, 'error')
     }
   }
 

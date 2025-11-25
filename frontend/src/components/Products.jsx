@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import * as api from '../services/api';
+import { useToast } from './Toast';
 
 export default function Products({ lang }) {
+  const toast = useToast();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -34,7 +36,9 @@ export default function Products({ lang }) {
     cancel: 'Anuluj',
     loading: 'Ładowanie...',
     error: 'Błąd',
-    noProducts: 'Brak produktów'
+    noProducts: 'Brak produktów',
+    saveFailed:'Nie udało się zapisać produktu',
+    deleteFailed:'Nie udało się usunąć produktu'
   } : {
     title: 'Products',
     productId: 'Product ID',
@@ -52,7 +56,9 @@ export default function Products({ lang }) {
     cancel: 'Cancel',
     loading: 'Loading...',
     error: 'Error',
-    noProducts: 'No products'
+    noProducts: 'No products',
+    saveFailed:'Failed to save product',
+    deleteFailed:'Failed to delete product'
   };
 
   useEffect(() => {
@@ -100,12 +106,13 @@ export default function Products({ lang }) {
   };
 
   const handleDeleteClick = async (productId) => {
-    if (!window.confirm('Delete this product?')) return;
+    if (!window.confirm(lang==='pl'?'Usunąć produkt?':'Delete this product?')) return;
     try {
-      await api.deleteProduct?.(productId);
+      await api.deleteProduct(productId);
+      toast.show(lang==='pl'?'Produkt usunięty':'Product deleted');
       loadProducts();
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      toast.show(`${t.deleteFailed}: ${err.message}`, 'error');
     }
   };
 
@@ -113,14 +120,16 @@ export default function Products({ lang }) {
     e.preventDefault();
     try {
       if (editingProduct) {
-        await api.updateProduct?.(formData.product_id, formData);
+        await api.updateProduct(editingProduct.product_id, formData);
+        toast.show(lang==='pl'?'Produkt zaktualizowany':'Product updated');
       } else {
-        await api.createProduct?.(formData);
+        await api.createProduct(formData);
+        toast.show(lang==='pl'?'Produkt dodany':'Product added');
       }
+      resetForm();
       loadProducts();
-      setShowForm(false);
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      toast.show(`${t.saveFailed}: ${err.message}`, 'error');
     }
   };
 

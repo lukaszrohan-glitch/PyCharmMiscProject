@@ -6,6 +6,11 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 from enum import Enum
 
+MAX_ORDER_ID_LEN = 24
+MAX_CUSTOMER_ID_LEN = 24
+MAX_CONTACT_PERSON_LEN = 80
+MAX_STATUS_LEN = 16
+
 
 class OrderStatus(str, Enum):
     """Enum for order statuses."""
@@ -53,11 +58,15 @@ class OrderCreate(BaseModel):
     """Write model for creating a new order."""
     model_config = ConfigDict(from_attributes=True)
 
-    order_id: str = Field(..., min_length=1)
-    customer_id: str = Field(..., min_length=1)
+    order_id: str = Field(..., min_length=1, max_length=MAX_ORDER_ID_LEN)
+    customer_id: str = Field(..., min_length=1, max_length=MAX_CUSTOMER_ID_LEN)
     status: OrderStatus = OrderStatus.New
     due_date: Optional[date] = None
-    contact_person: Optional[str] = None
+    contact_person: Optional[str] = Field(None, max_length=MAX_CONTACT_PERSON_LEN)
+
+    @field_validator("order_id", "customer_id", mode="before")
+    def _strip_ids(cls, value: Optional[str]):
+        return value.strip() if isinstance(value, str) else value
 
 
 class OrderUpdate(BaseModel):
@@ -67,7 +76,7 @@ class OrderUpdate(BaseModel):
     customer_id: Optional[str] = None
     status: Optional[OrderStatus] = None
     due_date: Optional[date] = None
-    contact_person: Optional[str] = None
+    contact_person: Optional[str] = Field(None, max_length=MAX_CONTACT_PERSON_LEN)
 
 
 class OrderLineCreate(BaseModel):
@@ -228,22 +237,22 @@ class Customer(BaseModel):
 class CustomerCreate(BaseModel):
     """Write model for creating a new customer."""
     model_config = ConfigDict(from_attributes=True)
-    customer_id: str = Field(..., min_length=1)
-    name: str = Field(..., min_length=1)
-    nip: Optional[str] = None
-    address: Optional[str] = None
-    email: Optional[str] = None
-    contact_person: Optional[str] = None
+    customer_id: str = Field(..., min_length=1, max_length=MAX_CUSTOMER_ID_LEN)
+    name: str = Field(..., min_length=1, max_length=120)
+    nip: Optional[str] = Field(None, max_length=20)
+    address: Optional[str] = Field(None, max_length=200)
+    email: Optional[str] = Field(None, max_length=120)
+    contact_person: Optional[str] = Field(None, max_length=MAX_CONTACT_PERSON_LEN)
 
 
 class CustomerUpdate(BaseModel):
     """Write model for updating an existing customer."""
     model_config = ConfigDict(from_attributes=True)
-    name: Optional[str] = None
-    nip: Optional[str] = None
-    address: Optional[str] = None
-    email: Optional[str] = None
-    contact_person: Optional[str] = None
+    name: Optional[str] = Field(None, max_length=120)
+    nip: Optional[str] = Field(None, max_length=20)
+    address: Optional[str] = Field(None, max_length=200)
+    email: Optional[str] = Field(None, max_length=120)
+    contact_person: Optional[str] = Field(None, max_length=MAX_CONTACT_PERSON_LEN)
 
 
 class Employee(BaseModel):
@@ -347,4 +356,3 @@ class AnalyticsSummary(BaseModel):
     margin_pct: Optional[Decimal] = None
     revenue_yoy_change_pct: Optional[Decimal] = None
     top_customer: Optional[TopCustomer] = None
-

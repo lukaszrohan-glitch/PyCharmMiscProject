@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import * as api from '../services/api';
 import Calendar from './Calendar';
 import { useI18n } from '../i18n';
+import { useToast } from './Toast';
 
 export default function Timesheets({ lang }) {
+  const toast = useToast();
   const { t: tt } = useI18n();
   const T = (key, fallback) => {
     const v = tt(key);
@@ -165,9 +167,10 @@ export default function Timesheets({ lang }) {
     if (!window.confirm(T('confirm_delete', 'Delete this entry?'))) return;
     try {
       await api.deleteTimesheet(tsId);
-      loadTimesheets();
+      await loadTimesheets();
+      toast.show(T('ts_delete_success','Entry deleted'))
     } catch (err) {
-      alert(`Error: ${err.message || String(err)}`);
+      toast.show(`${T('ts_delete_failed','Failed to delete entry')}: ${err.message || String(err)}`, 'error')
     }
   };
 
@@ -176,13 +179,15 @@ export default function Timesheets({ lang }) {
     try {
       if (editingItem) {
         await api.updateTimesheet(editingItem.ts_id, formData);
+        toast.show(T('ts_update_success','Entry updated'))
       } else {
         await api.createTimesheet(formData);
+        toast.show(T('ts_save_success','Timesheet saved successfully.'))
       }
       await loadTimesheets();
       setShowForm(false);
     } catch (err) {
-      alert(`Error: ${err.message || String(err)}`);
+      toast.show(`${T('ts_save_failed','Failed to save entry')}: ${err.message || String(err)}`, 'error')
     }
   };
 
@@ -250,8 +255,9 @@ export default function Timesheets({ lang }) {
                 a.click();
                 a.remove();
                 URL.revokeObjectURL(url);
+                toast.show(T('ts_export_success', 'Export ready'));
               } catch (err) {
-                alert('Export failed: ' + (err.message || String(err)));
+                toast.show(`${T('ts_export_failed', 'Export failed')}: ${err.message || String(err)}`, 'error');
               }
             }}
           >
@@ -270,15 +276,14 @@ export default function Timesheets({ lang }) {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `timesheets_summary_${start}_${end}${
-                  filterEmpId ? `_${filterEmpId}` : ''
-                }.csv`;
+                a.download = `timesheets_summary_${start}_${end}${filterEmpId ? `_${filterEmpId}` : ''}.csv`;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
                 URL.revokeObjectURL(url);
+                toast.show(T('ts_export_summary_success', 'Summary export ready'));
               } catch (err) {
-                alert('Export summary failed: ' + (err.message || String(err)));
+                toast.show(`${T('ts_export_summary_failed', 'Summary export failed')}: ${err.message || String(err)}`, 'error');
               }
             }}
           >
@@ -337,8 +342,9 @@ export default function Timesheets({ lang }) {
                       a.click();
                       a.remove();
                       URL.revokeObjectURL(url);
+                      toast.show(T('ts_export_success', 'Export ready'));
                     } catch (err) {
-                      alert('Export week failed: ' + (err.message || String(err)));
+                      toast.show(`${T('ts_export_failed', 'Export failed')}: ${err.message || String(err)}`, 'error');
                     }
                   }}
                 >
@@ -366,9 +372,9 @@ export default function Timesheets({ lang }) {
                         await loadTimesheets();
                         await loadSummary();
                         await loadWeekly();
-                        alert('Unapproved week');
+                        toast.show(T('ts_unapprove_success', 'Week unapproved'));
                       } catch (err) {
-                        alert('Unapprove week failed: ' + (err.message || String(err)));
+                        toast.show(`${T('ts_unapprove_failed', 'Unapprove failed')}: ${err.message || String(err)}`, 'error');
                       }
                     }}
                   >
@@ -397,9 +403,9 @@ export default function Timesheets({ lang }) {
                         await loadTimesheets();
                         await loadSummary();
                         await loadWeekly();
-                        alert('Approved week');
+                        toast.show(T('ts_approve_success', 'Week approved'));
                       } catch (err) {
-                        alert('Approve week failed: ' + (err.message || String(err)));
+                        toast.show(`${T('ts_approve_failed', 'Approve failed')}: ${err.message || String(err)}`, 'error');
                       }
                     }}
                   >
@@ -530,8 +536,9 @@ export default function Timesheets({ lang }) {
                               await loadTimesheets();
                               await loadSummary();
                               await loadWeekly();
+                              toast.show(T('ts_approve_success', 'Timesheet approved'))
                             } catch (err) {
-                              alert('Approve failed: ' + (err.message || String(err)));
+                              toast.show(`${T('ts_approve_failed', 'Approve failed')}: ${err.message || String(err)}`, 'error')
                             }
                           }}
                         >
@@ -546,8 +553,9 @@ export default function Timesheets({ lang }) {
                               await loadTimesheets();
                               await loadSummary();
                               await loadWeekly();
+                              toast.show(T('ts_unapprove_success', 'Timesheet unapproved'))
                             } catch (err) {
-                              alert('Unapprove failed: ' + (err.message || String(err)));
+                              toast.show(`${T('ts_unapprove_failed', 'Unapprove failed')}: ${err.message || String(err)}`, 'error')
                             }
                           }}
                         >
@@ -564,4 +572,3 @@ export default function Timesheets({ lang }) {
     </div>
   );
 }
-

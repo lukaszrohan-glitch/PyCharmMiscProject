@@ -444,6 +444,67 @@ table {
   padding: 0 var(--spacing-4);
 }
 
+/* Orders container grid layout */
+.orders-container .order-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.orders-container .order-form-grid .form-group.inline {
+  display: flex;
+  flex-direction: column;
+}
+
+.orders-container .customer-preview {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.orders-container .customer-preview-name {
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-xs);
+}
+
+.orders-container .customer-preview-line {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* Form hints */
+.form-hint {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.form-hint-error {
+  color: var(--status-error);
+}
+
+/* Header actions on mobile */
+.header-actions.stack-mobile {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+/* Sticky form actions */
+.form-actions.sticky {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: flex-end;
+}
+
+/* Data table adjustments */
+.orders-container table.data-table th,
+.orders-container table.data-table td {
+  white-space: nowrap;
+}
+
 /* Responsive utilities */
 @media (max-width: 768px) {
   main {

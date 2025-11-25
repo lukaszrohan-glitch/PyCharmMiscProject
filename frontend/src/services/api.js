@@ -386,3 +386,11 @@ export async function getTopOrders(params = {}) {
   const res = await apiClient.get(`/api/analytics/top-orders?${usp.toString()}`)
   return res.data
 }
+
+export const validateOrderId = (orderId, customerId) => {
+  const params = new URLSearchParams({ order_id: orderId })
+  if (customerId) params.append('customer_id', customerId)
+  return request(`/api/orders/validate?${params.toString()}`)
+}
+
+export const suggestOrderId = () => request('/api/orders/validate?order_id=__probe__')
