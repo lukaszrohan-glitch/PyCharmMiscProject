@@ -6,7 +6,7 @@ import './styles.css';
 import './style-fixes.css';
 import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider } from './auth/AuthProvider';
-import { ToastProvider } from './components/Toast';
+import ToastProvider from './components/ToastProvider';
 
 // Ensure the root element exists
 // ... existing code

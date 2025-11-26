@@ -1,7 +1,7 @@
 import {useState, useEffect, useRef} from 'react';
 import { useI18n } from '../i18n'
 import { changePassword } from '../services/api'
-import { useToast } from './Toast'
+import { useToast } from '../lib/toastContext'
 import styles from './Settings.module.css'
 
 export default function Settings({ profile, onClose, onOpenAdmin }) {

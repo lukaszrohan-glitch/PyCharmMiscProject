@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 import * as api from '../services/api'
-import { useToast } from './Toast'
+import { useToast } from '../lib/toastContext'
 import ModalOverlay from './ModalOverlay'
 
 const CUSTOMER_ID_MAX = 24

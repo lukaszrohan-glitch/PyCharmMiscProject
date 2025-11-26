@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { adminListKeys, adminCreateKey, adminDeleteKey, adminRotateKey, setAdminKey } from './services/api'
-import { useToast } from './components/Toast'
+import { useToast } from './lib/toastContext'
 import { useI18n } from './i18n.jsx'
 import AdminImport from './components/AdminImport'
 import AdminAudit from './components/AdminAudit'

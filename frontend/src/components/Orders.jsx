@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import * as api from '../services/api'
-import { useToast } from './Toast'
+import { useToast } from '../lib/toastContext'
 
 const ORDER_ID_MAX = 24
 const CUSTOMER_ID_MAX = 24

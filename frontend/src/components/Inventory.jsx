@@ -1,6 +1,6 @@
 import {useState, useEffect} from 'react';
 import * as api from '../services/api';
-import { useToast } from './Toast';
+import { useToast } from '../lib/toastContext';
 import ModalOverlay from './ModalOverlay';
 
 export default function Inventory({ lang }) {
