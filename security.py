@@ -16,6 +16,8 @@ def check_api_key(
     x_api_key: Optional[str] = Header(None),
     api_key: Optional[str] = None,
     authorization: Optional[str] = Header(None),
+    *,
+    allow_readonly: bool = False,
 ):
     """
     Require either:
@@ -23,7 +25,8 @@ def check_api_key(
       - API key in x-api-key or ?api_key=
 
     Hardened onboarding: even if there are no API keys defined, writes are NOT allowed
-    without a valid JWT. This function is used only on write endpoints.
+    without a valid JWT. This function is used only on write endpoints unless
+    `allow_readonly=True`, which relaxes the requirement for public GETs (finance, shortages, etc.).
     """
     key = x_api_key or api_key
 
@@ -36,6 +39,9 @@ def check_api_key(
             return True
         except Exception as e:
             logger.debug(f"JWT token validation failed: {e}")
+
+    if allow_readonly and not key:
+        return True
 
     # Require API key when JWT not valid
     if not key:

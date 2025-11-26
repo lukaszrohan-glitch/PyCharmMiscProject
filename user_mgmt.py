@@ -213,7 +213,11 @@ def _make_token(user: Dict) -> Dict[str, str]:
 
 
 def login_user(email: str, password: str) -> Dict:
-    user = fetch_one(SQL_GET_USER_BY_EMAIL, (email,))
+    normalized_email = email.strip() if email else ''
+    if not normalized_email:
+        raise HTTPException(status_code=401, detail='Invalid credentials')
+
+    user = fetch_one(SQL_GET_USER_BY_EMAIL, (normalized_email,))
     if not user or not user.get('active'):
         raise HTTPException(status_code=401, detail='Invalid credentials')
 

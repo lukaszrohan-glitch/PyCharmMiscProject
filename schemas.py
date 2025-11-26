@@ -28,6 +28,8 @@ class InventoryReason(str, Enum):
     Sale = "Sale"
     Adjust = "Adjust"
     Adjustment = "Adjustment"
+    Return = "Return"
+    Scrap = "Scrap"
 
 
 class Order(BaseModel):
@@ -40,6 +42,10 @@ class Order(BaseModel):
     order_date: Optional[date] = None
     due_date: Optional[date] = None
     contact_person: Optional[str] = None
+
+    @field_validator("order_id", "customer_id", mode="before")
+    def _strip_required_ids(cls, value: Optional[str]):  # noqa: D401
+        return value.strip() if isinstance(value, str) else value
 
 
 class Finance(BaseModel):
@@ -69,15 +75,23 @@ class OrderCreate(BaseModel):
     def _strip_ids(cls, value: Optional[str]):
         return value.strip() if isinstance(value, str) else value
 
+    @field_validator("contact_person", mode="before")
+    def _normalize_contact(cls, value: Optional[str]):
+        return value.strip() if isinstance(value, str) else value
+
 
 class OrderUpdate(BaseModel):
     """Write model for updating an existing order."""
     model_config = ConfigDict(from_attributes=True)
 
-    customer_id: Optional[str] = None
+    customer_id: Optional[str] = Field(None, min_length=1, max_length=MAX_CUSTOMER_ID_LEN)
     status: Optional[OrderStatus] = None
     due_date: Optional[date] = None
     contact_person: Optional[str] = Field(None, max_length=MAX_CONTACT_PERSON_LEN)
+
+    @field_validator("customer_id", "contact_person", mode="before")
+    def _strip_optional_fields(cls, value: Optional[str]):
+        return value.strip() if isinstance(value, str) else value
 
 
 class OrderLineCreate(BaseModel):
@@ -117,6 +131,10 @@ class TimesheetCreate(BaseModel):
     hours: condecimal(max_digits=10, decimal_places=2) = Field(..., ge=0)
     notes: Optional[str] = None
 
+    @field_validator("emp_id", "order_id", "notes", mode="before")
+    def _strip_timesheet_fields(cls, value: Optional[str]):
+        return value.strip() if isinstance(value, str) else value
+
 
 class InventoryCreate(BaseModel):
     """Write model for creating a new inventory transaction."""
@@ -130,6 +148,10 @@ class InventoryCreate(BaseModel):
     lot: Optional[str] = None
     location: Optional[str] = None
 
+    @field_validator("txn_id", "product_id", "lot", "location", mode="before")
+    def _strip_inventory_strings(cls, value: Optional[str]):
+        return value.strip() if isinstance(value, str) else value
+
 
 class UserPublic(BaseModel):
     """Public-facing user model, safe to return from API."""
@@ -141,6 +163,10 @@ class UserPublic(BaseModel):
     active: bool = True
     subscription_plan: Optional[str] = None
 
+    @field_validator("email", "company_id", "subscription_plan", mode="before")
+    def _strip_user_strings(cls, value: Optional[str]):  # noqa: D401
+        return value.strip() if isinstance(value, str) else value
+
 
 class UserCreateAdmin(BaseModel):
     """Model for an admin creating a new user."""
@@ -150,17 +176,29 @@ class UserCreateAdmin(BaseModel):
     subscription_plan: Optional[str] = "free"
     password: Optional[str] = None  # optional initial password supplied by admin
 
+    @field_validator("email", "company_id", "password", mode="before")
+    def _normalize_admin_inputs(cls, value: Optional[str]):
+        return value.strip() if isinstance(value, str) else value
+
 
 class UserLogin(BaseModel):
     """Model for user login request."""
     email: str
     password: str
 
+    @field_validator("email", "password", mode="before")
+    def _strip_login_inputs(cls, value: Optional[str]):
+        return value.strip() if isinstance(value, str) else value
+
 
 class PasswordChange(BaseModel):
     """Model for user changing their own password."""
     old_password: str
     new_password: str = Field(..., min_length=8)
+
+    @field_validator("old_password", "new_password", mode="before")
+    def _strip_passwords(cls, value: Optional[str]):
+        return value.strip() if isinstance(value, str) else value
 
 
 class SubscriptionPlanCreate(BaseModel):
@@ -170,6 +208,10 @@ class SubscriptionPlanCreate(BaseModel):
     max_orders: Optional[int] = None
     max_users: Optional[int] = None
     features: Optional[List[str]] = None
+
+    @field_validator("plan_id", "name", mode="before")
+    def _strip_plan_fields(cls, value: Optional[str]):
+        return value.strip() if isinstance(value, str) else value
 
 
 class SubscriptionPlan(BaseModel):
@@ -245,6 +287,10 @@ class CustomerCreate(BaseModel):
     email: Optional[str] = Field(None, max_length=120)
     contact_person: Optional[str] = Field(None, max_length=MAX_CONTACT_PERSON_LEN)
 
+    @field_validator("customer_id", "name", "nip", "address", "email", "contact_person", mode="before")
+    def _strip_customer_fields(cls, value: Optional[str]):
+        return value.strip() if isinstance(value, str) else value
+
 
 class CustomerUpdate(BaseModel):
     """Write model for updating an existing customer."""
@@ -254,6 +300,10 @@ class CustomerUpdate(BaseModel):
     address: Optional[str] = Field(None, max_length=200)
     email: Optional[str] = Field(None, max_length=120)
     contact_person: Optional[str] = Field(None, max_length=MAX_CONTACT_PERSON_LEN)
+
+    @field_validator("name", "nip", "address", "email", "contact_person", mode="before")
+    def _strip_customer_update_fields(cls, value: Optional[str]):
+        return value.strip() if isinstance(value, str) else value
 
 
 class Employee(BaseModel):
@@ -272,6 +322,10 @@ class EmployeeCreate(BaseModel):
     name: str = Field(..., min_length=1)
     role: Optional[str] = None
     hourly_rate: Optional[Decimal] = Decimal("0")
+
+    @field_validator("emp_id", "name", "role", mode="before")
+    def _strip_employee_fields(cls, value: Optional[str]):
+        return value.strip() if isinstance(value, str) else value
 
 
 class EmployeeUpdate(BaseModel):
@@ -326,6 +380,10 @@ class InventoryUpdate(BaseModel):
     reason: Optional[InventoryReason] = None
     lot: Optional[str] = None
     location: Optional[str] = None
+
+    @field_validator("product_id", "lot", "location", mode="before")
+    def _strip_inventory_update_strings(cls, value: Optional[str]):
+        return value.strip() if isinstance(value, str) else value
 
 
 class RevenueByMonth(BaseModel):

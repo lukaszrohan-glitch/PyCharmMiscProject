@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
+from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File, Header
 from fastapi.responses import StreamingResponse
 from psycopg.errors import UniqueViolation
 
@@ -176,8 +176,12 @@ def import_customers_csv(file: UploadFile = File(...), _ok: bool = Depends(check
     return {"created": created, "skipped": skipped, "errors": errors}
 
 
+def _readonly_dep(authorization=Header(None), x_api_key=Header(None), api_key: Optional[str] = None):
+    return check_api_key(authorization=authorization, x_api_key=x_api_key, api_key=api_key, allow_readonly=True)
+
+
 @router.get("/api/customers/export", summary="Export customers as CSV")
-def export_customers_csv(_ok: bool = Depends(check_api_key)):
+def export_customers_csv(_ok: bool = Depends(_readonly_dep)):
     try:
         rows = fetch_all(
             "SELECT customer_id, name, nip, address, email, contact_person FROM customers ORDER BY customer_id",

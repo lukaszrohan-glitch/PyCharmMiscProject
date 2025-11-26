@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
+from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File, Header
 from fastapi.responses import StreamingResponse
 from psycopg.errors import UniqueViolation
 
-from db import fetch_all, fetch_one, execute
+from db import fetch_all, fetch_one, execute, next_order_id
 from schemas import Order, OrderCreate, OrderUpdate, OrderLineCreate
 from queries import (
     SQL_ORDERS,
@@ -14,12 +14,39 @@ from queries import (
     SQL_INSERT_ORDER_LINE,
     SQL_FIND_ORDER,
     SQL_FIND_CUSTOMER,
-    SQL_NEXT_ORDER_ID,
 )
 from security import check_api_key
 
 
 router = APIRouter(tags=["Orders"])
+
+
+def _readonly_dep(authorization=Header(None), x_api_key=Header(None), api_key: Optional[str] = None):
+    return check_api_key(authorization=authorization, x_api_key=x_api_key, api_key=api_key, allow_readonly=True)
+
+
+@router.get("/api/orders/export", summary="Export orders as CSV")
+def export_orders_csv(_ok: bool = Depends(_readonly_dep)):
+    """Export all orders as a CSV for Excel/import workflows."""
+    try:
+        rows = fetch_all(SQL_ORDERS, None) or []
+        import io, csv
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        header = ["order_id", "customer_id", "status", "order_date", "due_date", "contact_person"]
+        writer.writerow(header)
+        for r in rows:
+            writer.writerow([r.get(col) if r.get(col) is not None else "" for col in header])
+        csv_bytes = buf.getvalue().encode("utf-8-sig")
+        mem = io.BytesIO(csv_bytes)
+        mem.seek(0)
+        return StreamingResponse(
+            mem,
+            media_type="text/csv; charset=utf-8",
+            headers={"Content-Disposition": "attachment; filename=orders.csv"},
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 def _normalize_status(value: Optional[str]) -> Optional[str]:
@@ -88,9 +115,7 @@ def create_order(payload: OrderCreate, _ok: bool = Depends(check_api_key)):
     try:
         order_id = (payload.order_id or '').strip() if payload.order_id else None
         if not order_id:
-            suggestion = fetch_one(SQL_NEXT_ORDER_ID, None)
-            suffix = suggestion.get('next_suffix') if suggestion else '0001'
-            order_id = f"ORD-{suffix}"
+            order_id = next_order_id()
         existing = fetch_one(SQL_FIND_ORDER, (order_id,))
         if existing:
             raise HTTPException(status_code=409, detail="Order already exists")
@@ -232,79 +257,6 @@ def migrate_contact_person(_ok: bool = Depends(check_api_key)):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.get("/api/orders/export", summary="Export orders as CSV")
-def export_orders_csv(_ok: bool = Depends(check_api_key)):
-    """Export all orders as a CSV for Excel/import workflows."""
-    try:
-        rows = fetch_all(SQL_ORDERS, None) or []
-        import io, csv
-        buf = io.StringIO()
-        writer = csv.writer(buf)
-        header = ["order_id", "customer_id", "status", "order_date", "due_date", "contact_person"]
-        writer.writerow(header)
-        for r in rows:
-            # Preserve NULL values: write empty string only if value is None, otherwise keep the actual value
-            writer.writerow([r.get(col) if r.get(col) is not None else "" for col in header])
-        csv_bytes = buf.getvalue().encode("utf-8-sig")
-        mem = io.BytesIO(csv_bytes)
-        mem.seek(0)
-        return StreamingResponse(
-            mem,
-            media_type="text/csv; charset=utf-8",
-            headers={
-                "Content-Disposition": "attachment; filename=orders.csv",
-            },
-        )
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
-
-
-@router.post("/api/orders/import", summary="Import orders from CSV")
-def import_orders_csv(file: UploadFile = File(...), _ok: bool = Depends(check_api_key)):
-    """Import orders from a CSV file with columns: order_id, customer_id, status, due_date, contact_person"""
-    import csv, io
-    try:
-        content = file.file.read().decode("utf-8-sig")
-    except Exception as exc:
-        raise HTTPException(status_code=400, detail=f"Cannot read file: {exc}") from exc
-
-    reader = csv.DictReader(io.StringIO(content))
-    created = 0
-    skipped = 0
-    errors: list[str] = []
-
-    for idx, row in enumerate(reader, start=2):  # header is line 1
-        order_id = (row.get("order_id") or "").strip()
-        customer_id = (row.get("customer_id") or "").strip()
-        if not order_id or not customer_id:
-            skipped += 1
-            errors.append(f"Line {idx}: missing order_id or customer_id")
-            continue
-
-        status = (row.get("status") or "Planned").strip() or "Planned"
-        due_date = (row.get("due_date") or "").strip() or None
-        contact_person = (row.get("contact_person") or "").strip() or None
-
-        # skip duplicates for now (insert-only behavior)
-        existing = fetch_one("SELECT 1 FROM orders WHERE order_id = %s", (order_id,))
-        if existing:
-            skipped += 1
-            errors.append(f"Line {idx}: order {order_id} already exists, skipped")
-            continue
-
-        try:
-            execute(
-                SQL_INSERT_ORDER,
-                (order_id, customer_id, status, due_date, contact_person),
-            )
-            created += 1
-        except Exception as exc:
-            skipped += 1
-            errors.append(f"Line {idx}: failed to insert {order_id}: {exc}")
-
-    return {"created": created, "skipped": skipped, "errors": errors}
-
-
 @router.get("/api/orders/validate", summary="Validate an order ID before submit")
 def validate_order(order_id: str = Query(..., min_length=1), customer_id: Optional[str] = None):
     try:
@@ -315,11 +267,11 @@ def validate_order(order_id: str = Query(..., min_length=1), customer_id: Option
             cust = fetch_one(SQL_FIND_CUSTOMER, (customer_id.strip(),))
             if not cust:
                 raise HTTPException(status_code=404, detail="Customer not found")
-        suggestion = fetch_one(SQL_NEXT_ORDER_ID, None)
+        next_hint = next_order_id()
         return {
             "order_id": order_id,
             "available": True,
-            "suggested_next": suggestion.get("next_suffix") if suggestion else None,
+            "suggested_next": next_hint.split('-')[-1],
         }
     except HTTPException:
         raise

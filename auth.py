@@ -238,8 +238,13 @@ def rotate_api_key(key_id: int, by: Optional[str] = None) -> Dict[str, Any]:
     new_key_row = create_api_key(label=f'rotated-from-{key_id}')
     # Log audit (use helper to ensure sqlite gets event_time)
     try:
-        details = { 'rotated_from': key_id, 'new_id': new_key_row.get('id') if new_key_row else None }
+        details = {'rotated_from': key_id, 'new_id': new_key_row.get('id') if new_key_row else None}
         log_api_key_event(new_key_row.get('id') if new_key_row else None, 'rotated', by, details)
+    except Exception:
+        pass
+    # mark old key inactive explicitly (some sqlite paths skipped earlier update)
+    try:
+        execute("UPDATE api_keys SET active = 0 WHERE id = %s", (key_id,))
     except Exception:
         pass
     return new_key_row

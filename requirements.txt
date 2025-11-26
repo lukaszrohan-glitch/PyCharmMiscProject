@@ -4,6 +4,7 @@ aiofiles==23.2.1
 # Postgres driver is optional; use requirements-postgres.txt if needed
 # Switch to psycopg v3 with bundled binary wheels and pooling
 psycopg[binary,pool]==3.2.12
+psycopg2-binary>=2.9.7
 httpx==0.24.1
 pydantic>=2.7,<3
 pydantic-settings==2.4.0

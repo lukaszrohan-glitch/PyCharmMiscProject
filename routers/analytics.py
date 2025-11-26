@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional, List
 
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, Header
 
 from db import fetch_all, fetch_one
 from schemas import Finance, RevenueByMonth, TopCustomer, TopOrder, AnalyticsSummary
@@ -20,12 +20,13 @@ from security import check_api_key
 router = APIRouter(tags=["Finance", "Analytics"])
 
 
+def _readonly_ok(authorization=Header(None), x_api_key=Header(None), api_key: Optional[str] = None):
+    return check_api_key(authorization=authorization, x_api_key=x_api_key, api_key=api_key, allow_readonly=True)
+
+
 @router.get("/api/finance/{order_id}", response_model=Optional[Finance], summary="Finance by order")
-def finance_one(order_id: str, _ok: bool = Depends(check_api_key)):
-    """
-    Szczegóły finansowe dla pojedynczego zlecenia.
-    Dostępne tylko dla uwierzytelnionych użytkowników (JWT / API key).
-    """
+def finance_one(order_id: str, _ok: bool = Depends(_readonly_ok)):
+    """Szczegóły finansowe dla zlecenia (read-only)."""
     try:
         row = fetch_one(SQL_FINANCE_ONE, (order_id,))
         if not row:
@@ -36,10 +37,8 @@ def finance_one(order_id: str, _ok: bool = Depends(check_api_key)):
 
 
 @router.get("/api/shortages", summary="Material shortages", response_model=List[dict])
-def shortages(_ok: bool = Depends(check_api_key)):
-    """
-    Lista braków materiałowych.
-    """
+def shortages(_ok: bool = Depends(_readonly_ok)):
+    """Lista braków materiałowych bez wymogu logowania."""
     try:
         return fetch_all(SQL_SHORTAGES, None) or []
     except Exception as exc:
@@ -47,10 +46,8 @@ def shortages(_ok: bool = Depends(check_api_key)):
 
 
 @router.get("/api/planned-time/{order_id}", summary="Planned time for order")
-def planned_time(order_id: str, _ok: bool = Depends(check_api_key)):
-    """
-    Planowany czas dla zlecenia (na podstawie widoku v_planned_time).
-    """
+def planned_time(order_id: str, _ok: bool = Depends(_readonly_ok)):
+    """Planowany czas dla zlecenia (read-only)."""
     try:
         row = fetch_one(SQL_PLANNED_ONE, (order_id,))
         if not row:

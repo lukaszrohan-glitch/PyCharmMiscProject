@@ -4,7 +4,7 @@ from typing import List, Optional
 from datetime import date
 from decimal import Decimal
 
-from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
+from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File, Header
 from fastapi.responses import StreamingResponse
 from psycopg.errors import UniqueViolation
 
@@ -15,6 +15,37 @@ from security import check_api_key
 
 
 router = APIRouter(tags=["Inventory"])
+
+
+def _readonly_dep(authorization=Header(None), x_api_key=Header(None), api_key: Optional[str] = None):
+    return check_api_key(authorization=authorization, x_api_key=x_api_key, api_key=api_key, allow_readonly=True)
+
+
+@router.get("/api/inventory/export", summary="Export inventory as CSV")
+def export_inventory_csv(_ok: bool = Depends(_readonly_dep)):
+    """Export all inventory transactions as CSV for Excel/import workflows."""
+    try:
+        rows = fetch_all(
+            "SELECT txn_id, txn_date, product_id, qty_change, reason, lot, location FROM inventory ORDER BY txn_date DESC",
+            None,
+        ) or []
+        import io, csv
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        header = ["txn_id", "txn_date", "product_id", "qty_change", "reason", "lot", "location"]
+        writer.writerow(header)
+        for r in rows:
+            writer.writerow([r.get(col) if r.get(col) is not None else "" for col in header])
+        csv_bytes = buf.getvalue().encode("utf-8-sig")
+        mem = io.BytesIO(csv_bytes)
+        mem.seek(0)
+        return StreamingResponse(
+            mem,
+            media_type="text/csv; charset=utf-8",
+            headers={"Content-Disposition": "attachment; filename=inventory.csv"},
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 @router.get("/api/inventory", response_model=List[Inventory], summary="List inventory transactions")
@@ -127,35 +158,6 @@ def delete_inventory(txn_id: str, _ok: bool = Depends(check_api_key)):
     try:
         execute("DELETE FROM inventory WHERE txn_id = %s", (txn_id,))
         return {"deleted": True}
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
-
-
-@router.get("/api/inventory/export", summary="Export inventory as CSV")
-def export_inventory_csv(_ok: bool = Depends(check_api_key)):
-    """Export all inventory transactions as CSV for Excel/import workflows."""
-    try:
-        rows = fetch_all(
-            "SELECT txn_id, txn_date, product_id, qty_change, reason, lot, location FROM inventory ORDER BY txn_date DESC",
-            None,
-        ) or []
-        import io, csv
-        # use StringIO then encode to bytes with BOM so Excel opens it well
-        buf = io.StringIO()
-        writer = csv.writer(buf)
-        header = ["txn_id", "txn_date", "product_id", "qty_change", "reason", "lot", "location"]
-        writer.writerow(header)
-        for r in rows:
-            # Preserve NULL values: write empty string only if value is None, otherwise keep the actual value
-            writer.writerow([r.get(col) if r.get(col) is not None else "" for col in header])
-        csv_bytes = buf.getvalue().encode("utf-8-sig")
-        mem = io.BytesIO(csv_bytes)
-        mem.seek(0)
-        return StreamingResponse(
-            mem,
-            media_type="text/csv; charset=utf-8",
-            headers={"Content-Disposition": "attachment; filename=inventory.csv"},
-        )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 

@@ -392,6 +392,14 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
     )
     conn.commit()
 
+    cur.executescript("""
+    CREATE TABLE IF NOT EXISTS order_id_seq (
+      prefix TEXT PRIMARY KEY,
+      last_suffix INTEGER NOT NULL DEFAULT 0
+    );
+    INSERT OR IGNORE INTO order_id_seq(prefix, last_suffix) VALUES ('ORD', 1);
+    """)
+
 
 def fetch_all(sql: str, params: Optional[Tuple] = None) -> List[dict]:
     pool = _get_pool()
@@ -407,6 +415,7 @@ def fetch_all(sql: str, params: Optional[Tuple] = None) -> List[dict]:
                 bind_params = tuple(float(p) if isinstance(p, Decimal) else p for p in params)
             cur.execute(sql_exec, bind_params or ())
             rows = cur.fetchall()
+            cur.close()
             # convert sqlite3.Row to dict
             return [dict(r) for r in rows]
     else:
@@ -444,45 +453,52 @@ def fetch_one(sql: str, params: Optional[Tuple] = None) -> Optional[dict]:
                     return cur.fetchone()
 
 
+def _fetch_returning_rows(cur):
+    """Return list of dict rows from cursor regardless of backend."""
+    if cur.description is None:
+        return []
+    columns = [col[0] for col in cur.description]
+    rows = cur.fetchall()
+    normalized = []
+    for row in rows:
+        if isinstance(row, dict):
+            normalized.append(row)
+        elif hasattr(row, "_mapping"):
+            normalized.append(dict(row._mapping))
+        else:
+            normalized.append({col: row[idx] for idx, col in enumerate(columns)})
+    return normalized
+
+
 def execute(sql: str, params: Optional[Tuple] = None, returning: bool = False):
     """Execute SQL (INSERT, UPDATE, DELETE).
-    For INSERT with `returning=True`, it will return the ID of the new row (for PG).
+    For INSERT/UPDATE with `returning=True`, return list[dict] rows just like fetch_* helpers.
     """
     pool = _get_pool()
     if pool is None:
-        # sqlite path
         with get_conn() as conn:
             cur = conn.cursor()
-            # translate %s placeholders (Postgres style) to ? for sqlite
             sql_exec = sql.replace('%s', '?') if params else sql
-            # Convert Decimal params to float for sqlite binding
             bind_params = params
             if params:
                 bind_params = tuple(float(p) if isinstance(p, Decimal) else p for p in params)
             cur.execute(sql_exec, bind_params or ())
+            rows = _fetch_returning_rows(cur) if returning else None
             conn.commit()
-            if returning:
-                return cur.lastrowid
-            return None
+            return rows
     else:
-        # Postgres path
         with get_conn() as conn:
             if PSYCOPG3_AVAILABLE:
                 with conn.cursor() as cur:  # type: ignore
                     cur.execute(sql, params or ())
-                    if returning:
-                        # Assuming the table has a RETURNING id clause
-                        res = cur.fetchone()
-                        return res[0] if res else None
-                    return None
+                    return _fetch_returning_rows(cur) if returning else None
             else:
                 from psycopg2.extras import RealDictCursor  # type: ignore
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:  # type: ignore
                     cur.execute(sql, params or ())
                     if returning:
-                        # Assuming the table has a RETURNING id clause
-                        res = cur.fetchone()
-                        return res['id'] if res else None
+                        rows = cur.fetchall()
+                        return rows if isinstance(rows, list) else list(rows)
                     return None
 
 
@@ -563,3 +579,21 @@ def init_db():
             """
         ]
         # ... existing code
+
+
+def next_order_id(prefix: str = 'ORD') -> str:
+    pool = _get_pool()
+    if pool is None:
+        with get_conn() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT last_suffix FROM order_id_seq WHERE prefix = ?", (prefix,))
+            row = cur.fetchone()
+            suffix = (row[0] if row else 0) + 1
+            cur.execute("INSERT INTO order_id_seq(prefix, last_suffix) VALUES(?, ?) ON CONFLICT(prefix) DO UPDATE SET last_suffix=excluded.last_suffix", (prefix, suffix))
+            conn.commit()
+            return f"{prefix}-{suffix:04d}"
+    # Postgres path - rely on SQL_NEXT_ORDER_ID
+    from queries import SQL_NEXT_ORDER_ID
+    row = fetch_one(SQL_NEXT_ORDER_ID)
+    suffix = row.get('next_suffix') if row else '0001'
+    return f"{prefix}-{suffix}"
