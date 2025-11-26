@@ -257,6 +257,14 @@ def migrate_contact_person(_ok: bool = Depends(check_api_key)):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
+@router.get("/api/orders/next-id", summary="Get a suggested next order ID")
+def get_next_order_id_hint(_ok: bool = Depends(_readonly_dep)):
+    try:
+        return {"order_id": next_order_id()}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
 @router.get("/api/orders/validate", summary="Validate an order ID before submit")
 def validate_order(order_id: str = Query(..., min_length=1), customer_id: Optional[str] = None):
     try:
@@ -267,11 +275,11 @@ def validate_order(order_id: str = Query(..., min_length=1), customer_id: Option
             cust = fetch_one(SQL_FIND_CUSTOMER, (customer_id.strip(),))
             if not cust:
                 raise HTTPException(status_code=404, detail="Customer not found")
-        next_hint = next_order_id()
+        suggested = next_order_id()
         return {
             "order_id": order_id,
             "available": True,
-            "suggested_next": next_hint.split('-')[-1],
+            "suggested_next": suggested,
         }
     except HTTPException:
         raise

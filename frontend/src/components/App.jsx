@@ -1,8 +1,29 @@
-// ...existing code...
+import React, { useState } from 'react'
+import Header from './Header'
+import Login from './Login'
+import UserGuide from './UserGuide'
+import HelpPanel from './HelpPanel'
+import styles from './App.module.css'
+import './styles/global.css'
+
+export default function App({
+  lang = 'pl',
+  setLang,
+  currentView = 'dashboard',
+  setCurrentView,
+  profile,
+  onSettings,
+  onLogout,
+  onSearchSelect,
+  jumpToFinance,
+}) {
   const [showGuide, setShowGuide] = useState(false)
-// ...existing code...
-  const toggleGuide = (open = true) => setShowGuide(open)
-// ...existing code...
+  const [showHelp, setShowHelp] = useState(false)
+
+  const handleLogout = () => onLogout?.()
+  const handleSettings = () => onSettings?.()
+  const handleSearchSelect = jumpToFinance || onSearchSelect
+
   if (!profile) {
     return <Login lang={lang} setLang={setLang} />
   }
@@ -17,17 +38,27 @@
         profile={profile}
         onSettings={handleSettings}
         onLogout={handleLogout}
-        onSearchSelect={jumpToFinance}
-        onOpenGuide={() => toggleGuide(true)}
+        onSearchSelect={handleSearchSelect}
+        onOpenHelp={() => setShowHelp(true)}
+        isHelpOpen={showHelp}
       />
-// ...existing code...
+      {/* Placeholder for routed content */}
       {showGuide && (
         <UserGuide
           lang={lang}
-          onClose={() => toggleGuide(false)}
+          onClose={() => setShowGuide(false)}
+        />
+      )}
+      {showHelp && (
+        <HelpPanel
+          lang={lang}
+          onClose={() => setShowHelp(false)}
+          onOpenGuide={() => {
+            setShowHelp(false)
+            setShowGuide(true)
+          }}
         />
       )}
     </div>
   )
 }
-

@@ -4,7 +4,7 @@
   min-height: 100vh;
   display: grid;
   place-items: center;
-  background: radial-gradient(circle at top, #1f2933 0%, #131b23 45%, #0c1117 80%);
+  background: #0f172a;
   background-color: #0f172a;
   position: relative;
   padding: var(--spacing-6);
@@ -12,11 +12,7 @@
 }
 
 .root::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(15,23,42,0.85), rgba(6,11,16,0.95));
-  opacity: 0.9;
+  content: none;
 }
 
 .card {

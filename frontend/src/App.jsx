@@ -12,6 +12,7 @@ import Financials from './components/Financials';
 import Clients from './components/Clients';
 import Admin from './components/Admin';
 import UserGuide from './components/UserGuide';
+import HelpPanel from './components/HelpPanel';
 import { useAuth } from './auth/AuthProvider';
 import styles from './App.module.css';
 
@@ -25,6 +26,7 @@ export default function App() {
   const [isSettingsOpen, setSettingsOpen] = useState(false);
   const [initialFinanceOrderId, setInitialFinanceOrderId] = useState(null);
   const [showGuide, setShowGuide] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const { profile, checkingAuth, setAuth, logout } = useAuth();
 
   // zapisujemy język przy zmianie
@@ -135,7 +137,8 @@ export default function App() {
         onSettings={handleSettings}
         onLogout={handleLogout}
         onSearchSelect={jumpToFinance}
-        onOpenGuide={() => setShowGuide(true)}
+        onOpenHelp={() => setShowHelp(true)}
+        isHelpOpen={showHelp}
       />
       <main id="main-content" className={styles.mainContent}>
         <div className={styles.container}>{renderView()}</div>
@@ -152,6 +155,16 @@ export default function App() {
         />
       )}
       {showGuide && <UserGuide lang={lang} onClose={() => setShowGuide(false)} />}
+      {showHelp && (
+        <HelpPanel
+          lang={lang}
+          onClose={() => setShowHelp(false)}
+          onOpenGuide={() => {
+            setShowHelp(false);
+            setShowGuide(true);
+          }}
+        />
+      )}
     </div>
   );
 }

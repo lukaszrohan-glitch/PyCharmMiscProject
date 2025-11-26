@@ -393,4 +393,6 @@ export const validateOrderId = (orderId, customerId) => {
   return request(`/api/orders/validate?${params.toString()}`)
 }
 
-export const suggestOrderId = () => request('/api/orders/validate?order_id=__probe__')
+export const suggestOrderId = async () => {
+  return request('/api/orders/next-id')
+}

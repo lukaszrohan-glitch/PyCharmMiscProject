@@ -105,8 +105,13 @@ export default function Orders({ lang }) {
 
   const fetchAutoSuggestion = async () => {
     try {
-      const hint = await api.validateOrderId('__probe__').catch(() => null)
-      if (hint?.suggested_next) setAutoSuggestion(`ORD-${hint.suggested_next}`)
+      const hint = await api.suggestOrderId()?.catch(() => null)
+      if (hint?.order_id) {
+        setAutoSuggestion(hint.order_id)
+        return
+      }
+      const fallback = await api.validateOrderId('__probe__').catch(() => null)
+      if (fallback?.suggested_next) setAutoSuggestion(fallback.suggested_next)
     } catch {}
   }
 
@@ -195,6 +200,7 @@ export default function Orders({ lang }) {
         const created = await api.createOrder(payload)
         toast.show(t.createSuccess)
         setLastCreatedId(created?.order_id || null)
+        await fetchAutoSuggestion()
       }
       loadOrders()
       setShowForm(false)
@@ -375,7 +381,7 @@ export default function Orders({ lang }) {
                 </div>
               )}
               <div className="form-actions sticky">
-                <button type="submit" className="btn btn-primary" disabled={!formData.order_id || !!fieldErrors.order_id}>{t.save}</button>
+                <button type="submit" className="btn btn-primary" disabled={!!editingOrder && (!formData.order_id || !!fieldErrors.order_id)}>{t.save}</button>
                 <button type="button" className="btn" onClick={() => setShowForm(false)}>{t.cancel}</button>
               </div>
             </form>

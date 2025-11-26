@@ -3,7 +3,6 @@ import styles from './Header.module.css'
 import { useI18n } from '../i18n'
 import * as api from '../services/api'
 import SynterraLogo from './SynterraLogo'
-import HelpPanel from './HelpPanel'
 
 export default function Header({
   lang,
@@ -14,17 +13,16 @@ export default function Header({
   onSettings,
   onLogout,
   onSearchSelect,
-  onOpenGuide,
+  onOpenHelp,
+  isHelpOpen,
 }) {
   const { t: tt } = useI18n(lang)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [showHelp, setShowHelp] = useState(false)
   const [orders, setOrders] = useState([])
   const [q, setQ] = useState('')
   const inputRef = useRef(null)
   const chromeRef = useRef(null)
   const menuBtnRef = useRef(null)
-  const helpBtnRef = useRef(null)
   const menuListRef = useRef(null)
 
   const t = {
@@ -67,16 +65,12 @@ export default function Header({
           setMenuOpen(false)
           menuBtnRef.current?.focus()
         }
-        if (showHelp) {
-          setShowHelp(false)
-          helpBtnRef.current?.focus()
-        }
       }
     }
     const handleKey = (e) => {
-      if (e.key === 'Escape' && showHelp) {
-        setShowHelp(false)
-        helpBtnRef.current?.focus()
+      if (e.key === 'Escape' && menuOpen) {
+        setMenuOpen(false)
+        menuBtnRef.current?.focus()
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -85,7 +79,7 @@ export default function Header({
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('keydown', handleKey)
     }
-  }, [menuOpen, showHelp])
+  }, [menuOpen])
 
   // Lazy-load orders when search first opens
   useEffect(() => {
@@ -161,7 +155,7 @@ export default function Header({
             <button
               ref={menuBtnRef}
               className={styles.menuTrigger}
-              onClick={() => { setMenuOpen((v) => !v); setShowHelp(false) }}
+              onClick={() => setMenuOpen((v) => !v)}
               aria-haspopup="true"
               aria-expanded={menuOpen}
               aria-controls="global-menu"
@@ -301,14 +295,13 @@ export default function Header({
 
           <div className={styles.helpCluster}>
             <button
-              ref={helpBtnRef}
               className={styles.helpBtn}
               onClick={() => {
-                setShowHelp(true)
+                onOpenHelp?.()
                 setMenuOpen(false)
               }}
               aria-haspopup="dialog"
-              aria-expanded={showHelp}
+              aria-expanded={isHelpOpen}
               aria-label={t.help}
               type="button"
             >
@@ -358,18 +351,6 @@ export default function Header({
         </div>
       </div>
     </header>
-    {showHelp && (
-      <HelpPanel
-        lang={lang}
-        onClose={() => {
-          setShowHelp(false)
-          helpBtnRef.current?.focus()
-        }}
-        onOpenGuide={() => {
-          onOpenGuide?.()
-        }}
-      />
-    )}
     </>
   )
 }
