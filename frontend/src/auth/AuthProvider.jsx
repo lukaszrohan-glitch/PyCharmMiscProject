@@ -1,7 +1,6 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { AuthContext } from './context'
 import * as api from '../services/api'
-
-const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null)
@@ -69,20 +68,4 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   )
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext)
-  if (!ctx) {
-    // Using outside provider — return a minimal shim to avoid hard crashes
-    return {
-      profile: null,
-      checkingAuth: false,
-      loginWithCredentials: async () => ({ user: null, token: null }),
-      setAuth: () => {},
-      refreshProfile: async () => null,
-      logout: () => {},
-    }
-  }
-  return ctx
 }

@@ -1,6 +1,6 @@
-import React from 'react'
+import { Component } from 'react'
 
-export default class ErrorBoundary extends React.Component {
+export default class ErrorBoundary extends Component {
   constructor(props){
     super(props)
     this.state = { error: null, errorInfo: null }
@@ -11,8 +11,9 @@ export default class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo){
-    // eslint-disable-next-line no-console
-    console.error('Frontend runtime error:', error, errorInfo)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Frontend runtime error:', error, errorInfo)
+    }
     this.setState({ errorInfo })
 
     // Send to error tracking service (e.g., Sentry) in production
@@ -117,4 +118,3 @@ export default class ErrorBoundary extends React.Component {
     return this.props.children
   }
 }
-

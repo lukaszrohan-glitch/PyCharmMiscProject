@@ -10,6 +10,12 @@
   justify-content: center;
   padding: var(--spacing-8) var(--spacing-4);
   z-index: var(--z-modal);
+  border: none;
+  cursor: pointer;
+}
+
+.backdrop:focus-visible {
+  outline: 2px solid var(--brand-primary);
 }
 
 .panel {
@@ -159,4 +165,3 @@ kbd {
     gap: var(--spacing-2);
   }
 }
-

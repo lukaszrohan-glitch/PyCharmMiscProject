@@ -1,5 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react'
-
+import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 export default function Autocomplete({
   items = [],
   getLabel = (x)=> String(x),
@@ -15,10 +14,10 @@ export default function Autocomplete({
   const listRef = useRef(null)
 
   const filtered = useMemo(()=>{
-    const q = (inputValue || '').toLowerCase()
-    if(!q) return items.slice(0, 8)
-    return items.filter(it => getLabel(it).toLowerCase().includes(q)).slice(0, 8)
-  }, [items, inputValue])
+     const q = (inputValue || '').toLowerCase()
+     if(!q) return items.slice(0, 8)
+     return items.filter(it => getLabel(it).toLowerCase().includes(q)).slice(0, 8)
+  }, [getLabel, inputValue, items])
 
   useEffect(()=>{
     function onDocClick(e){
@@ -32,31 +31,31 @@ export default function Autocomplete({
     if (highlightedIndex > filtered.length - 1) setHighlightedIndex(0)
   }, [filtered, highlightedIndex])
 
-  function handleKeyDown(e){
-    if(!open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')){
-      setOpen(true)
-      return
-    }
-    if(e.key === 'ArrowDown'){
-      e.preventDefault()
-      const next = (highlightedIndex + 1) % Math.max(filtered.length, 1)
-      setHighlightedIndex(next)
-      scrollIntoView(next)
-    } else if(e.key === 'ArrowUp'){
-      e.preventDefault()
-      const next = (highlightedIndex - 1 + Math.max(filtered.length, 1)) % Math.max(filtered.length, 1)
-      setHighlightedIndex(next)
-      scrollIntoView(next)
-    } else if(e.key === 'Enter'){
-      if(open && filtered.length > 0){
-        e.preventDefault()
-        const it = filtered[highlightedIndex] || filtered[0]
-        if(it){ onSelect(it); setOpen(false) }
-      }
-    } else if(e.key === 'Escape'){
-      setOpen(false)
-    }
-  }
+  const handleKeyDown = useCallback((e)=>{
+     if(!open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')){
+       setOpen(true)
+       return
+     }
+     if(e.key === 'ArrowDown'){
+       e.preventDefault()
+       const next = (highlightedIndex + 1) % Math.max(filtered.length, 1)
+       setHighlightedIndex(next)
+       scrollIntoView(next)
+     } else if(e.key === 'ArrowUp'){
+       e.preventDefault()
+       const next = (highlightedIndex - 1 + Math.max(filtered.length, 1)) % Math.max(filtered.length, 1)
+       setHighlightedIndex(next)
+       scrollIntoView(next)
+     } else if(e.key === 'Enter'){
+       if(open && filtered.length > 0){
+         e.preventDefault()
+         const it = filtered[highlightedIndex] || filtered[0]
+         if(it){ onSelect(it); setOpen(false) }
+       }
+     } else if(e.key === 'Escape'){
+       setOpen(false)
+     }
+  }, [filtered, highlightedIndex, onSelect, open])
 
   function scrollIntoView(idx){
     const ul = listRef.current
@@ -64,6 +63,8 @@ export default function Autocomplete({
     const li = ul.querySelector(`[data-idx="${idx}"]`)
     if(li && li.scrollIntoView){ li.scrollIntoView({ block: 'nearest' }) }
   }
+
+  const activeId = open && filtered[highlightedIndex] ? `${testId || 'ac'}-option-${highlightedIndex}` : undefined
 
   return (
     <div ref={wrapRef} style={{position:'relative'}}>
@@ -77,6 +78,7 @@ export default function Autocomplete({
         role="combobox"
         aria-expanded={open}
         aria-controls={testId? `${testId}-list` : undefined}
+        aria-activedescendant={activeId}
       />
       {open && filtered.length > 0 && (
         <ul
@@ -97,7 +99,16 @@ export default function Autocomplete({
                 style={{padding:'4px 6px', cursor:'pointer', background: isActive? '#eef6ff' : 'transparent'}}
                 onMouseEnter={()=>setHighlightedIndex(idx)}
                 onClick={()=>{ onSelect(it); setOpen(false) }}
-                data-testid={`${testId}-option-${idx}`}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    onSelect(it)
+                    setOpen(false)
+                  }
+                }}
+                tabIndex={0}
+                id={`${testId || 'ac'}-option-${idx}`}
+                data-testid={testId ? `${testId}-option-${idx}` : undefined}
               >
                 {label}
               </li>

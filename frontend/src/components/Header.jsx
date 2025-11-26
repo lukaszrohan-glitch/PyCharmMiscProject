@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import styles from './Header.module.css'
 import { useI18n } from '../i18n'
 import * as api from '../services/api'
@@ -24,6 +24,22 @@ export default function Header({
   const chromeRef = useRef(null)
   const menuBtnRef = useRef(null)
   const menuListRef = useRef(null)
+  const typeaheadId = useMemo(
+    () => `global-search-${Math.random().toString(36).slice(2)}`,
+    [],
+  )
+
+  const laptopNav = useMemo(
+    () => [
+      { id: 'dashboard', label: lang === 'pl' ? 'Panel główny' : 'Home' },
+      { id: 'orders', label: tt('orders') || (lang === 'pl' ? 'Zamówienia' : 'Orders') },
+      { id: 'clients', label: lang === 'pl' ? 'Klienci' : 'Clients' },
+      { id: 'inventory', label: tt('inventory') || (lang === 'pl' ? 'Magazyn' : 'Inventory') },
+      { id: 'timesheets', label: tt('timesheets') || (lang === 'pl' ? 'Czas pracy' : 'Timesheets') },
+      { id: 'reports', label: tt('reports') || (lang === 'pl' ? 'Raporty' : 'Reports') },
+    ],
+    [lang, tt],
+  )
 
   const t = {
     appName: 'Synterra',
@@ -43,17 +59,14 @@ export default function Header({
     docs: lang === 'pl' ? 'Dokumentacja' : 'Documentation',
   }
 
-  const navItems = [
-    { id: 'dashboard', label: t.home },
-    { id: 'orders', label: t.orders },
-    { id: 'clients', label: lang === 'pl' ? 'Klienci' : 'Clients' },
-    { id: 'inventory', label: t.inventory },
-    { id: 'timesheets', label: t.timesheets },
-    { id: 'reports', label: t.reports },
-  ]
+  const navItems = laptopNav
 
   useEffect(() => {
-    try { localStorage.setItem('lang', lang) } catch {}
+    try {
+      localStorage.setItem('lang', lang)
+    } catch (err) {
+      console.warn('Persisting lang failed', err)
+    }
   }, [lang])
 
   // Close dropdowns on outside click with proper focus management
@@ -73,10 +86,10 @@ export default function Header({
         menuBtnRef.current?.focus()
       }
     }
-    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('pointerdown', handleClickOutside)
     document.addEventListener('keydown', handleKey)
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('pointerdown', handleClickOutside)
       document.removeEventListener('keydown', handleKey)
     }
   }, [menuOpen])
@@ -87,35 +100,40 @@ export default function Header({
       ;(async () => {
         try {
           setOrders((await api.getOrders()) || [])
-        } catch {
-          // ignore – search is optional
+        } catch (err) {
+          console.warn('Search preload failed:', err)
         }
       })()
     }
   }, [orders.length])
 
-  const results = q.trim()
-    ? orders
-        .filter((o) => {
-          const s = q.toLowerCase()
-          return (
-            String(o.order_id || '').toLowerCase().includes(s) ||
-            String(o.customer_id || '').toLowerCase().includes(s) ||
-            String(o.status || '').toLowerCase().includes(s)
-          )
-        })
-        .slice(0, 6)
-    : []
+  const results = useMemo(() => {
+    const probe = q.trim().toLowerCase()
+    if (!probe) return []
+    return orders
+      .filter((o) =>
+        [o.order_id, o.customer_id, o.status]
+          .map((x) => String(x || '').toLowerCase())
+          .some((token) => token.includes(probe))
+      )
+      .slice(0, 6)
+  }, [orders, q])
 
-  const selectResult = (orderId) => {
-    setQ('')
-    onSearchSelect?.(String(orderId))
-  }
+  const selectResult = useCallback(
+    (orderId) => {
+      setQ('')
+      onSearchSelect?.(String(orderId))
+    },
+    [onSearchSelect],
+  )
 
-  const changeView = (id) => {
-    setCurrentView(id)
-    setMenuOpen(false)
-  }
+  const changeView = useCallback(
+    (id) => {
+      setCurrentView(id)
+      setMenuOpen(false)
+    },
+    [setCurrentView],
+  )
 
   useEffect(() => {
     if (menuOpen && menuListRef.current) {
@@ -135,6 +153,7 @@ export default function Header({
         <div className={styles.chrome} ref={chromeRef}>
         {/* FAR LEFT: moving logo */}
         <div className={styles.leftCluster}>
+          <div className={styles.logoMotion} aria-hidden="true" />
           <button
             className={styles.logoWrap}
             onClick={() => changeView('dashboard')}
@@ -175,6 +194,7 @@ export default function Header({
                 className={styles.menuDropdown}
                 role="menu"
                 ref={menuListRef}
+                tabIndex={-1}
                 onKeyDown={(e) => {
                   if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) {
                     e.preventDefault()
@@ -227,11 +247,11 @@ export default function Header({
           </button>
 
           <div className={styles.searchShell}>
-            <label htmlFor="global-search" className="visually-hidden">
+            <label htmlFor={typeaheadId} className="visually-hidden">
               {t.search}
             </label>
             <input
-              id="global-search"
+              id={typeaheadId}
               ref={inputRef}
               className={styles.searchInput}
               placeholder={t.search}
@@ -242,6 +262,12 @@ export default function Header({
               aria-controls={results.length > 0 ? 'search-results' : undefined}
               type="search"
               autoComplete="off"
+              onKeyDown={(evt) => {
+                if (evt.key === 'Escape') {
+                  setQ('')
+                  evt.target.blur()
+                }
+              }}
             />
             {results.length > 0 && (
               <div
@@ -256,8 +282,15 @@ export default function Header({
                     className={styles.searchItem}
                     type="button"
                     role="option"
+                    aria-selected="false"
                     onClick={() => selectResult(r.order_id)}
                     aria-label={`${lang === 'pl' ? 'Zamówienie' : 'Order'} ${r.order_id}`}
+                    onKeyDown={(evt) => {
+                      if (evt.key === 'Enter' || evt.key === ' ') {
+                        evt.preventDefault()
+                        selectResult(r.order_id)
+                      }
+                    }}
                   >
                     <span className={styles.searchItemPrimary}>#{r.order_id}</span>
                     <span className={styles.searchItemMeta}>
@@ -303,11 +336,12 @@ export default function Header({
               aria-haspopup="dialog"
               aria-expanded={isHelpOpen}
               aria-label={t.help}
-              type="button"
+              title={t.help}
+               type="button"
             >
-              <span aria-hidden="true">?</span>
-            </button>
-          </div>
+               <span aria-hidden="true">?</span>
+             </button>
+           </div>
 
           {profile && (
             <div className={styles.profileCluster}>
@@ -315,6 +349,8 @@ export default function Header({
                 type="button"
                 className={styles.profileButton}
                 onClick={onSettings}
+                aria-haspopup="dialog"
+                aria-label={lang === 'pl' ? 'Ustawienia profilu' : 'Open profile settings'}
               >
                 <span className={styles.avatar}>
                   {profile.name?.charAt(0) || profile.email?.charAt(0) || 'U'}

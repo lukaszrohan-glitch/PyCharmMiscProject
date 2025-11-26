@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
-import React from 'react';
 
 // Extend expect with axe matchers
 expect.extend(toHaveNoViolations);
@@ -141,4 +140,3 @@ describe('accessibility: Keyboard navigation', () => {
     expect(results).toHaveNoViolations();
   });
 });
-

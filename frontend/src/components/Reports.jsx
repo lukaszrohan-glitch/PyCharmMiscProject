@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import {useEffect, useMemo, useState} from 'react';
 import * as api from '../services/api'
 
 function BarChart({ data=[], height=140, color='#0891b2', label }){
@@ -33,10 +33,18 @@ export default function Reports({ lang }){
   const [range, setRange] = useState('90d')
 
   useEffect(()=>{ (async()=>{
-    try{ setTimesheets(await api.getTimesheets()||[]) }catch{}
-    try{ setEmployees(await api.getEmployees()||[]) }catch{}
-    try{ setInventory(await api.getInventory()||[]) }catch{}
-    try{ setProducts(await api.getProducts()||[]) }catch{}
+    try{ setTimesheets(await api.getTimesheets()||[]) } catch (err) {
+      console.warn('Timesheets fetch failed', err)
+    }
+    try{ setEmployees(await api.getEmployees()||[]) } catch (err) {
+      console.warn('Employees fetch failed', err)
+    }
+    try{ setInventory(await api.getInventory()||[]) } catch (err) {
+      console.warn('Inventory fetch failed', err)
+    }
+    try{ setProducts(await api.getProducts()||[]) } catch (err) {
+      console.warn('Products fetch failed', err)
+    }
   })() },[])
 
   useEffect(() => {
@@ -60,8 +68,8 @@ export default function Reports({ lang }){
         setRevByMonth(rbm || [])
         setTopCustomers(tc || [])
         setTopOrders(to || [])
-      } catch {
-        // keep reports best-effort, no hard fail
+      } catch (err) {
+        console.warn('Analytics summary fetch failed', err)
       }
     })()
   }, [range])
@@ -226,7 +234,7 @@ export default function Reports({ lang }){
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .kpi-range{ display:flex; justify-content:flex-end; margin-bottom:8px; }
         .range-buttons button{ margin-left:4px; padding:4px 10px; border-radius:999px; border:1px solid var(--border); background:var(--surface); cursor:pointer; font-size:12px; }
         .range-buttons button.active{ background:#111827; color:#fff; border-color:#111827; }

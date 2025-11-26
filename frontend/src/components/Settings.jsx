@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import {useState, useEffect, useRef} from 'react';
 import { useI18n } from '../i18n'
 import { changePassword } from '../services/api'
 import { useToast } from './Toast'
@@ -90,17 +90,14 @@ export default function Settings({ profile, onClose, onOpenAdmin }) {
   }
 
   return (
-    <div
-      className={styles.overlay}
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="settings-title"
-    >
+    <>
+      <button type="button" className={styles.overlay} aria-label={t('close')} onClick={onClose} />
       <div
-        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="settings-title"
         className={styles.modal}
-        onClick={e => e.stopPropagation()}
+        ref={modalRef}
       >
         {/* Header */}
         <div className={styles.header}>
@@ -248,6 +245,6 @@ export default function Settings({ profile, onClose, onOpenAdmin }) {
           )}
         </div>
       </div>
-    </div>
+    </>
   )
 }

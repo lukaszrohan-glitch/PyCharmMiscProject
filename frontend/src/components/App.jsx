@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import Header from './Header'
 import Login from './Login'
 import UserGuide from './UserGuide'
@@ -39,7 +39,7 @@ export default function App({
         onSettings={handleSettings}
         onLogout={handleLogout}
         onSearchSelect={handleSearchSelect}
-        onOpenHelp={() => setShowHelp(true)}
+        onOpenHelp={() => setShowHelp((prev) => !prev)}
         isHelpOpen={showHelp}
       />
       {/* Placeholder for routed content */}

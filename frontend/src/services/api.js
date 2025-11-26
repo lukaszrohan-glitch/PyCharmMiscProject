@@ -19,7 +19,6 @@ function resolveApiBase() {
 }
 
 const API_BASE = resolveApiBase()
-console.log('API Base URL:', API_BASE)
 
 let API_KEY = import.meta.env.VITE_API_KEY || null
 let ADMIN_KEY = import.meta.env.VITE_ADMIN_KEY || null
@@ -47,7 +46,11 @@ export function setToken(t, persist){
       stor.removeItem('authToken'); stor.removeItem('token')
       other.removeItem('authToken'); other.removeItem('token')
     }
-  } catch {}
+  } catch (err) {
+    if (import.meta.env?.MODE === 'development') {
+      console.warn('Auth token storage unavailable', err)
+    }
+  }
 }
 export function getToken(){
   if (TOKEN) return TOKEN
@@ -56,7 +59,11 @@ export function getToken(){
     const t = sessionStorage.getItem('authToken') || sessionStorage.getItem('token') ||
               localStorage.getItem('authToken') || localStorage.getItem('token')
     if (t) TOKEN = t
-  } catch {}
+  } catch (err) {
+    if (import.meta.env?.MODE === 'development') {
+      console.warn('Auth token retrieval failed', err)
+    }
+  }
   return TOKEN
 }
 
@@ -366,25 +373,21 @@ export const importInventoryCSV = async (file) => {
 
 export async function getAnalyticsSummary(params = {}) {
   const usp = new URLSearchParams(params)
-  const res = await apiClient.get(`/api/analytics/summary?${usp.toString()}`)
-  return res.data
+  return request(`/api/analytics/summary?${usp.toString()}`)
 }
 
 export async function getRevenueByMonth() {
-  const res = await apiClient.get('/api/analytics/revenue-by-month')
-  return res.data
+  return request('/api/analytics/revenue-by-month')
 }
 
 export async function getTopCustomers(params = {}) {
   const usp = new URLSearchParams(params)
-  const res = await apiClient.get(`/api/analytics/top-customers?${usp.toString()}`)
-  return res.data
+  return request(`/api/analytics/top-customers?${usp.toString()}`)
 }
 
 export async function getTopOrders(params = {}) {
   const usp = new URLSearchParams(params)
-  const res = await apiClient.get(`/api/analytics/top-orders?${usp.toString()}`)
-  return res.data
+  return request(`/api/analytics/top-orders?${usp.toString()}`)
 }
 
 export const validateOrderId = (orderId, customerId) => {

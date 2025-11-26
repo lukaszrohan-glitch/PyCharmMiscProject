@@ -1,11 +1,18 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { adminListUsers, adminCreateUser, setAdminKey, getToken } from '../services/api';
-import { useAuth } from '../auth/AuthProvider';
+import { useAuth } from '../auth/useAuth';
 import styles from './Admin.module.css';
 import classNames from 'classnames';
 
 export default function Admin({ lang }) {
   const { profile } = useAuth();
+  const setLastAdminErrorSafe = (message) => {
+    try {
+      window.lastAdminError = message;
+    } catch (err) {
+      // ignore if window unavailable
+    }
+  };
   const [users, setUsers] = useState([]);
   const [adminKey, setAdminKeyInput] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
@@ -18,8 +25,7 @@ export default function Admin({ lang }) {
   const [showErrorDetails, setShowErrorDetails] = useState(false);
   const emailInputRef = useRef(null);
 
-  const t = (key) => {
-    const translations = {
+  const translations = useMemo(() => ({
       admin_panel: { pl: 'Panel Administratora', en: 'Admin Panel' },
       admin_key: { pl: 'Klucz Admin', en: 'Admin Key' },
       authenticate: { pl: 'Uwierzytelnij', en: 'Authenticate' },
@@ -65,42 +71,32 @@ export default function Admin({ lang }) {
       yes: { pl: 'Tak', en: 'Yes' },
       no: { pl: 'Nie', en: 'No' },
       actions: { pl: 'Akcje', en: 'Actions' }
-    };
-    return translations[key]?.[lang] || key;
-  };
+    }), [])
 
-  useEffect(() => {
-    if (profile?.is_admin && !isAuthed && !loading) {
-      authenticate();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.is_admin]);
+  const t = useCallback((key) => translations[key]?.[lang] || key, [lang, translations])
 
-  // Align front-end validation with backend: minimum 8 characters
-  const isStrongPassword = (pwd) => typeof pwd === 'string' && pwd.length >= 8;
-
-  const authenticate = async () => {
+  const authenticate = useCallback(async () => {
     // If logged-in user is an admin, prefer JWT and skip admin key
     if (profile?.is_admin) {
       setError('');
       setSuccess('');
       setLoading(true);
       try {
-      const result = await adminListUsers();
-      setUsers(result || []);
-      setIsAuthed(true);
-      setSuccess('✅ ' + t('authenticate'));
-      // Focus email input after successful auth
-      setTimeout(() => emailInputRef.current?.focus(), 100);
-    } catch (err) {
-      console.error(err);
-      const errorMsg = err?.message || String(err);
-      window.lastAdminError = errorMsg;
-      setIsAuthed(false);
-      setError('❌ ' + t('error_generic') + ' - ' + errorMsg);
-    } finally {
-      setLoading(false);
-    }
+        const result = await adminListUsers();
+        setUsers(result || []);
+        setIsAuthed(true);
+        setSuccess('✅ ' + t('authenticate'));
+        // Focus email input after successful auth
+        setTimeout(() => emailInputRef.current?.focus(), 100);
+      } catch (err) {
+        console.error(err);
+        const errorMsg = err?.message || String(err);
+        setLastAdminErrorSafe(errorMsg);
+        setIsAuthed(false);
+        setError('❌ ' + t('error_generic') + ' - ' + errorMsg);
+      } finally {
+        setLoading(false);
+      }
       return;
     }
     const trimmedKey = adminKey.trim();
@@ -114,20 +110,29 @@ export default function Admin({ lang }) {
     setLoading(true);
 
     try {
-      // Uwaga: zadbaj, żeby setAdminKey NIE zapisywał klucza w localStorage,
-      // tylko np. w pamięci i dodawał nagłówek x-admin-key do zapytań admina.
       setAdminKey(trimmedKey);
       const result = await adminListUsers();
       setUsers(result || []);
       setIsAuthed(true);
       setSuccess('✅ ' + t('authenticate'));
-    } catch (err) { console.error(err); try { window.lastAdminError = err?.message || String(err) } catch {}
+    } catch (err) {
+      console.error(err);
+      setLastAdminErrorSafe(err?.message || String(err));
       setIsAuthed(false);
       setError('❌ ' + t('error_auth_failed'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [adminKey, profile?.is_admin, t]);
+
+  useEffect(() => {
+    if (profile?.is_admin && !isAuthed && !loading) {
+      authenticate();
+    }
+  }, [profile?.is_admin, isAuthed, loading, authenticate]);
+
+  // Align front-end validation with backend: minimum 8 characters
+  const isStrongPassword = (pwd) => typeof pwd === 'string' && pwd.length >= 8;
 
   const createUser = async () => {
     const email = newUserEmail.trim();
@@ -161,7 +166,9 @@ export default function Admin({ lang }) {
 
       const updated = await adminListUsers();
       setUsers(updated || []);
-    } catch (err) { console.error(err); try { window.lastAdminError = err?.message || String(err) } catch {}
+    } catch (err) {
+      console.error(err);
+      setLastAdminErrorSafe(err?.message || String(err));
       setError('❌ ' + t('error_generic'));
     } finally {
       setLoading(false);
@@ -195,7 +202,9 @@ export default function Admin({ lang }) {
       const updated = await adminListUsers();
       setUsers(updated || []);
       setSuccess('✅ ' + t('user_deleted'));
-    } catch (err) { console.error(err); try { window.lastAdminError = err?.message || String(err) } catch {}
+    } catch (err) {
+      console.error(err);
+      setLastAdminErrorSafe(err?.message || String(err));
       setError('❌ ' + t('error_generic'));
     } finally {
       setLoading(false);
@@ -269,7 +278,6 @@ export default function Admin({ lang }) {
                   autoComplete="off"
                   required
                   aria-required="true"
-                  autoFocus
                 />
               </div>
 
@@ -413,19 +421,24 @@ export default function Admin({ lang }) {
                   </div>
                 </div>
 
-                <div className={styles.checkboxGroup}>
-                  <input
-                    id="new-is-admin"
-                    type="checkbox"
-                    className={styles.checkbox}
-                    checked={newUserIsAdmin}
-                    onChange={(e) => setNewUserIsAdmin(e.target.checked)}
-                    disabled={loading}
-                  />
-                  <label htmlFor="new-is-admin" className={styles.checkboxLabel}>
-                    <span aria-hidden="true">👑</span> {t('is_admin')}
+                <fieldset className={styles.actionsRow}>
+                  <legend className="visually-hidden">{t('actions')}</legend>
+                  <label className={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={newUserIsAdmin}
+                      onChange={(e) => setNewUserIsAdmin(e.target.checked)}
+                    />
+                    {t('is_admin')}
                   </label>
-                </div>
+                  <button
+                    type="button"
+                    className={styles.infoBadge}
+                    onClick={() => alert(t('password_requirements'))}
+                  >
+                    ℹ️ {lang === 'pl' ? 'Wymagania hasła' : 'Password rules'}
+                  </button>
+                </fieldset>
 
                 <button
                   type="submit"
@@ -487,10 +500,8 @@ export default function Admin({ lang }) {
                           <td>
                             <button
                               type="button"
-                              className={classNames('admin-actions-row', styles.btn, styles.btnDanger)}
+                              className={styles.tableAction}
                               onClick={() => deleteUser(user.id)}
-                              disabled={loading}
-                              aria-label={`${t('delete')} ${user.email}`}
                             >
                               <span aria-hidden="true">🗑️</span> {t('delete')}
                             </button>

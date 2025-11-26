@@ -1,4 +1,4 @@
-import React from 'react'
+import {useEffect, useRef} from 'react';
 import styles from './ConfirmDialog.module.css'
 
 /**
@@ -25,6 +25,27 @@ export default function ConfirmDialog({
   cancelText = 'Nie',
   type = 'default' // 'default' | 'danger' | 'warning'
 }) {
+  const cancelBtnRef = useRef(null)
+
+  useEffect(() => {
+    if (!isOpen) return
+    cancelBtnRef.current?.focus()
+  }, [isOpen])
+
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') onClose()
+    }
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape)
+      document.body.style.overflow = 'hidden'
+    }
+    return () => {
+      document.removeEventListener('keydown', handleEscape)
+      document.body.style.overflow = ''
+    }
+  }, [isOpen, onClose])
+
   if (!isOpen) return null
 
   const handleConfirm = () => {
@@ -36,31 +57,16 @@ export default function ConfirmDialog({
     onClose()
   }
 
-  // Close on Escape key
-  React.useEffect(() => {
-    const handleEscape = (e) => {
-      if (e.key === 'Escape') {
-        onClose()
-      }
-    }
-
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscape)
-      // Prevent background scroll
-      document.body.style.overflow = 'hidden'
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEscape)
-      document.body.style.overflow = ''
-    }
-  }, [isOpen, onClose])
-
   return (
-    <div className={styles.overlay} onClick={onClose}>
+    <>
+      <button
+        type="button"
+        className={styles.overlay}
+        aria-label={title}
+        onClick={onClose}
+      />
       <div
         className={`${styles.dialog} ${styles[type]}`}
-        onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
@@ -75,9 +81,9 @@ export default function ConfirmDialog({
 
         <div className={styles.actions}>
           <button
+            ref={cancelBtnRef}
             className={styles.cancelBtn}
             onClick={handleCancel}
-            autoFocus
           >
             {cancelText}
           </button>
@@ -89,7 +95,6 @@ export default function ConfirmDialog({
           </button>
         </div>
       </div>
-    </div>
+    </>
   )
 }
-

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
@@ -6,14 +6,13 @@ import Settings from './components/Settings';
 import Orders from './components/Orders';
 import Inventory from './components/Inventory';
 import Timesheets from './components/Timesheets';
-import Products from './components/Products';
 import Reports from './components/Reports';
 import Financials from './components/Financials';
 import Clients from './components/Clients';
 import Admin from './components/Admin';
 import UserGuide from './components/UserGuide';
 import HelpPanel from './components/HelpPanel';
-import { useAuth } from './auth/AuthProvider';
+import { useAuth } from './auth/useAuth';
 import styles from './App.module.css';
 
 export default function App() {
@@ -27,7 +26,7 @@ export default function App() {
   const [initialFinanceOrderId, setInitialFinanceOrderId] = useState(null);
   const [showGuide, setShowGuide] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
-  const { profile, checkingAuth, setAuth, logout } = useAuth();
+  const { profile, checkingAuth, logout } = useAuth();
 
   // zapisujemy język przy zmianie
   useEffect(() => {
@@ -59,14 +58,6 @@ export default function App() {
       }
     })(); */
   }, []);
-
-  const handleLogin = (data) => {
-    // załóżmy, że data = { user, token }
-    // Update global auth context as well
-    setAuth?.(data.user, data.token);
-    
-    setCurrentView('dashboard');
-  };
 
   const handleLogout = () => {
     logout?.();

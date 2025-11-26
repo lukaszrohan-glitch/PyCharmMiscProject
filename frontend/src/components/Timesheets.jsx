@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import {useEffect, useState, useCallback} from 'react';
 import * as api from '../services/api';
 import Calendar from './Calendar';
 import { useI18n } from '../i18n';
@@ -44,6 +44,36 @@ export default function Timesheets({ lang }) {
     notes: ''
   });
 
+  const loadTimesheets = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await api.getTimesheets();
+      setTimesheets(data || []);
+    } catch (err) {
+      setError(err.message || String(err));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const loadEmployees = useCallback(async () => {
+    try {
+      const data = await api.getEmployees();
+      setEmployees(data || []);
+    } catch (err) {
+      console.error('Failed to load employees:', err);
+    }
+  }, []);
+
+  const loadOrders = useCallback(async () => {
+    try {
+      const data = await api.getOrders();
+      setOrders(data || []);
+    } catch (err) {
+      console.error('Failed to load orders:', err);
+    }
+  }, []);
+
   useEffect(() => {
     loadTimesheets();
     loadEmployees();
@@ -56,34 +86,15 @@ export default function Timesheets({ lang }) {
         // not logged in or not admin; leave as false
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadTimesheets, loadEmployees, loadOrders]);
 
-  useEffect(() => {
-    loadSummary();
-    loadWeekly();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentMonth, filterEmpId, approvedOnly]);
+  const monthRange = useCallback((y, m) => {
+    const start = fmtLocal(new Date(y, m, 1))
+    const end = fmtLocal(new Date(y, m + 1, 0))
+    return { start, end }
+  }, [])
 
-  const monthRange = (y, m) => {
-    const start = fmtLocal(new Date(y, m, 1));
-    const end = fmtLocal(new Date(y, m + 1, 0));
-    return { start, end };
-  };
-
-  const loadTimesheets = async () => {
-    try {
-      setLoading(true);
-      const data = await api.getTimesheets();
-      setTimesheets(data || []);
-    } catch (err) {
-      setError(err.message || String(err));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadSummary = async () => {
+  const loadSummary = useCallback(async () => {
     try {
       const { year, month } = currentMonth;
       const { start, end } = monthRange(year, month);
@@ -101,9 +112,9 @@ export default function Timesheets({ lang }) {
     } catch (err) {
       console.error('Failed to load summary', err);
     }
-  };
+  }, [currentMonth, filterEmpId, approvedOnly, monthRange]);
 
-  const loadWeekly = async () => {
+  const loadWeekly = useCallback(async () => {
     try {
       const { year, month } = currentMonth;
       const { start, end } = monthRange(year, month);
@@ -117,25 +128,12 @@ export default function Timesheets({ lang }) {
     } catch (err) {
       console.error('Failed to load weekly summary', err);
     }
-  };
+  }, [currentMonth, filterEmpId, approvedOnly, monthRange]);
 
-  const loadEmployees = async () => {
-    try {
-      const data = await api.getEmployees();
-      setEmployees(data || []);
-    } catch (err) {
-      console.error('Failed to load employees:', err);
-    }
-  };
-
-  const loadOrders = async () => {
-    try {
-      const data = await api.getOrders();
-      setOrders(data || []);
-    } catch (err) {
-      console.error('Failed to load orders:', err);
-    }
-  };
+  useEffect(() => {
+    loadSummary();
+    loadWeekly();
+  }, [loadSummary, loadWeekly]);
 
   const handleAddClick = () => {
     setEditingItem(null);
@@ -196,6 +194,20 @@ export default function Timesheets({ lang }) {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handlePrevMonth = useCallback(() => {
+    setCurrentMonth((prev) => {
+      const d = new Date(prev.year, prev.month - 1, 1)
+      return { year: d.getFullYear(), month: d.getMonth() }
+    })
+  }, [])
+
+  const handleNextMonth = useCallback(() => {
+    setCurrentMonth((prev) => {
+      const d = new Date(prev.year, prev.month + 1, 1)
+      return { year: d.getFullYear(), month: d.getMonth() }
+    })
+  }, [])
+
   if (loading) return <div className="loading">{T('ts_loading', 'Loading...')}</div>;
 
   return (
@@ -221,19 +233,13 @@ export default function Timesheets({ lang }) {
           </label>
           <button
             className="btn"
-            onClick={() => {
-              const d = new Date(currentMonth.year, currentMonth.month - 1, 1);
-              setCurrentMonth({ year: d.getFullYear(), month: d.getMonth() });
-            }}
+            onClick={handlePrevMonth}
           >
             {'<'}
           </button>
           <button
             className="btn"
-            onClick={() => {
-              const d = new Date(currentMonth.year, currentMonth.month + 1, 1);
-              setCurrentMonth({ year: d.getFullYear(), month: d.getMonth() });
-            }}
+            onClick={handleNextMonth}
           >
             {'>'}
           </button>
@@ -366,7 +372,6 @@ export default function Timesheets({ lang }) {
                           approved: true
                         });
                         for (const it of items || []) {
-                          // eslint-disable-next-line no-await-in-loop
                           await api.unapproveTimesheet(it.ts_id);
                         }
                         await loadTimesheets();
@@ -397,7 +402,6 @@ export default function Timesheets({ lang }) {
                           approved: false
                         });
                         for (const it of items || []) {
-                          // eslint-disable-next-line no-await-in-loop
                           await api.approveTimesheet(it.ts_id);
                         }
                         await loadTimesheets();
@@ -419,8 +423,9 @@ export default function Timesheets({ lang }) {
       )}
 
       {showForm && (
-        <div className="modal-overlay" onClick={() => setShowForm(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <>
+          <button type="button" className="modal-overlay" aria-label={T('ts_cancel','Cancel')} onClick={() => setShowForm(false)} />
+          <div className="modal" role="dialog" aria-modal="true">
             <div className="modal-header">
               <h3>{editingItem ? T('ts_edit', 'Edit') : T('ts_add', 'Add Entry')}</h3>
               <button className="close-btn" onClick={() => setShowForm(false)}>
@@ -476,7 +481,7 @@ export default function Timesheets({ lang }) {
               </div>
             </form>
           </div>
-        </div>
+        </>
       )}
 
       <div className="table-container">

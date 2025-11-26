@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { useAuth } from '../auth/AuthProvider'
+import {useState, useEffect, useRef} from 'react';
+import { useAuth } from '../auth/useAuth'
 import ForgotPassword from './ForgotPassword'
 import SynterraLogo from './SynterraLogo'
 import styles from './Login.module.css'

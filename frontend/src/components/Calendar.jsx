@@ -1,4 +1,3 @@
-import React from 'react'
 
 function getMonthDays(year, month) {
   // month: 0-11

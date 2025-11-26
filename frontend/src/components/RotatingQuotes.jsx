@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import {useState, useEffect} from 'react';
 import styles from './RotatingQuotes.module.css';
 
 const quotes = [
@@ -144,7 +144,7 @@ export default function RotatingQuotes({ lang }) {
         className={`${styles.quote} ${isAnimating ? styles.fadeOut : styles.fadeIn}`}
       >
         <blockquote className={styles.text}>
-          "{quote.text}"
+          &ldquo;{quote.text}&rdquo;
         </blockquote>
         <cite className={styles.author}>
           — {quote.author}
@@ -156,6 +156,7 @@ export default function RotatingQuotes({ lang }) {
         {quotes.map((_, index) => (
           <button
             key={index}
+            type="button"
             className={`${styles.dot} ${index === currentQuote ? styles.dotActive : ''}`}
             onClick={() => {
               setIsAnimating(true);
@@ -172,4 +173,3 @@ export default function RotatingQuotes({ lang }) {
     </div>
   );
 }
-

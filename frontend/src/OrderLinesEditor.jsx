@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import Autocomplete from './components/Autocomplete'
 import { useI18n } from './i18n.jsx'
 

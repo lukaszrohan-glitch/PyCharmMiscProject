@@ -1,4 +1,3 @@
-import React from 'react'
 
 export default function FinancePanel({ orderId, finance, lang }) {
   const t = lang === 'pl' ? {

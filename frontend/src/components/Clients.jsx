@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import {useEffect, useState} from 'react';
 import * as api from '../services/api'
 import { useToast } from './Toast'
+import ModalOverlay from './ModalOverlay'
 
 const CUSTOMER_ID_MAX = 24
 const CONTACT_MAX = 80
@@ -53,6 +54,8 @@ export default function Clients({ lang }) {
     setForm(prev => ({ ...prev, [name]: value }))
   }
 
+  const closeForm = () => setShowForm(false)
+
   return (
     <div className="customers">
       <div className="customers-header">
@@ -95,45 +98,45 @@ export default function Clients({ lang }) {
       )}
 
       {showForm && (
-        <div className="modal-overlay" onClick={()=>setShowForm(false)}>
-          <div className="modal" onClick={e=>e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{editing ? t.edit : t.add}</h3>
-              <button className="close-btn" onClick={()=>setShowForm(false)}>×</button>
-            </div>
-            <form className="form" onSubmit={submit}>
+        <ModalOverlay ariaLabel={t.cancel} onClose={closeForm}>
+          <div className="modal" role="dialog" aria-modal="true">
+             <div className="modal-header">
+               <h3>{editing ? t.edit : t.add}</h3>
+               <button className="close-btn" type="button" onClick={closeForm} aria-label={t.cancel}>×</button>
+             </div>
+             <form className="form" onSubmit={submit}>
               <div className="form-group">
-                <label>{t.customer_id}</label>
-                <input value={form.customer_id} onChange={handleInput} name="customer_id" required disabled={!!editing} maxLength={CUSTOMER_ID_MAX} />
+                <label htmlFor="customer_id_field">{t.customer_id}</label>
+                <input id="customer_id_field" value={form.customer_id} onChange={handleInput} name="customer_id" required disabled={!!editing} maxLength={CUSTOMER_ID_MAX} />
               </div>
               <div className="form-group">
-                <label>{t.name}</label>
-                <input value={form.name} onChange={handleInput} name="name" required />
+                <label htmlFor="name_field">{t.name}</label>
+                <input id="name_field" value={form.name} onChange={handleInput} name="name" required />
               </div>
               <div className="form-group">
-                <label>{t.nip}</label>
-                <input value={form.nip} onChange={handleInput} name="nip" />
+                <label htmlFor="nip_field">{t.nip}</label>
+                <input id="nip_field" value={form.nip} onChange={handleInput} name="nip" />
               </div>
               <div className="form-group">
-                <label>{t.address}</label>
-                <input value={form.address} onChange={handleInput} name="address" />
+                <label htmlFor="address_field">{t.address}</label>
+                <input id="address_field" value={form.address} onChange={handleInput} name="address" />
               </div>
               <div className="form-group">
-                <label>{t.email}</label>
-                <input type="email" value={form.email} onChange={handleInput} name="email" />
+                <label htmlFor="email_field">{t.email}</label>
+                <input id="email_field" type="email" value={form.email} onChange={handleInput} name="email" />
               </div>
               <div className="form-group">
-                <label>POC</label>
-                <input value={form.contact_person} onChange={handleInput} name="contact_person" maxLength={CONTACT_MAX} />
+                <label htmlFor="poc_field">POC</label>
+                <input id="poc_field" value={form.contact_person} onChange={handleInput} name="contact_person" maxLength={CONTACT_MAX} />
               </div>
               <div className="form-actions">
                 <button className="btn btn-primary" type="submit" disabled={loading}>{t.save}</button>
-                <button className="btn btn-sm" type="button" onClick={()=>setShowForm(false)}>{t.cancel}</button>
+                <button className="btn btn-sm" type="button" onClick={closeForm}>{t.cancel}</button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+           </div>
+         </ModalOverlay>
+       )}
     </div>
   )
 }

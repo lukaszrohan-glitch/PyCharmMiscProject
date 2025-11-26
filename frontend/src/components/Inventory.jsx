@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import {useState, useEffect} from 'react';
 import * as api from '../services/api';
 import { useToast } from './Toast';
+import ModalOverlay from './ModalOverlay';
 
 export default function Inventory({ lang }) {
   const toast = useToast();
@@ -217,11 +218,11 @@ export default function Inventory({ lang }) {
         </div>
       </div>
       {importing && (
-        <div className="modal-overlay" onClick={() => setImporting(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
+        <ModalOverlay ariaLabel={t.cancel} onClose={() => setImporting(false)}>
+          <div className="modal" role="dialog" aria-modal="true">
             <div className="modal-header">
               <h3>{lang==='pl' ? 'Import magazynu' : 'Import inventory'}</h3>
-              <button className="close-btn" onClick={() => setImporting(false)}>×</button>
+              <button className="close-btn" type="button" onClick={() => setImporting(false)} aria-label={t.cancel}>×</button>
             </div>
             <div className="form">
               <input
@@ -242,22 +243,21 @@ export default function Inventory({ lang }) {
               )}
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
-      {error && <div className="error-message">{t.error}: {error}</div>}
-
       {showForm && (
-        <div className="modal-overlay" onClick={() => setShowForm(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
+        <ModalOverlay ariaLabel={t.cancel} onClose={() => setShowForm(false)}>
+          <div className="modal" role="dialog" aria-modal="true">
             <div className="modal-header">
               <h3>{editingItem ? t.edit : t.add}</h3>
-              <button className="close-btn" onClick={() => setShowForm(false)}>×</button>
+              <button className="close-btn" type="button" onClick={() => setShowForm(false)} aria-label={t.cancel}>×</button>
             </div>
             <form onSubmit={handleSubmit} className="form">
               <div className="form-group">
-                <label>{t.txnId}</label>
+                <label htmlFor="txn_id_field">{t.txnId}</label>
                 <input
+                  id="txn_id_field"
                   type="text"
                   name="txn_id"
                   value={formData.txn_id}
@@ -267,8 +267,9 @@ export default function Inventory({ lang }) {
                 />
               </div>
               <div className="form-group">
-                <label>{t.product}</label>
+                <label htmlFor="product_id_field">{t.product}</label>
                 <select
+                  id="product_id_field"
                   name="product_id"
                   value={formData.product_id}
                   onChange={handleInputChange}
@@ -281,8 +282,9 @@ export default function Inventory({ lang }) {
                 </select>
               </div>
               <div className="form-group">
-                <label>{t.qtyChange}</label>
+                <label htmlFor="qty_change_field">{t.qtyChange}</label>
                 <input
+                  id="qty_change_field"
                   type="number"
                   name="qty_change"
                   value={formData.qty_change}
@@ -292,16 +294,17 @@ export default function Inventory({ lang }) {
                 />
               </div>
               <div className="form-group">
-                <label>{t.reason}</label>
-                <select name="reason" value={formData.reason} onChange={handleInputChange}>
+                <label htmlFor="reason_field">{t.reason}</label>
+                <select id="reason_field" name="reason" value={formData.reason} onChange={handleInputChange}>
                   <option value="PO">PO</option>
                   <option value="WO">WO</option>
                   <option value="Adjustment">Adjustment</option>
                 </select>
               </div>
               <div className="form-group">
-                <label>{t.lot}</label>
+                <label htmlFor="lot_field">{t.lot}</label>
                 <input
+                  id="lot_field"
                   type="text"
                   name="lot"
                   value={formData.lot}
@@ -309,8 +312,9 @@ export default function Inventory({ lang }) {
                 />
               </div>
               <div className="form-group">
-                <label>{t.location}</label>
+                <label htmlFor="location_field">{t.location}</label>
                 <input
+                  id="location_field"
                   type="text"
                   name="location"
                   value={formData.location}
@@ -323,8 +327,10 @@ export default function Inventory({ lang }) {
               </div>
             </form>
           </div>
-        </div>
+        </ModalOverlay>
       )}
+
+      {error && <div className="error-message">{t.error}: {error}</div>}
 
       <div className="table-container">
         {inventory.length === 0 ? (

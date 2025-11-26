@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import {useEffect, useState, useCallback} from 'react';
 import { adminListAdminAudit, getToken } from '../services/api'
 
 export default function AdminAudit(){
@@ -8,15 +8,15 @@ export default function AdminAudit(){
 
   const token = getToken()
 
-  async function load(){
+  const load = useCallback(async () => {
     setErr(null)
     try{
       const data = await adminListAdminAudit(limit)
       setRows(data || [])
     }catch(e){ setErr(String(e)) }
-  }
+  }, [limit])
 
-  useEffect(()=>{ if(token) load() }, [token, limit])
+  useEffect(()=>{ if(token) load() }, [token, load])
 
   if(!token){
     return <div style={{padding:12, border:'1px solid #eee', borderRadius:8}}>Login as admin to view audit.</div>
@@ -62,4 +62,3 @@ export default function AdminAudit(){
     </div>
   )
 }
-

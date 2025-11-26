@@ -1,4 +1,4 @@
-import React, { useEffect, useState, FormEvent } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 
 const AdminUsersPage = () => {
   const [users, setUsers] = useState([]);
@@ -12,13 +12,13 @@ const AdminUsersPage = () => {
     password: '',
   });
 
-  const authToken = localStorage.getItem('authToken');
-  const commonHeaders = {
+  const authToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+  const commonHeaders = useMemo(() => ({
     'Content-Type': 'application/json',
     ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-  };
+  }), [authToken]);
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -37,11 +37,11 @@ const AdminUsersPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [commonHeaders]);
 
   useEffect(() => {
     loadUsers();
-  }, []);
+  }, [loadUsers]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -98,10 +98,11 @@ const AdminUsersPage = () => {
         <h2>Create New User</h2>
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
+            <label htmlFor="admin-user-email" style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
               Email
             </label>
             <input
+              id="admin-user-email"
               type="email"
               name="email"
               value={form.email}
@@ -112,10 +113,11 @@ const AdminUsersPage = () => {
           </div>
 
           <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
+            <label htmlFor="admin-user-company" style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
               Company ID (optional)
             </label>
             <input
+              id="admin-user-company"
               type="text"
               name="company_id"
               value={form.company_id}
@@ -125,10 +127,11 @@ const AdminUsersPage = () => {
           </div>
 
           <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
+            <label htmlFor="admin-user-plan" style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
               Subscription Plan
             </label>
             <select
+              id="admin-user-plan"
               name="subscription_plan"
               value={form.subscription_plan}
               onChange={handleChange}
@@ -141,8 +144,9 @@ const AdminUsersPage = () => {
           </div>
 
           <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <label htmlFor="admin-user-is-admin" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <input
+                id="admin-user-is-admin"
                 type="checkbox"
                 name="is_admin"
                 checked={form.is_admin}
@@ -153,10 +157,11 @@ const AdminUsersPage = () => {
           </div>
 
           <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
+            <label htmlFor="admin-user-password" style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>
               Password (optional)
             </label>
             <input
+              id="admin-user-password"
               type="password"
               name="password"
               value={form.password}

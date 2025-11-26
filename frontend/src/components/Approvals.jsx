@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import * as api from '../services/api'
 import { useToast } from './Toast'
 
@@ -31,7 +31,7 @@ function isoWeekInfo(dateStr){
 
 export default function Approvals({ lang }) {
   const toast = useToast()
-  const t = lang==='pl' ? {
+  const t = useMemo(() => lang==='pl' ? {
     title:'Zatwierdzenia', pending:'Do zatwierdzenia', approve:'Zatwierdź', approved:'Zatwierdzone', exportCsv:'Eksport CSV', filter:'Filtruj', error:'Błąd', empty:'Brak pozycji', approveSuccess:'Zatwierdzono', approveFailed:'Nie udało się zatwierdzić', exportFailed:'Błąd eksportu',
     weeklyPending:'Tygodniówkowe (oczekujące)',
     weeklyApproved:'Tygodniówkowe (zatwierdzone)',
@@ -40,7 +40,9 @@ export default function Approvals({ lang }) {
     noPending:'Brak pozycji',
     exportPending:'Eksport zaległych',
     apply:'Filtruj',
-    allEmployees:'Wszyscy pracownicy'
+    allEmployees:'Wszyscy pracownicy',
+    approveSelected:'Zatwierdź zaznaczone',
+    approvedToggle:'Pokaż zatwierdzone tygodnie'
   } : {
     title:'Approvals', pending:'Pending approvals', approve:'Approve', approved:'Approved', exportCsv:'Export CSV', filter:'Filter', error:'Error', empty:'Nothing to approve', approveSuccess:'Approved', approveFailed:'Approval failed', exportFailed:'Export failed',
     weeklyPending:'Weekly (pending)',
@@ -50,8 +52,10 @@ export default function Approvals({ lang }) {
     noPending:'Nothing pending',
     exportPending:'Export pending',
     apply:'Apply',
-    allEmployees:'All employees'
-  }
+    allEmployees:'All employees',
+    approveSelected:'Approve selected',
+    approvedToggle:'Show approved weeks'
+  }, [lang])
   const [rows, setRows] = useState([])
   const [selected, setSelected] = useState({})
   const [loading, setLoading] = useState(false)
@@ -63,7 +67,7 @@ export default function Approvals({ lang }) {
   const [showApprovedWeekly, setShowApprovedWeekly] = useState(false)
   const [approvedRows, setApprovedRows] = useState([])
 
-  async function load(){
+  const load = useCallback(async () => {
     try{
       setLoading(true)
       const data = await api.getPendingTimesheets({ fromDate: fromDate || undefined, toDate: toDate || undefined, empId: filterEmpId || undefined })
@@ -71,28 +75,29 @@ export default function Approvals({ lang }) {
       setSelected({})
     }catch(e){ setError(String(e)) }
     finally{ setLoading(false) }
-  }
+  }, [filterEmpId, fromDate, toDate])
 
-  async function loadEmployees(){
+  const loadEmployees = useCallback(async () => {
     try{
       const data = await api.getEmployees()
       setEmployees(data || [])
     }catch(e){ /* ignore */ }
-  }
+  }, [])
 
-  useEffect(()=>{ load(); loadEmployees() }, [])
+  useEffect(()=>{ load(); loadEmployees() }, [load, loadEmployees])
 
   useEffect(()=>{
-    (async () => {
-      if (showApprovedWeekly){
-        try{
-          setLoading(true)
-          const data = await api.getTimesheetsFiltered({ fromDate: fromDate || undefined, toDate: toDate || undefined, empId: filterEmpId || undefined, approved: true })
-          setApprovedRows(data || [])
-        }catch(e){ /* ignore */ }
-        finally{ setLoading(false) }
-      }
+    if (!showApprovedWeekly) return
+    let cancelled = false
+    ;(async () => {
+      try{
+        setLoading(true)
+        const data = await api.getTimesheetsFiltered({ fromDate: fromDate || undefined, toDate: toDate || undefined, empId: filterEmpId || undefined, approved: true })
+        if (!cancelled) setApprovedRows(data || [])
+      }catch(e){ /* ignore */ }
+      finally{ if(!cancelled) setLoading(false) }
     })()
+    return () => { cancelled = true }
   }, [showApprovedWeekly, fromDate, toDate, filterEmpId])
 
   const weekly = useMemo(()=>{
@@ -109,93 +114,48 @@ export default function Approvals({ lang }) {
     return Array.from(map.values()).sort((a,b)=> a.week_start.localeCompare(b.week_start))
   }, [rows, approvedRows, showApprovedWeekly])
 
-  async function approveSelected(){
-    const ids = Object.keys(selected).filter(k => selected[k]).map(Number)
-    if (ids.length === 0) return
-    if (!confirm(`Approve ${ids.length} entries?`)) return
-    try{
-      setLoading(true)
-      for (const id of ids){
-        // eslint-disable-next-line no-await-in-loop
-        await api.approveTimesheet(id)
-      }
-      await load()
-      toast.show(t.approveSuccess)
-    }catch(e){
-      toast.show(`${t.approveFailed}: ${e.message}`, 'error')
-    }finally{ setLoading(false) }
-  }
+  const approveSelected = useCallback(async () => {
+     const ids = Object.keys(selected).filter(k => selected[k]).map(Number)
+     if (ids.length === 0) return
+     if (!window.confirm(`Approve ${ids.length} entries?`)) return
+     try{
+       setLoading(true)
+       await Promise.all(ids.map(id => api.approveTimesheet(id)))
+       await load()
+       toast.show(t.approveSuccess)
+     }catch(e){
+       toast.show(`${t.approveFailed}: ${e.message}`, 'error')
+     }finally{ setLoading(false) }
+  }, [load, selected, t.approveFailed, t.approveSuccess, toast])
 
-  async function handleApprove(ts_id){
-    try {
-      await api.approveTimesheet(ts_id)
-      toast.show(t.approveSuccess)
-      await load()
-    } catch(e){
-      toast.show(`${t.approveFailed}: ${e.message}`, 'error')
-    }
-  }
+  const approveWeek = useCallback(async (info) => {
+     if (!window.confirm(`Approve all pending entries for ${info.week_label}?`)) return
+     try{
+       setLoading(true)
+       await Promise.all(info.rows.map(r => api.approveTimesheet(r.ts_id)))
+       await load()
+       toast.show(t.approveSuccess)
+     }catch(e){
+       toast.show(`${t.approveFailed}: ${e.message}`, 'error')
+     }finally{ setLoading(false) }
+  }, [load, t.approveFailed, t.approveSuccess, toast])
 
-  async function handleApproveAll(ids){
-    try {
-      for(const id of ids){
-        // eslint-disable-next-line no-await-in-loop
-        await api.approveTimesheet(id)
-      }
-      toast.show(t.approveSuccess)
-      await load()
-    } catch(e){
-      toast.show(`${t.approveFailed}: ${e.message}`, 'error')
-    }
-  }
-
-  async function handleExport(){
-    try {
-      const blob = await api.exportApprovalsCSV()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'approvals.csv'
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(url)
-    } catch(e){
-      toast.show(`${t.exportFailed}: ${e.message}`, 'error')
-    }
-  }
-
-  async function exportPending(){
-    try{
-      const blob = await api.exportTimesheetsCSV({ fromDate: fromDate || undefined, toDate: toDate || undefined, empId: filterEmpId || undefined, pending: true })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      const name = `pending_${fromDate || ''}_${toDate || ''}${filterEmpId?`_${filterEmpId}`:''}.csv`.replace(/__+/g,'_')
-      a.download = name
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(url)
-    }catch(e){
-      toast.show(`${t.exportFailed}: ${e.message}`, 'error')
-    }
-  }
-
-  async function approveWeek(info){
-    if (!confirm(`Approve all pending entries for ${info.week_label}?`)) return
-    try{
-      setLoading(true)
-      for (const r of info.rows){
-        // eslint-disable-next-line no-await-in-loop
-        await api.approveTimesheet(r.ts_id)
-      }
-      await load()
-      toast.show(t.approveSuccess)
-    }catch(e){
-      toast.show(`${t.approveFailed}: ${e.message}`, 'error')
-    }finally{ setLoading(false) }
-  }
+  const exportPending = useCallback(async () => {
+     try {
+       const blob = await api.exportTimesheetsCSV({ fromDate: fromDate || undefined, toDate: toDate || undefined, empId: filterEmpId || undefined, pending: true })
+       const url = URL.createObjectURL(blob)
+       const a = document.createElement('a')
+       a.href = url
+       const name = `pending_${fromDate || ''}_${toDate || ''}${filterEmpId?`_${filterEmpId}`:''}.csv`.replace(/__+/g,'_')
+       a.download = name
+       document.body.appendChild(a)
+       a.click()
+       a.remove()
+       URL.revokeObjectURL(url)
+     }catch(e){
+       toast.show(`${t.exportFailed}: ${e.message}`, 'error')
+     }
+  }, [filterEmpId, fromDate, t.exportFailed, toast, toDate])
 
   return (
     <div style={{ padding: 8, border: '1px solid #e1e4e8', borderRadius: 6, background: '#fff' }}>
@@ -211,11 +171,11 @@ export default function Approvals({ lang }) {
         <input type="date" value={toDate} onChange={e=> setToDate(e.target.value)} />
         <label style={{ display:'inline-flex', alignItems:'center', gap:4 }}>
           <input type="checkbox" checked={showApprovedWeekly} onChange={e=> setShowApprovedWeekly(e.target.checked)} />
-          Approved weekly
+          {t.approvedToggle}
         </label>
-        <button onClick={load} disabled={loading}>{t.apply}</button>
-        <button onClick={exportPending} disabled={loading}>{t.exportPending}</button>
-        <button onClick={approveSelected} disabled={loading}>{t.approveSelected}</button>
+        <button type="button" onClick={load} disabled={loading}>{t.apply}</button>
+        <button type="button" onClick={exportPending} disabled={loading}>{t.exportPending}</button>
+        <button type="button" onClick={approveSelected} disabled={loading}>{t.approveSelected}</button>
       </div>
       {error && <div style={{ color:'crimson', marginTop: 6 }}>{error}</div>}
 
@@ -229,12 +189,12 @@ export default function Approvals({ lang }) {
                 {w.week_label} — {w.total_hours}h — {w.rows.length} entries
                 {!showApprovedWeekly && (
                   <>
-                    <button className="btn" style={{ marginLeft: 8 }} onClick={()=>approveWeek(w)} disabled={loading}>{t.approveWeek}</button>
-                    <button className="btn" style={{ marginLeft: 8 }} onClick={()=>{
-                      const sel = {}
-                      for (const r of w.rows) sel[r.ts_id] = true
-                      setSelected(prev => ({ ...prev, ...sel }))
-                    }}>{t.selectWeek}</button>
+                    <button type="button" className="btn" style={{ marginLeft: 8 }} onClick={()=>approveWeek(w)} disabled={loading}>{t.approveWeek}</button>
+                    <button type="button" className="btn" style={{ marginLeft: 8 }} onClick={()=>{
+                         const sel = {}
+                         for (const r of w.rows) sel[r.ts_id] = true
+                         setSelected(prev => ({ ...prev, ...sel }))
+                       }}>{t.selectWeek}</button>
                   </>
                 )}
               </li>
@@ -248,11 +208,11 @@ export default function Approvals({ lang }) {
           <thead>
             <tr>
               <th><input type="checkbox" onChange={e=>{
-                const v = e.target.checked
-                const all = {}
-                for(const r of rows) all[r.ts_id] = v
-                setSelected(all)
-              }}/></th>
+                 const v = e.target.checked
+                 const all = {}
+                 for(const r of rows) all[r.ts_id] = v
+                 setSelected(all)
+               }}/></th>
               <th>TS ID</th>
               <th>Date</th>
               <th>Employee</th>

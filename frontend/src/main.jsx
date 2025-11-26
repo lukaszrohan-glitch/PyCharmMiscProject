@@ -1,5 +1,5 @@
-import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { StrictMode } from 'react';
 import './styles/theme.css';
 import App from './App';
 import './styles.css';
@@ -16,7 +16,11 @@ import { ToastProvider } from './components/Toast';
   try {
     document.documentElement.classList.remove('dark');
     localStorage.setItem('theme', 'light');
-  } catch (_) {}
+  } catch (err) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Unable to enforce light theme:', err)
+    }
+  }
 })();
 
 // Bootstrap React app
@@ -27,7 +31,7 @@ if (!rootElement) {
 
 const root = ReactDOM.createRoot(rootElement);
 root.render(
-  <React.StrictMode>
+  <StrictMode>
     <AuthProvider>
       <ToastProvider>
         <ErrorBoundary>
@@ -35,5 +39,5 @@ root.render(
         </ErrorBoundary>
       </ToastProvider>
     </AuthProvider>
-  </React.StrictMode>
+  </StrictMode>
 );

@@ -1,4 +1,5 @@
-import React from 'react'
+import { useEffect } from 'react'
+import ModalOverlay from './ModalOverlay'
 import styles from './HelpPanel.module.css'
 
 export default function HelpPanel({ lang = 'pl', onClose, onOpenGuide }) {
@@ -39,15 +40,25 @@ export default function HelpPanel({ lang = 'pl', onClose, onOpenGuide }) {
     onClose?.()
   }
 
+  useEffect(() => {
+    const handler = (event) => {
+      if (event.key === 'Escape') {
+        onClose?.()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [onClose])
+
   return (
-    <div className={styles.backdrop} role="dialog" aria-modal="true" aria-label={t.title}>
-      <div className={styles.panel}>
+    <ModalOverlay ariaLabel={t.title} onClose={onClose} className={styles.backdrop}>
+      <div className={styles.panel} role="document">
         <div className={styles.header}>
           <div className={styles.titleBlock}>
             <div className={styles.title}>{t.title}</div>
             <div className={styles.subtitle}>{t.subtitle}</div>
           </div>
-          <button className={styles.closeBtn} onClick={onClose} title={t.close}>
+          <button type="button" className={styles.closeBtn} onClick={onClose} title={t.close}>
             ×
           </button>
         </div>
@@ -82,6 +93,6 @@ export default function HelpPanel({ lang = 'pl', onClose, onOpenGuide }) {
           <span className={styles.chip}>{t.esc}</span>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   )
 }

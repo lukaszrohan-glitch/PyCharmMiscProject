@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { adminListKeys, adminCreateKey, adminDeleteKey, adminRotateKey, setAdminKey } from './services/api'
 import { useToast } from './components/Toast'
 import { useI18n } from './i18n.jsx'
@@ -20,13 +20,13 @@ export default function AdminPage({ onClose }){
     if(adminKeyInput) setAdminKey(adminKeyInput)
   }, [adminKeyInput])
 
-  async function refresh(){
-    setErr(null)
-    try{
-      const rows = await adminListKeys()
-      setKeys(rows)
-    }catch(e){ setErr(String(e)) }
-  }
+  const refresh = useCallback(async () => {
+     setErr(null)
+     try{
+       const rows = await adminListKeys()
+       setKeys(rows)
+     }catch(e){ setErr(String(e)) }
+  }, [])
 
   async function createKey(e){
     e.preventDefault(); setErr(null); setMsg(null)
@@ -67,7 +67,7 @@ export default function AdminPage({ onClose }){
     }
   }
 
-  useEffect(()=>{ refresh() }, [])
+  useEffect(()=>{ refresh() }, [refresh])
 
   return (
     <div className="page page--admin">
@@ -92,10 +92,16 @@ export default function AdminPage({ onClose }){
               <button type="submit">{t('create')}</button>
             </form>
             {lastKey && (
-              <div style={{marginTop:8, padding:8, background:'#fff', border:'1px dashed #6c6c6c', borderRadius:6}} title="Click to copy" onClick={()=>{navigator.clipboard.writeText(lastKey); toast.show(t('copied_new_key'))}}>
+              <button
+                type="button"
+                className="btn-ghost"
+                style={{marginTop:8, padding:8, background:'#fff', border:'1px dashed #6c6c6c', borderRadius:6, textAlign:'left'}}
+                title={t('click_to_copy', 'Click to copy')}
+                onClick={()=>{navigator.clipboard.writeText(lastKey); toast.show(t('copied_new_key'))}}
+              >
                 <strong>{t('new_key_once')}</strong>
                 <div style={{marginTop:4}}><code>{lastKey}</code></div>
-              </div>
+              </button>
             )}
           </div>
           {msg && <div className="notice notice--success">{msg}</div>}

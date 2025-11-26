@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import * as api from '../services/api'
 import { useToast } from './Toast'
 
@@ -23,7 +23,6 @@ export default function Orders({ lang }) {
   const [importing, setImporting] = useState(false)
   const [importFile, setImportFile] = useState(null)
   const [importResult, setImportResult] = useState(null)
-  const [validation, setValidation] = useState({ order: null, customer: null })
   const [autoSuggestion, setAutoSuggestion] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
   const [lastCreatedId, setLastCreatedId] = useState(null)
@@ -87,53 +86,7 @@ export default function Orders({ lang }) {
     importFailed:'Import failed'
   };
 
-  useEffect(() => {
-    loadOrders()
-    loadCustomers()
-    fetchAutoSuggestion()
-  }, [])
-
-  useEffect(() => {
-    if (!showForm) {
-      setValidation({ order: null, customer: null })
-      setFieldErrors({})
-      return
-    }
-    if (!formData.order_id) return
-    validateOrder(formData.order_id, formData.customer_id)
-  }, [formData.order_id, formData.customer_id, showForm])
-
-  const fetchAutoSuggestion = async () => {
-    try {
-      const hint = await api.suggestOrderId()?.catch(() => null)
-      if (hint?.order_id) {
-        setAutoSuggestion(hint.order_id)
-        return
-      }
-      const fallback = await api.validateOrderId('__probe__').catch(() => null)
-      if (fallback?.suggested_next) setAutoSuggestion(fallback.suggested_next)
-    } catch {}
-  }
-
-  const validateOrder = async (orderId, customerId) => {
-    if (!orderId) return
-    try {
-      await api.validateOrderId(orderId, customerId)
-      setValidation({ order: { ok: true }, customer: customerId ? { ok: true } : null })
-      setFieldErrors((prev) => ({ ...prev, order_id: undefined, customer_id: undefined }))
-    } catch (err) {
-      const detail = err?.message || 'Validation error'
-      if (detail.includes('Order already exists')) {
-        setFieldErrors((prev) => ({ ...prev, order_id: lang === 'pl' ? 'Zamówienie już istnieje' : 'Order already exists' }))
-        setValidation((prev) => ({ ...prev, order: { ok: false, reason: detail } }))
-      } else if (detail.includes('Customer not found')) {
-        setFieldErrors((prev) => ({ ...prev, customer_id: lang === 'pl' ? 'Klient nie istnieje' : 'Customer not found' }))
-        setValidation((prev) => ({ ...prev, customer: { ok: false, reason: detail } }))
-      }
-    }
-  }
-
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     try {
       setLoading(true)
       const data = await api.getOrders()
@@ -143,16 +96,60 @@ export default function Orders({ lang }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const loadCustomers = async () => {
+  const loadCustomers = useCallback(async () => {
     try {
       const data = await api.getCustomers()
       setCustomers(data || [])
     } catch (err) {
       console.error('Failed to load customers:', err)
     }
-  }
+  }, [])
+
+  const fetchAutoSuggestion = useCallback(async () => {
+    try {
+      const hint = await api.suggestOrderId()?.catch(() => null)
+      if (hint?.order_id) {
+        setAutoSuggestion(hint.order_id)
+        return
+      }
+      const fallback = await api.validateOrderId('__probe__').catch(() => null)
+      if (fallback?.suggested_next) setAutoSuggestion(fallback.suggested_next)
+    } catch (err) {
+      console.warn('Auto ID suggestion failed:', err)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadOrders()
+    loadCustomers()
+    fetchAutoSuggestion()
+  }, [loadOrders, loadCustomers, fetchAutoSuggestion])
+
+  useEffect(() => {
+     if (!showForm) {
+       setFieldErrors({})
+       return
+     }
+     if (!formData.order_id) return
+     validateOrder(formData.order_id, formData.customer_id)
+  }, [formData.order_id, formData.customer_id, showForm, validateOrder])
+
+  const validateOrder = useCallback(async (orderId, customerId) => {
+    if (!orderId) return
+    try {
+      await api.validateOrderId(orderId, customerId)
+      setFieldErrors((prev) => ({ ...prev, order_id: undefined, customer_id: undefined }))
+    } catch (err) {
+      const detail = err?.message || 'Validation error'
+      if (detail.includes('Order already exists')) {
+        setFieldErrors((prev) => ({ ...prev, order_id: lang === 'pl' ? 'Zamówienie już istnieje' : 'Order already exists' }))
+      } else if (detail.includes('Customer not found')) {
+        setFieldErrors((prev) => ({ ...prev, customer_id: lang === 'pl' ? 'Klient nie istnieje' : 'Customer not found' }))
+      }
+    }
+  }, [lang])
 
   const handleAddClick = () => {
     setEditingOrder(null)
@@ -260,19 +257,25 @@ export default function Orders({ lang }) {
       <div className="orders-header">
         <h2>{t.title}</h2>
         <div className="header-actions stack-mobile">
-          <button className="btn" onClick={handleExport}>{lang==='pl' ? 'Eksport CSV' : 'Export CSV'}</button>
-          <button className="btn" onClick={() => { setImporting(true); setImportResult(null); setImportFile(null); }}>
+          <button className="btn btn-primary" type="button" onClick={handleExport}>{lang==='pl' ? 'Eksport CSV' : 'Export CSV'}</button>
+          <button className="btn" type="button" onClick={() => { setImporting(true); setImportResult(null); setImportFile(null); }}>
             {lang==='pl' ? 'Import CSV' : 'Import CSV'}
           </button>
-          <button className="btn btn-primary" onClick={handleAddClick}>{t.add}</button>
+          <button className="btn btn-primary" type="button" onClick={handleAddClick}>{t.add}</button>
         </div>
       </div>
       {importing && (
-        <div className="modal-overlay" onClick={() => setImporting(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
+        <>
+          <button
+            type="button"
+            className="modal-overlay"
+            aria-label={t.cancel}
+            onClick={() => setImporting(false)}
+          />
+          <div className="modal" role="dialog" aria-modal="true">
             <div className="modal-header">
               <h3>{lang==='pl' ? 'Import zamówień' : 'Import orders'}</h3>
-              <button className="close-btn" onClick={() => setImporting(false)}>×</button>
+              <button type="button" className="close-btn" onClick={() => setImporting(false)}>×</button>
             </div>
             <div className="form">
               <input
@@ -281,7 +284,7 @@ export default function Orders({ lang }) {
                 onChange={e => setImportFile(e.target.files?.[0] || null)}
               />
               <div className="form-actions" style={{marginTop:'1rem'}}>
-                <button className="btn btn-primary" disabled={!importFile} onClick={handleImportSubmit}>
+                <button className="btn btn-primary" type="button" disabled={!importFile} onClick={handleImportSubmit}>
                   {lang==='pl' ? 'Wyślij' : 'Upload'}
                 </button>
                 <button className="btn" type="button" onClick={() => setImporting(false)}>{t.cancel}</button>
@@ -293,17 +296,23 @@ export default function Orders({ lang }) {
               )}
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {error && <div className="error-message">{t.error}: {error}</div>}
 
       {showForm && (
-        <div className="modal-overlay" onClick={() => setShowForm(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
+        <>
+          <button
+            type="button"
+            className="modal-overlay"
+            aria-label={t.cancel}
+            onClick={() => setShowForm(false)}
+          />
+          <div className="modal" role="dialog" aria-modal="true">
             <div className="modal-header">
               <h3>{editingOrder ? t.edit : t.add}</h3>
-              <button className="close-btn" onClick={() => setShowForm(false)}>×</button>
+              <button type="button" className="close-btn" onClick={() => setShowForm(false)}>×</button>
             </div>
             <form onSubmit={handleSubmit} className="form order-form-grid">
               <div className="notice" role="status" aria-live="polite">
@@ -386,7 +395,7 @@ export default function Orders({ lang }) {
               </div>
             </form>
           </div>
-        </div>
+        </>
       )}
 
       <div className="table-container">
@@ -415,8 +424,8 @@ export default function Orders({ lang }) {
                   <td>{order.due_date || '-'}</td>
                   <td>{order.contact_person || '-'}</td>
                   <td>
-                    <button className="btn-sm btn-edit" onClick={() => handleEditClick(order)}>{t.edit}</button>
-                    <button className="btn-sm btn-danger" onClick={() => handleDeleteClick(order.order_id)}>{t.delete}</button>
+                    <button type="button" className="btn-sm btn-edit" onClick={() => handleEditClick(order)}>{t.edit}</button>
+                    <button type="button" className="btn-sm btn-danger" onClick={() => handleDeleteClick(order.order_id)}>{t.delete}</button>
                   </td>
                 </tr>
               ))}
@@ -426,29 +435,4 @@ export default function Orders({ lang }) {
       </div>
     </div>
   );
-}
-
-function InlineClientEditor({ lang, customer, onSaved }){
-  const toast = useToast()
-  const [form, setForm] = React.useState({ name: customer.name||'', address: customer.address||'', email: customer.email||'', contact_person: customer.contact_person||'' })
-  const [saving, setSaving] = React.useState(false)
-  async function save(){
-    setSaving(true)
-    try { await api.updateCustomer(customer.customer_id, form); onSaved && onSaved() } catch(e) {
-      toast.show((lang==='pl'?'Błąd: ':'Error: ')+e.message, 'error')
-    } finally {
-      setSaving(false)
-    }
-  }
-  return (
-    <div style={{display:'grid', gap:6}}>
-      <label>{lang==='pl'?'Nazwa':'Name'}<input value={form.name} onChange={e=>setForm({...form, name:e.target.value})} /></label>
-      <label>{lang==='pl'?'Adres':'Address'}<input value={form.address} onChange={e=>setForm({...form, address:e.target.value})} /></label>
-      <label>Email<input type="email" value={form.email} onChange={e=>setForm({...form, email:e.target.value})} /></label>
-      <label>{lang==='pl'?'Osoba kontaktowa':'Point of contact'}<input value={form.contact_person} onChange={e=>setForm({...form, contact_person:e.target.value})} /></label>
-      <div>
-        <button type="button" className="btn btn-sm" disabled={saving} onClick={save}>{lang==='pl'?'Zapisz':'Save'}</button>
-      </div>
-    </div>
-  )
 }

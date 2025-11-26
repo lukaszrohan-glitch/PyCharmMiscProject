@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import {useState, useEffect} from 'react';
 import * as api from '../services/api';
 import { useToast } from './Toast';
 
@@ -77,6 +77,20 @@ export default function Products({ lang }) {
     }
   };
 
+  const closeForm = () => {
+    setShowForm(false)
+    setEditingProduct(null)
+    setFormData({
+      product_id: '',
+      name: '',
+      unit: 'pcs',
+      std_cost: '',
+      price: '',
+      vat_rate: '23',
+      make_or_buy: 'Make'
+    })
+  }
+
   const handleAddClick = () => {
     setEditingProduct(null);
     setFormData({
@@ -126,7 +140,7 @@ export default function Products({ lang }) {
         await api.createProduct(formData);
         toast.show(lang==='pl'?'Produkt dodany':'Product added');
       }
-      resetForm();
+      closeForm();
       loadProducts();
     } catch (err) {
       toast.show(`${t.saveFailed}: ${err.message}`, 'error');
@@ -150,11 +164,19 @@ export default function Products({ lang }) {
       {error && <div className="error-message">{t.error}: {error}</div>}
 
       {showForm && (
-        <div className="modal-overlay" onClick={() => setShowForm(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
+        <>
+          <button
+            type="button"
+            className="modal-overlay"
+            onClick={closeForm}
+            aria-label="Close"
+          />
+          <div className="modal" role="dialog" aria-modal="true">
             <div className="modal-header">
               <h3>{editingProduct ? t.edit : t.add}</h3>
-              <button className="close-btn" onClick={() => setShowForm(false)}>×</button>
+              <button type="button" className="close-btn" onClick={closeForm} aria-label="Close">
+                ×
+              </button>
             </div>
             <form onSubmit={handleSubmit} className="form">
               <div className="form-group">
@@ -231,11 +253,11 @@ export default function Products({ lang }) {
               </div>
               <div className="form-actions">
                 <button type="submit" className="btn btn-primary">{t.save}</button>
-                <button type="button" className="btn" onClick={() => setShowForm(false)}>{t.cancel}</button>
+                <button type="button" className="btn" onClick={closeForm}>{t.cancel}</button>
               </div>
             </form>
           </div>
-        </div>
+        </>
       )}
 
       <div className="table-container">

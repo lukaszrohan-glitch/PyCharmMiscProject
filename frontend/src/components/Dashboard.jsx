@@ -1,4 +1,3 @@
-import React from 'react';
 import styles from '../App.module.css';
 import RotatingQuotes from './RotatingQuotes';
 
@@ -79,9 +78,14 @@ const IconFinance = () => (
 )
 
 export default function Dashboard({ lang, setCurrentView }) {
-  const handleCardClick = (view) => {
-    setCurrentView(view);
-  };
+  const cards = [
+    { view: 'orders', icon: <IconOrders />, title: lang === 'pl' ? 'Zamówienia' : 'Orders', text: lang === 'pl' ? 'Zarządzaj zamówieniami klientów' : 'Manage customer orders' },
+    { view: 'clients', icon: <IconClients />, title: lang === 'pl' ? 'Klienci' : 'Clients', text: lang === 'pl' ? 'Zarządzaj klientami' : 'Manage customers' },
+    { view: 'inventory', icon: <IconWarehouse />, title: lang === 'pl' ? 'Magazyn' : 'Inventory', text: lang === 'pl' ? 'Kontroluj stany magazynowe' : 'Control inventory levels' },
+    { view: 'timesheets', icon: <IconTimesheets />, title: lang === 'pl' ? 'Czas pracy' : 'Timesheets', text: lang === 'pl' ? 'Monitoruj czas pracowników' : 'Monitor employee time' },
+    { view: 'reports', icon: <IconReports />, title: lang === 'pl' ? 'Raporty' : 'Reports', text: lang === 'pl' ? 'Analizuj wyniki działalności' : 'Analyze business results' },
+    { view: 'financials', icon: <IconFinance />, title: lang === 'pl' ? 'Finanse' : 'Financials', text: lang === 'pl' ? 'Przegląd finansów zamówień' : 'Order financial overview' }
+  ]
 
   return (
     <>
@@ -90,73 +94,18 @@ export default function Dashboard({ lang, setCurrentView }) {
       </div>
 
       <div className={styles.cards}>
-        <div className={styles.card} onClick={() => handleCardClick('orders')}>
-          <div className={styles.cardIcon}><IconOrders /></div>
-          <h3 className={styles.cardTitle}>
-            {lang === 'pl' ? 'Zamówienia' : 'Orders'}
-          </h3>
-          <p className={styles.cardText}>
-            {lang === 'pl'
-              ? 'Zarządzaj zamówieniami klientów'
-              : 'Manage customer orders'}
-          </p>
-        </div>
-
-        <div className={styles.card} onClick={() => handleCardClick('clients')}>
-          <div className={styles.cardIcon}><IconClients /></div>
-          <h3 className={styles.cardTitle}>
-            {lang === 'pl' ? 'Klienci' : 'Clients'}
-          </h3>
-          <p className={styles.cardText}>
-            {lang === 'pl' ? 'Zarządzaj klientami' : 'Manage customers'}
-          </p>
-        </div>
-
-        <div className={styles.card} onClick={() => handleCardClick('inventory')}>
-          <div className={styles.cardIcon}><IconWarehouse /></div>
-          <h3 className={styles.cardTitle}>
-            {lang === 'pl' ? 'Magazyn' : 'Inventory'}
-          </h3>
-          <p className={styles.cardText}>
-            {lang === 'pl'
-              ? 'Kontroluj stany magazynowe'
-              : 'Control inventory levels'}
-          </p>
-        </div>
-
-        <div className={styles.card} onClick={() => handleCardClick('timesheets')}>
-          <div className={styles.cardIcon}><IconTimesheets /></div>
-          <h3 className={styles.cardTitle}>
-            {lang === 'pl' ? 'Czas pracy' : 'Timesheets'}
-          </h3>
-          <p className={styles.cardText}>
-            {lang === 'pl'
-              ? 'Monitoruj czas pracowników'
-              : 'Monitor employee time'}
-          </p>
-        </div>
-
-        <div className={styles.card} onClick={() => handleCardClick('reports')}>
-          <div className={styles.cardIcon}><IconReports /></div>
-          <h3 className={styles.cardTitle}>
-            {lang === 'pl' ? 'Raporty' : 'Reports'}
-          </h3>
-          <p className={styles.cardText}>
-            {lang === 'pl'
-              ? 'Analizuj wyniki działalności'
-              : 'Analyze business results'}
-          </p>
-        </div>
-
-        <div className={styles.card} onClick={() => handleCardClick('financials')}>
-          <div className={styles.cardIcon}><IconFinance /></div>
-          <h3 className={styles.cardTitle}>
-            {lang === 'pl' ? 'Finanse' : 'Financials'}
-          </h3>
-          <p className={styles.cardText}>
-            {lang === 'pl' ? 'Przegląd finansów zamówień' : 'Order financial overview'}
-          </p>
-        </div>
+        {cards.map(card => (
+          <button
+            key={card.view}
+            type="button"
+            className={styles.card}
+            onClick={() => setCurrentView(card.view)}
+          >
+            <div className={styles.cardIcon}>{card.icon}</div>
+            <h3 className={styles.cardTitle}>{card.title}</h3>
+            <p className={styles.cardText}>{card.text}</p>
+          </button>
+        ))}
       </div>
       <div className={styles.status}>
         <div className={styles.statusBadge}>
