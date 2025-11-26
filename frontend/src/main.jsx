@@ -1,3 +1,4 @@
+// Railway rebuild trigger: 2025-11-26T10:50:00Z - Force fresh build
 import ReactDOM from 'react-dom/client';
 import { StrictMode } from 'react';
 import './styles/theme.css';
