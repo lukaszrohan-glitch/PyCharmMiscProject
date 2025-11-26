@@ -22,9 +22,9 @@ export default function Inventory({ lang }) {
   const [importing, setImporting] = useState(false)
   const [importFile, setImportFile] = useState(null)
   const [importResult, setImportResult] = useState(null)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [reasonFilter, setReasonFilter] = useState('all')
-  const [showBalanceView, setShowBalanceView] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterReason, setFilterReason] = useState('all')
+  const [sortBy, setSortBy] = useState('date')
 
   const t = lang === 'pl' ? {
     title: 'Magazyn',
@@ -91,6 +91,37 @@ export default function Inventory({ lang }) {
     }
     return code;
   }
+
+  // Filter and sort logic
+  const filteredInventory = inventory
+    .filter(item => {
+      // Search filter
+      const query = searchQuery.toLowerCase();
+      const matchesSearch = !query ||
+        item.txn_id?.toLowerCase().includes(query) ||
+        item.product_id?.toLowerCase().includes(query) ||
+        item.lot?.toLowerCase().includes(query) ||
+        item.location?.toLowerCase().includes(query);
+
+      // Reason filter
+      const matchesReason = filterReason === 'all' || item.reason === filterReason;
+
+      return matchesSearch && matchesReason;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'txn_id':
+          return (a.txn_id || '').localeCompare(b.txn_id || '');
+        case 'product':
+          return (a.product_id || '').localeCompare(b.product_id || '');
+        case 'qty':
+          return (b.qty_change || 0) - (a.qty_change || 0);
+        case 'date':
+        default:
+          // Assuming txn_date exists or using txn_id as fallback
+          return (b.txn_date || b.txn_id || '').localeCompare(a.txn_date || a.txn_id || '');
+      }
+    });
 
   useEffect(() => {
     loadInventory();
@@ -335,9 +366,50 @@ export default function Inventory({ lang }) {
 
       {error && <div className="error-message">{t.error}: {error}</div>}
 
+      {/* Filter Bar */}
+      <div className="filter-bar">
+        <div className="search-box">
+          <input
+            type="text"
+            className="search-input"
+            placeholder={lang === 'pl' ? 'Szukaj po ID transakcji, produkcie...' : 'Search by Txn ID, Product...'}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div className="filter-controls">
+          <select
+            className="filter-select"
+            value={filterReason}
+            onChange={(e) => setFilterReason(e.target.value)}
+          >
+            <option value="all">{lang === 'pl' ? 'Wszystkie powody' : 'All Reasons'}</option>
+            <option value="PO">{lang === 'pl' ? 'Zamówienie zakupu' : 'Purchase Order'}</option>
+            <option value="WO">{lang === 'pl' ? 'Zlecenie produkcji' : 'Work Order'}</option>
+            <option value="Sale">{lang === 'pl' ? 'Sprzedaż' : 'Sale'}</option>
+            <option value="Adjust">{lang === 'pl' ? 'Korekta' : 'Adjustment'}</option>
+          </select>
+          <select
+            className="filter-select"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+          >
+            <option value="date">{lang === 'pl' ? 'Data' : 'Date'}</option>
+            <option value="txn_id">{lang === 'pl' ? 'ID transakcji' : 'Txn ID'}</option>
+            <option value="product">{lang === 'pl' ? 'Produkt' : 'Product'}</option>
+            <option value="qty">{lang === 'pl' ? 'Ilość' : 'Quantity'}</option>
+          </select>
+        </div>
+      </div>
+
       <div className="table-container">
-        {inventory.length === 0 ? (
-          <p className="empty-message">{t.noItems}</p>
+        {filteredInventory.length === 0 ? (
+          <p className="empty-message">
+            {searchQuery || filterReason !== 'all'
+              ? (lang === 'pl' ? 'Brak wyników dla wybranych filtrów' : 'No results for selected filters')
+              : t.noItems
+            }
+          </p>
         ) : (
           <table className="data-table">
             <thead>
@@ -352,11 +424,13 @@ export default function Inventory({ lang }) {
               </tr>
             </thead>
             <tbody>
-              {inventory.map(item => (
+              {filteredInventory.map(item => (
                 <tr key={item.txn_id}>
                   <td>{item.txn_id}</td>
                   <td>{item.product_id}</td>
-                  <td>{item.qty_change}</td>
+                  <td className={item.qty_change > 0 ? 'qty-positive' : 'qty-negative'}>
+                    {item.qty_change > 0 ? '+' : ''}{item.qty_change}
+                  </td>
                   <td>{reasonLabel(item.reason)}</td>
                   <td>{item.lot || '—'}</td>
                   <td>{item.location || '—'}</td>
