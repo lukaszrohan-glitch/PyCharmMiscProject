@@ -25,7 +25,7 @@
   justify-content: space-between;
   gap: var(--spacing-4);
   font-family: var(--font-sans);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base); /* Increased from sm to base for better readability */
 }
 
 .leftCluster {
@@ -75,7 +75,7 @@
 }
 
 .logoText {
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-lg); /* Increased from base to lg for prominence */
   font-weight: var(--font-weight-semibold);
   letter-spacing: -0.02em;
   color: var(--text-primary);
@@ -83,7 +83,7 @@
 
 .logoTagline {
   margin-top: 2px;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm); /* Increased from xs to sm for readability */
   font-style: italic;
   color: var(--text-secondary);
 }
@@ -115,10 +115,10 @@
   border: 0;
   background: transparent;
   color: var(--text-primary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base); /* Increased from sm to base */
   cursor: pointer;
   transition: background var(--transition-fast);
-  min-height: 36px; /* Touch target */
+  min-height: 40px; /* Increased from 36px for better touch targets */
 }
 
 .menuTrigger:hover {
@@ -182,10 +182,10 @@
   border-radius: var(--radius-md);
   background: transparent;
   color: var(--text-primary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base); /* Increased from sm to base */
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
-  min-height: 36px; /* Touch target */
+  min-height: 40px; /* Increased from 36px for better touch targets */
 }
 
 .menuItem:hover {
@@ -222,11 +222,11 @@
   background: var(--bg-secondary);
   color: var(--text-primary);
   padding: var(--spacing-2) var(--spacing-4);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base); /* Increased from sm to base */
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition: all var(--transition-fast);
-  min-height: 36px; /* Touch target */
+  min-height: 40px; /* Increased from 36px for better touch targets */
 }
 
 .homeBtn:hover {
@@ -253,13 +253,13 @@
 
 .searchInput {
   width: 100%;
-  height: 36px; /* Touch target */
+  height: 40px; /* Increased from 36px */
   border-radius: var(--radius-full);
   border: 1px solid var(--border-primary);
   background: var(--bg-tertiary);
   color: var(--text-primary);
   padding: 0 var(--spacing-4);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base); /* Increased from sm to base */
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
 }
 
@@ -303,10 +303,10 @@
   background: transparent;
   cursor: pointer;
   color: var(--text-primary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base); /* Increased from sm to base */
   transition: background var(--transition-fast);
   text-align: left;
-  min-height: 40px; /* Touch target */
+  min-height: 42px; /* Increased from 40px for more comfortable touch targets */
 }
 
 .searchItem:hover {
@@ -348,12 +348,12 @@
 
 .langBtn,
 .langActive {
-  min-width: 32px;
-  min-height: 32px; /* Touch target */
+  min-width: 36px;
+  min-height: 36px; /* Increased from 32px for better touch targets */
   padding: var(--spacing-1) var(--spacing-3);
   border-radius: var(--radius-full);
   border: 0;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm); /* Increased from xs to sm */
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   background: transparent;

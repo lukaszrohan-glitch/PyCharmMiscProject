@@ -36,29 +36,47 @@ export default function HelpPanel({ lang = 'pl', onClose, onOpenGuide }) {
       ]
 
   const openGuide = () => {
-    onOpenGuide?.()
     onClose?.()
+    onOpenGuide?.()
   }
 
   useEffect(() => {
     const handler = (event) => {
       if (event.key === 'Escape') {
+        event.preventDefault()
+        event.stopPropagation()
         onClose?.()
       }
     }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
+    window.addEventListener('keydown', handler, true)
+    return () => window.removeEventListener('keydown', handler, true)
   }, [onClose])
+
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose?.()
+    }
+  }
 
   return (
     <ModalOverlay ariaLabel={t.title} onClose={onClose} className={styles.backdrop}>
-      <div className={styles.panel} role="document">
+      <div className={styles.panel} role="document" onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
           <div className={styles.titleBlock}>
             <div className={styles.title}>{t.title}</div>
             <div className={styles.subtitle}>{t.subtitle}</div>
           </div>
-          <button type="button" className={styles.closeBtn} onClick={onClose} title={t.close}>
+          <button
+            type="button"
+            className={styles.closeBtn}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onClose?.()
+            }}
+            title={t.close}
+            aria-label={t.close}
+          >
             ×
           </button>
         </div>

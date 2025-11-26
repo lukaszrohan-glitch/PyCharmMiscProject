@@ -61,20 +61,16 @@ export default function App() {
   }, []);
 
   const handleLogout = () => {
+    console.log('Logging out...');
     logout?.();
     setCurrentView('dashboard');
   };
 
   const handleSettings = () => {
+    console.log('Opening Settings modal...');
     setSettingsOpen(true);
   };
 
-  const jumpToFinance = (orderId) => {
-    setInitialFinanceOrderId(orderId);
-    setIsTransitioning(true);
-    setCurrentView('financials');
-    setTimeout(() => setIsTransitioning(false), 300);
-  };
 
   // Smooth view transitions
   const handleViewChange = (newView) => {
