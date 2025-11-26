@@ -71,6 +71,11 @@ export default function App() {
     setSettingsOpen(true);
   };
 
+  // Jump to finance view with specific order
+  const jumpToFinance = (orderId) => {
+    setInitialFinanceOrderId(orderId);
+    handleViewChange('financials');
+  };
 
   // Smooth view transitions
   const handleViewChange = (newView) => {
