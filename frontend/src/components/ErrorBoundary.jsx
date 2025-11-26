@@ -35,7 +35,8 @@ class ErrorBoundary extends Component {
 
   render() {
     if (this.state.error) {
-      const isDev = process.env.NODE_ENV === 'development';
+      // Always show error details for easier debugging (can be removed later)
+      const showDetails = true; // process.env.NODE_ENV === 'development';
 
       return (
         <div
@@ -76,8 +77,9 @@ class ErrorBoundary extends Component {
               lub wrócić na stronę główną.
             </p>
 
-            {isDev && (
+            {showDetails && (
               <details
+                open
                 style={{ marginTop: '20px', fontSize: '14px' }}
               >
                 <summary
@@ -85,9 +87,10 @@ class ErrorBoundary extends Component {
                     cursor: 'pointer',
                     fontWeight: 'bold',
                     marginBottom: '10px',
+                    color: '#856404',
                   }}
                 >
-                  Szczegóły techniczne (tylko tryb deweloperski)
+                  Szczegóły błędu / Error Details
                 </summary>
                 <pre
                   style={{
@@ -102,7 +105,9 @@ class ErrorBoundary extends Component {
                     wordWrap: 'break-word',
                   }}
                 >
-                  {this.state.error.toString()}
+                  <strong>Error:</strong> {this.state.error.toString()}
+                  {'\n\n'}
+                  <strong>Component Stack:</strong>
                   {this.state.errorInfo?.componentStack}
                 </pre>
               </details>
