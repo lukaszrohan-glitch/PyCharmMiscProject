@@ -22,6 +22,9 @@ export default function Inventory({ lang }) {
   const [importing, setImporting] = useState(false)
   const [importFile, setImportFile] = useState(null)
   const [importResult, setImportResult] = useState(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [reasonFilter, setReasonFilter] = useState('all')
+  const [showBalanceView, setShowBalanceView] = useState(false)
 
   const t = lang === 'pl' ? {
     title: 'Magazyn',

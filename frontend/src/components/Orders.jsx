@@ -26,6 +26,9 @@ export default function Orders({ lang }) {
   const [autoSuggestion, setAutoSuggestion] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
   const [lastCreatedId, setLastCreatedId] = useState(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [sortBy, setSortBy] = useState('date')
   const selectedCustomer = customers.find(c => String(c.customer_id) === String(formData.customer_id))
 
   const t = lang === 'pl' ? {
@@ -407,40 +410,114 @@ export default function Orders({ lang }) {
         </>
       )}
 
+      {/* Search and Filter Controls */}
+      <div className="filter-bar">
+        <div className="search-box">
+          <input
+            type="text"
+            placeholder={lang === 'pl' ? 'Szukaj zamówienia lub klienta...' : 'Search order or customer...'}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+          />
+        </div>
+        <div className="filter-controls">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="filter-select"
+          >
+            <option value="all">{lang === 'pl' ? 'Wszystkie statusy' : 'All statuses'}</option>
+            <option value="New">{lang === 'pl' ? 'Nowe' : 'New'}</option>
+            <option value="Planned">{lang === 'pl' ? 'Planowane' : 'Planned'}</option>
+            <option value="InProd">{lang === 'pl' ? 'W produkcji' : 'In Production'}</option>
+            <option value="Done">{lang === 'pl' ? 'Zakończone' : 'Done'}</option>
+            <option value="Invoiced">{lang === 'pl' ? 'Zafakturowane' : 'Invoiced'}</option>
+          </select>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="filter-select"
+          >
+            <option value="date">{lang === 'pl' ? 'Sortuj: Data' : 'Sort: Date'}</option>
+            <option value="id">{lang === 'pl' ? 'Sortuj: ID' : 'Sort: ID'}</option>
+            <option value="customer">{lang === 'pl' ? 'Sortuj: Klient' : 'Sort: Customer'}</option>
+            <option value="status">{lang === 'pl' ? 'Sortuj: Status' : 'Sort: Status'}</option>
+          </select>
+        </div>
+      </div>
+
       <div className="table-container">
-        {orders.length === 0 ? (
-          <p className="empty-message">{t.noOrders}</p>
-        ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>{t.orderId}</th>
-                <th>{t.customer}</th>
-                <th>{t.status}</th>
-                <th>{t.dueDate}</th>
-                <th>{t.contact}</th>
-                <th>{t.actions}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map(order => (
-                <tr key={order.order_id}>
-                  <td>{order.order_id}</td>
-                  <td>{(() => { const c = customers.find(x => String(x.customer_id)===String(order.customer_id)); return c ? c.name : order.customer_id })()}</td>
-                  <td><span className={`status-badge ${order.status.toLowerCase()}`}>
-                    {lang==='pl' ? (order.status==='Planned'?'Planowane': order.status==='InProd'?'W produkcji': order.status==='Done'?'Zakończone': order.status) : (order.status==='InProd'?'In Production': order.status==='Done'?'Completed' : order.status)}
-                  </span></td>
-                  <td>{order.due_date || '-'}</td>
-                  <td>{order.contact_person || '-'}</td>
-                  <td>
-                    <button type="button" className="btn-sm btn-edit" onClick={() => handleEditClick(order)}>{t.edit}</button>
-                    <button type="button" className="btn-sm btn-danger" onClick={() => handleDeleteClick(order.order_id)}>{t.delete}</button>
-                  </td>
+        {(() => {
+          // Apply filtering
+          let filtered = orders.filter(order => {
+            const matchesSearch = !searchTerm ||
+              order.order_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              order.customer_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              customers.find(c => String(c.customer_id) === String(order.customer_id))?.name.toLowerCase().includes(searchTerm.toLowerCase());
+
+            const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+
+            return matchesSearch && matchesStatus;
+          });
+
+          // Apply sorting
+          filtered = filtered.sort((a, b) => {
+            switch (sortBy) {
+              case 'id':
+                return a.order_id.localeCompare(b.order_id);
+              case 'customer':
+                return a.customer_id.localeCompare(b.customer_id);
+              case 'status':
+                return a.status.localeCompare(b.status);
+              case 'date':
+              default:
+                if (!a.due_date && !b.due_date) return 0;
+                if (!a.due_date) return 1;
+                if (!b.due_date) return -1;
+                return new Date(b.due_date) - new Date(a.due_date);
+            }
+          });
+
+          return filtered.length === 0 ? (
+            <p className="empty-message">
+              {searchTerm || statusFilter !== 'all'
+                ? (lang === 'pl' ? 'Brak wyników' : 'No results found')
+                : t.noOrders
+              }
+            </p>
+          ) : (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>{t.orderId}</th>
+                  <th>{t.customer}</th>
+                  <th>{t.status}</th>
+                  <th>{t.dueDate}</th>
+                  <th>{t.contact}</th>
+                  <th>{t.actions}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+              </thead>
+              <tbody>
+                {filtered.map(order => (
+                  <tr key={order.order_id}>
+                    <td>{order.order_id}</td>
+                    <td>{(() => { const c = customers.find(x => String(x.customer_id)===String(order.customer_id)); return c ? c.name : order.customer_id })()}</td>
+                    <td><span className={`status-badge ${order.status.toLowerCase()}`}>
+                      {lang==='pl' ? (order.status==='Planned'?'Planowane': order.status==='InProd'?'W produkcji': order.status==='Done'?'Zakończone': order.status) : (order.status==='InProd'?'In Production': order.status==='Done'?'Completed' : order.status)}
+                    </span></td>
+                    <td>{order.due_date || '-'}</td>
+                    <td>{order.contact_person || '-'}</td>
+                    <td>
+                      <button type="button" className="btn-sm btn-edit" onClick={() => handleEditClick(order)}>{t.edit}</button>
+                      <button type="button" className="btn-sm btn-danger" onClick={() => handleDeleteClick(order.order_id)}>{t.delete}</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          );
+        })()}
       </div>
     </div>
   );

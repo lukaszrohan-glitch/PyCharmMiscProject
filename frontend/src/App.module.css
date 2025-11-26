@@ -19,8 +19,119 @@
 
 .hero {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
   padding: 2rem 1rem;
+}
+
+/* Dashboard Statistics */
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.statCard {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.statCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.statValue {
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.statLabel {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statSubtext {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-top: 0.25rem;
+  font-weight: 500;
+}
+
+/* Recent Activity */
+.recentActivity {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.sectionTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 1rem 0;
+}
+
+.activityList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.activityItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  background: #fafafa;
+  text-align: left;
+  width: 100%;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.activityItem:hover {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  transform: translateX(4px);
+}
+
+.activityInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.activityTitle {
+  font-weight: 600;
+  color: #111827;
+  font-size: 0.9375rem;
+}
+
+.activityMeta {
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.activityDate {
+  font-size: 0.8125rem;
+  color: #9ca3af;
+  font-weight: 500;
 }
 
 .heroTitle {

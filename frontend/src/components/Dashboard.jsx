@@ -1,5 +1,8 @@
+import { useState, useEffect } from 'react';
+import * as api from '../services/api';
 import styles from '../App.module.css';
 import RotatingQuotes from './RotatingQuotes';
+import { useI18n } from '../i18n';
 
 const IconOrders = () => (
   <svg viewBox="0 0 24 24" width="32" height="32" aria-hidden="true">
@@ -78,6 +81,75 @@ const IconFinance = () => (
 )
 
 export default function Dashboard({ lang, setCurrentView }) {
+  const { t } = useI18n();
+  const [stats, setStats] = useState({
+    ordersTotal: 0,
+    ordersNew: 0,
+    clientsTotal: 0,
+    inventoryItems: 0,
+    lowStockCount: 0
+  });
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      try {
+        // Load statistics
+        const [orders, clients, inventory] = await Promise.all([
+          api.getOrders(),
+          api.getCustomers(),
+          api.getInventory()
+        ]);
+
+        const newOrders = orders.filter(o => o.status === 'New').length;
+
+        const lowStock = inventory.filter(item =>
+          item.balance !== null && item.balance < 10
+        ).length;
+
+        setStats({
+          ordersTotal: orders.length,
+          ordersNew: newOrders,
+          clientsTotal: clients.length,
+          inventoryItems: inventory.length,
+          lowStockCount: lowStock
+        });
+
+        // Get recent 5 orders
+        setRecentOrders(orders.slice(0, 5));
+      } catch (err) {
+        console.error('Dashboard data load failed:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboardData();
+  }, []);
+
+  const statCards = [
+    {
+      label: t?.dashboard?.totalOrders || (lang === 'pl' ? 'Zamówienia' : 'Total Orders'),
+      value: stats.ordersTotal,
+      subtext: `${stats.ordersNew} ${lang === 'pl' ? 'nowych' : 'new'}`,
+      color: '#0891b2'
+    },
+    {
+      label: t?.dashboard?.clients || (lang === 'pl' ? 'Klienci' : 'Clients'),
+      value: stats.clientsTotal,
+      color: '#8b5cf6'
+    },
+    {
+      label: t?.dashboard?.inventory || (lang === 'pl' ? 'Produkty' : 'Inventory'),
+      value: stats.inventoryItems,
+      subtext: stats.lowStockCount > 0
+        ? `${stats.lowStockCount} ${lang === 'pl' ? 'niski stan' : 'low stock'}`
+        : null,
+      color: stats.lowStockCount > 0 ? '#ef4444' : '#10b981'
+    }
+  ];
+
   const cards = [
     { view: 'orders', icon: <IconOrders />, title: lang === 'pl' ? 'Zamówienia' : 'Orders', text: lang === 'pl' ? 'Zarządzaj zamówieniami klientów' : 'Manage customer orders' },
     { view: 'clients', icon: <IconClients />, title: lang === 'pl' ? 'Klienci' : 'Clients', text: lang === 'pl' ? 'Zarządzaj klientami' : 'Manage customers' },
@@ -85,7 +157,7 @@ export default function Dashboard({ lang, setCurrentView }) {
     { view: 'timesheets', icon: <IconTimesheets />, title: lang === 'pl' ? 'Czas pracy' : 'Timesheets', text: lang === 'pl' ? 'Monitoruj czas pracowników' : 'Monitor employee time' },
     { view: 'reports', icon: <IconReports />, title: lang === 'pl' ? 'Raporty' : 'Reports', text: lang === 'pl' ? 'Analizuj wyniki działalności' : 'Analyze business results' },
     { view: 'financials', icon: <IconFinance />, title: lang === 'pl' ? 'Finanse' : 'Financials', text: lang === 'pl' ? 'Przegląd finansów zamówień' : 'Order financial overview' }
-  ]
+  ];
 
   return (
     <>
@@ -93,6 +165,53 @@ export default function Dashboard({ lang, setCurrentView }) {
         <RotatingQuotes lang={lang} />
       </div>
 
+      {/* Statistics Row */}
+      {!loading && (
+        <div className={styles.statsRow}>
+          {statCards.map((stat, idx) => (
+            <div key={idx} className={styles.statCard}>
+              <div className={styles.statValue} style={{ color: stat.color }}>
+                {stat.value}
+              </div>
+              <div className={styles.statLabel}>{stat.label}</div>
+              {stat.subtext && (
+                <div className={styles.statSubtext}>{stat.subtext}</div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Recent Activity */}
+      {!loading && recentOrders.length > 0 && (
+        <div className={styles.recentActivity}>
+          <h3 className={styles.sectionTitle}>
+            {lang === 'pl' ? 'Ostatnie zamówienia' : 'Recent Orders'}
+          </h3>
+          <div className={styles.activityList}>
+            {recentOrders.map(order => (
+              <button
+                key={order.order_id}
+                type="button"
+                className={styles.activityItem}
+                onClick={() => setCurrentView('orders')}
+              >
+                <div className={styles.activityInfo}>
+                  <span className={styles.activityTitle}>{order.order_id}</span>
+                  <span className={styles.activityMeta}>
+                    {order.customer_id} • {order.status}
+                  </span>
+                </div>
+                <span className={styles.activityDate}>
+                  {order.due_date || order.created_at}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Quick Actions */}
       <div className={styles.cards}>
         {cards.map(card => (
           <button
@@ -107,6 +226,7 @@ export default function Dashboard({ lang, setCurrentView }) {
           </button>
         ))}
       </div>
+
       <div className={styles.status}>
         <div className={styles.statusBadge}>
           <span className={styles.statusDot}></span>
