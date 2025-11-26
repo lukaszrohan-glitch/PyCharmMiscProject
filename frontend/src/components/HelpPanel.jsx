@@ -52,15 +52,10 @@ export default function HelpPanel({ lang = 'pl', onClose, onOpenGuide }) {
     return () => window.removeEventListener('keydown', handler, true)
   }, [onClose])
 
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose?.()
-    }
-  }
 
   return (
     <ModalOverlay ariaLabel={t.title} onClose={onClose} className={styles.backdrop}>
-      <div className={styles.panel} role="document" onClick={(e) => e.stopPropagation()}>
+      <div className={styles.panel} role="document">
         <div className={styles.header}>
           <div className={styles.titleBlock}>
             <div className={styles.title}>{t.title}</div>

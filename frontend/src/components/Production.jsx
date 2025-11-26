@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import * as api from '../services/api'
 import { useI18n } from '../i18n'
 import { useToast } from '../lib/toastContext'
@@ -10,7 +10,7 @@ export default function Production() {
   const { t } = useI18n()
   const { addToast } = useToast()
   const [orders, setOrders] = useState([])
-  const [products, setProducts] = useState([])
+  const [_products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState('schedule') // schedule, bom, capacity
   const [selectedOrder, setSelectedOrder] = useState(null)

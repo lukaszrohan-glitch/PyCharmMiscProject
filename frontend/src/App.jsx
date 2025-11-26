@@ -63,13 +63,11 @@ export default function App() {
   }, []);
 
   const handleLogout = () => {
-    console.log('Logging out...');
     logout?.();
     setCurrentView('dashboard');
   };
 
   const handleSettings = () => {
-    console.log('Opening Settings modal...');
     setSettingsOpen(true);
   };
 
