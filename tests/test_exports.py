@@ -3,6 +3,7 @@ Basic smoke tests for CSV export endpoints.
 These tests verify that endpoints return 200 and produce valid CSV with proper encoding.
 Tests use a fresh temporary SQLite DB (may be empty), so we verify structure rather than data.
 """
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -21,7 +22,7 @@ def test_inventory_export(app_client):
 
     # Verify response is not empty and can be decoded as UTF-8
     assert len(r.content) > 0
-    content = r.content.decode('utf-8-sig', errors='replace')
+    content = r.content.decode("utf-8-sig", errors="replace")
 
     # CSV should have header row with expected columns (or be empty with just "null" for empty DB)
     # Accept both cases: populated CSV or minimal response for empty DB
@@ -39,7 +40,7 @@ def test_orders_export(app_client):
 
     # Verify response is not empty and can be decoded
     assert len(r.content) > 0
-    content = r.content.decode('utf-8-sig', errors='replace')
+    content = r.content.decode("utf-8-sig", errors="replace")
     assert len(content) > 0
 
 
@@ -56,6 +57,5 @@ def test_timesheets_export_requires_auth(app_client):
 
         # Verify content can be decoded
         assert len(r.content) > 0
-        content = r.content.decode('utf-8-sig', errors='replace')
+        content = r.content.decode("utf-8-sig", errors="replace")
         assert len(content) > 0
-

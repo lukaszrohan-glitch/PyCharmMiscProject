@@ -14,6 +14,8 @@ tags_metadata = [
     {"name": "Import", "description": "Data import utilities."},
     {"name": "Auth", "description": "User authentication and profile."},
     {"name": "Admin", "description": "Admin operations (JWT)."},
-    {"name": "Admin/API Keys", "description": "Admin API keys management (x-admin-key)."},
+    {
+        "name": "Admin/API Keys",
+        "description": "Admin API keys management (x-admin-key).",
+    },
 ]
-

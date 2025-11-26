@@ -2,12 +2,14 @@
 Cursor-based pagination utilities for efficient large dataset handling.
 Supports both offset-based and cursor-based pagination.
 """
+
 from typing import List, Dict, Any, Optional, Tuple
 from pydantic import BaseModel
 
 
 class PaginationParams(BaseModel):
     """Pagination parameters."""
+
     limit: int = 50  # Default page size
     cursor: Optional[str] = None  # Cursor for next page
     offset: Optional[int] = None  # Alternative: offset-based pagination
@@ -15,6 +17,7 @@ class PaginationParams(BaseModel):
 
 class PaginatedResponse(BaseModel):
     """Standard paginated response format."""
+
     data: List[Dict[str, Any]]
     pagination: Dict[str, Any]
     total: Optional[int] = None
@@ -26,7 +29,7 @@ def paginate_query(
     order_by: str = "id",
     limit: int = 50,
     cursor: Optional[str] = None,
-    cursor_field: str = "id"
+    cursor_field: str = "id",
 ) -> Tuple[str, List[Any]]:
     """
     Add pagination to SQL query using cursor-based pagination.
@@ -62,10 +65,7 @@ def paginate_query(
 
 
 def build_pagination_response(
-    rows: List[Dict],
-    limit: int,
-    cursor_field: str = "id",
-    total: Optional[int] = None
+    rows: List[Dict], limit: int, cursor_field: str = "id", total: Optional[int] = None
 ) -> PaginatedResponse:
     """
     Build paginated response from query results.
@@ -93,17 +93,14 @@ def build_pagination_response(
             "limit": limit,
             "has_more": has_more,
             "next_cursor": next_cursor,
-            "count": len(data)
+            "count": len(data),
         },
-        total=total
+        total=total,
     )
 
 
 def offset_paginate_query(
-    base_query: str,
-    params: List[Any],
-    limit: int = 50,
-    offset: int = 0
+    base_query: str, params: List[Any], limit: int = 50, offset: int = 0
 ) -> Tuple[str, List[Any]]:
     """
     Simple offset-based pagination (less efficient for large offsets).
@@ -130,4 +127,3 @@ def get_page_number_from_offset(offset: int, limit: int) -> int:
 def get_offset_from_page(page: int, limit: int) -> int:
     """Calculate offset from page number."""
     return (page - 1) * limit
-

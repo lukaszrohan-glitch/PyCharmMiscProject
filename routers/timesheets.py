@@ -23,7 +23,9 @@ router = APIRouter(tags=["Timesheets"])
 # -------------------------------------------------------------------
 
 
-@router.get("/api/timesheets", response_model=List[Timesheet], summary="List timesheets")
+@router.get(
+    "/api/timesheets", response_model=List[Timesheet], summary="List timesheets"
+)
 def timesheets_list(
     limit: Optional[int] = Query(None, ge=1, le=5000),
     offset: Optional[int] = Query(None, ge=0),
@@ -497,7 +499,9 @@ def timesheets_export_csv(
             "Content-Type": "text/csv; charset=utf-8",
         }
         mem.seek(0)
-        return StreamingResponse(mem, media_type="text/csv; charset=utf-8", headers=headers)
+        return StreamingResponse(
+            mem, media_type="text/csv; charset=utf-8", headers=headers
+        )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
@@ -612,7 +616,9 @@ def timesheets_export_summary_csv(
             "Content-Type": "text/csv; charset=utf-8",
         }
         mem.seek(0)
-        return StreamingResponse(mem, media_type="text/csv; charset=utf-8", headers=headers)
+        return StreamingResponse(
+            mem, media_type="text/csv; charset=utf-8", headers=headers
+        )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 

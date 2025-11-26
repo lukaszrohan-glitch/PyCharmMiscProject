@@ -168,6 +168,7 @@ except Exception:
 # Create helpful DB indexes (best-effort)
 try:
     from queries import SQL_CREATE_INDEXES
+
     execute(SQL_CREATE_INDEXES)
 except Exception:
     # Non-fatal: sqlite may ignore some clauses
@@ -185,6 +186,7 @@ def health():
 def health_api():
     return health()
 
+
 @app.get("/readyz", tags=["Health"], summary="Readiness probe (DB + migrations)")
 def readyz():
     try:
@@ -194,15 +196,28 @@ def readyz():
             try:
                 ver = fetch_one("SELECT version_num FROM alembic_version LIMIT 1")
                 if ver and ver.get("version_num"):
-                    return {"ready": True, "db": "sqlite", "alembic_version": ver.get("version_num")}
+                    return {
+                        "ready": True,
+                        "db": "sqlite",
+                        "alembic_version": ver.get("version_num"),
+                    }
             except Exception:
                 pass
-            core = fetch_one("SELECT name FROM sqlite_master WHERE type = 'table' AND name = %s", ("timesheets",))
+            core = fetch_one(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name = %s",
+                ("timesheets",),
+            )
             return {"ready": bool(core), "db": "sqlite", "alembic_version": None}
         else:
-            ver = fetch_one("SELECT version_num FROM alembic_version ORDER BY 1 DESC LIMIT 1")
+            ver = fetch_one(
+                "SELECT version_num FROM alembic_version ORDER BY 1 DESC LIMIT 1"
+            )
             if ver and ver.get("version_num"):
-                return {"ready": True, "db": "postgres", "alembic_version": ver.get("version_num")}
+                return {
+                    "ready": True,
+                    "db": "postgres",
+                    "alembic_version": ver.get("version_num"),
+                }
             return {"ready": False, "db": "postgres", "alembic_version": None}
     except Exception as e:
         return JSONResponse(status_code=503, content={"ready": False, "error": str(e)})
@@ -260,13 +275,13 @@ app.include_router(inventory_router)
 try:
     # Login endpoint: 5 attempts per minute
     for route in app.routes:
-        if hasattr(route, 'path') and route.path == "/api/auth/login":
+        if hasattr(route, "path") and route.path == "/api/auth/login":
             route.endpoint = limiter.limit("5/minute")(route.endpoint)
             app_logger.info("Applied rate limit to /api/auth/login: 5/minute")
 
     # Password reset request: 3 attempts per hour
     for route in app.routes:
-        if hasattr(route, 'path') and route.path == "/api/auth/request-reset":
+        if hasattr(route, "path") and route.path == "/api/auth/request-reset":
             route.endpoint = limiter.limit("3/hour")(route.endpoint)
             app_logger.info("Applied rate limit to /api/auth/request-reset: 3/hour")
 except Exception as e:
@@ -278,7 +293,9 @@ except Exception as e:
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
         status_code=422,
-        content=jsonable_encoder({"detail": "Validation Error", "errors": exc.errors()}),
+        content=jsonable_encoder(
+            {"detail": "Validation Error", "errors": exc.errors()}
+        ),
     )
 
 
@@ -308,7 +325,11 @@ if FRONTEND_DIST.exists():
     async def spa_root():
         index_file = FRONTEND_DIST / "index.html"
         if index_file.exists():
-            return FileResponse(index_file, headers=NO_CACHE_INDEX_HEADERS, media_type="text/html; charset=utf-8")
+            return FileResponse(
+                index_file,
+                headers=NO_CACHE_INDEX_HEADERS,
+                media_type="text/html; charset=utf-8",
+            )
         app_logger.error(f"Frontend index.html not found at {index_file}")
         raise HTTPException(
             status_code=500,
@@ -319,7 +340,11 @@ if FRONTEND_DIST.exists():
     async def spa_fallback(full_path: str):
         index_file = FRONTEND_DIST / "index.html"
         if index_file.exists():
-            return FileResponse(index_file, headers=NO_CACHE_INDEX_HEADERS, media_type="text/html; charset=utf-8")
+            return FileResponse(
+                index_file,
+                headers=NO_CACHE_INDEX_HEADERS,
+                media_type="text/html; charset=utf-8",
+            )
         app_logger.error(f"Frontend index.html not found at {index_file}")
         raise HTTPException(
             status_code=500,

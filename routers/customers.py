@@ -34,7 +34,11 @@ def customers_list(
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.get("/api/customers/{customer_id}", response_model=Optional[Customer], summary="Get customer by ID")
+@router.get(
+    "/api/customers/{customer_id}",
+    response_model=Optional[Customer],
+    summary="Get customer by ID",
+)
 def customer_get(customer_id: str):
     try:
         return fetch_one(
@@ -45,7 +49,12 @@ def customer_get(customer_id: str):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.post("/api/customers", response_model=Customer, status_code=201, summary="Create customer")
+@router.post(
+    "/api/customers",
+    response_model=Customer,
+    status_code=201,
+    summary="Create customer",
+)
 def create_customer(payload: CustomerCreate, _ok: bool = Depends(check_api_key)):
     try:
         existing = fetch_one(
@@ -79,8 +88,12 @@ def create_customer(payload: CustomerCreate, _ok: bool = Depends(check_api_key))
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.put("/api/customers/{customer_id}", response_model=Customer, summary="Update customer")
-def update_customer(customer_id: str, payload: CustomerUpdate, _ok: bool = Depends(check_api_key)):
+@router.put(
+    "/api/customers/{customer_id}", response_model=Customer, summary="Update customer"
+)
+def update_customer(
+    customer_id: str, payload: CustomerUpdate, _ok: bool = Depends(check_api_key)
+):
     try:
         updates = []
         params = []
@@ -96,7 +109,7 @@ def update_customer(customer_id: str, payload: CustomerUpdate, _ok: bool = Depen
         if payload.email is not None:
             updates.append("email = %s")
             params.append(payload.email)
-        if getattr(payload, 'contact_person', None) is not None:
+        if getattr(payload, "contact_person", None) is not None:
             updates.append("contact_person = %s")
             params.append(payload.contact_person)
         if not updates:
@@ -127,8 +140,11 @@ def delete_customer(customer_id: str, _ok: bool = Depends(check_api_key)):
 
 
 @router.post("/api/customers/import", summary="Import customers from CSV")
-def import_customers_csv(file: UploadFile = File(...), _ok: bool = Depends(check_api_key)):
+def import_customers_csv(
+    file: UploadFile = File(...), _ok: bool = Depends(check_api_key)
+):
     import csv, io
+
     try:
         content = file.file.read().decode("utf-8-sig")
     except Exception as exc:
@@ -176,24 +192,37 @@ def import_customers_csv(file: UploadFile = File(...), _ok: bool = Depends(check
     return {"created": created, "skipped": skipped, "errors": errors}
 
 
-def _readonly_dep(authorization=Header(None), x_api_key=Header(None), api_key: Optional[str] = None):
-    return check_api_key(authorization=authorization, x_api_key=x_api_key, api_key=api_key, allow_readonly=True)
+def _readonly_dep(
+    authorization=Header(None), x_api_key=Header(None), api_key: Optional[str] = None
+):
+    return check_api_key(
+        authorization=authorization,
+        x_api_key=x_api_key,
+        api_key=api_key,
+        allow_readonly=True,
+    )
 
 
 @router.get("/api/customers/export", summary="Export customers as CSV")
 def export_customers_csv(_ok: bool = Depends(_readonly_dep)):
     try:
-        rows = fetch_all(
-            "SELECT customer_id, name, nip, address, email, contact_person FROM customers ORDER BY customer_id",
-            None,
-        ) or []
+        rows = (
+            fetch_all(
+                "SELECT customer_id, name, nip, address, email, contact_person FROM customers ORDER BY customer_id",
+                None,
+            )
+            or []
+        )
         import csv, io
+
         buf = io.StringIO()
         writer = csv.writer(buf)
         header = ["customer_id", "name", "nip", "address", "email", "contact_person"]
         writer.writerow(header)
         for r in rows:
-            writer.writerow([r.get(col) if r.get(col) is not None else "" for col in header])
+            writer.writerow(
+                [r.get(col) if r.get(col) is not None else "" for col in header]
+            )
         csv_bytes = buf.getvalue().encode("utf-8-sig")
         mem = io.BytesIO(csv_bytes)
         mem.seek(0)

@@ -31,6 +31,7 @@ def ensure_table():
     """Create admin_audit table if missing. Works for both sqlite and Postgres."""
     try:
         from db import _get_pool
+
         pool = _get_pool()
         if pool is None:
             # sqlite path: simple TEXT columns
@@ -42,16 +43,29 @@ def ensure_table():
         pass
 
 
-def log_admin_event(event_type: str, event_by: Optional[str] = None, details: Optional[Dict[str, Any]] = None):
+def log_admin_event(
+    event_type: str,
+    event_by: Optional[str] = None,
+    details: Optional[Dict[str, Any]] = None,
+):
     try:
         from db import _get_pool
+
         pool = _get_pool()
         if pool is None:
             sql = "INSERT INTO admin_audit (event_type, event_by, event_time, details) VALUES (?, ?, datetime('now'), ?)"
-            execute(sql, (event_type, event_by, json.dumps(details) if details else None), returning=False)
+            execute(
+                sql,
+                (event_type, event_by, json.dumps(details) if details else None),
+                returning=False,
+            )
         else:
             sql = "INSERT INTO admin_audit (event_type, event_by, details) VALUES (%s, %s, %s)"
-            execute(sql, (event_type, event_by, json.dumps(details) if details else None), returning=True)
+            execute(
+                sql,
+                (event_type, event_by, json.dumps(details) if details else None),
+                returning=True,
+            )
     except Exception:
         # swallow errors to not break admin flows
         pass
@@ -60,9 +74,7 @@ def log_admin_event(event_type: str, event_by: Optional[str] = None, details: Op
 def list_admin_audit(limit: int = 100):
     try:
         return fetch_all(
-            "SELECT * FROM admin_audit ORDER BY audit_id DESC LIMIT %s",
-            (limit,)
+            "SELECT * FROM admin_audit ORDER BY audit_id DESC LIMIT %s", (limit,)
         )
     except Exception:
         return []
-

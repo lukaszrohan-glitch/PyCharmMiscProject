@@ -13,8 +13,10 @@ PSYCOPG2_AVAILABLE = False
 try:
     import psycopg  # type: ignore
     from psycopg.rows import dict_row  # type: ignore
+
     try:
         from psycopg_pool import ConnectionPool  # type: ignore
+
         PSYCOPG3_POOL = True
     except Exception:
         PSYCOPG3_POOL = False
@@ -24,6 +26,7 @@ except Exception:
         import psycopg2  # type: ignore
         from psycopg2.pool import SimpleConnectionPool  # type: ignore
         from psycopg2.extras import RealDictCursor  # type: ignore
+
         PSYCOPG2_AVAILABLE = True
     except Exception:
         pass
@@ -65,11 +68,18 @@ def _create_pool() -> Any:
     if os.getenv("FORCE_SQLITE") == "1":
         return None
     # If DATABASE_URL or PG_* configured, require psycopg2/psycopg
-    if DATABASE_URL or os.getenv("PG_HOST") or os.getenv("PG_DB") or os.getenv("PG_USER"):
+    if (
+        DATABASE_URL
+        or os.getenv("PG_HOST")
+        or os.getenv("PG_DB")
+        or os.getenv("PG_USER")
+    ):
         dsn = DATABASE_URL
 
         if not dsn:
-            raise RuntimeError("DATABASE_URL is empty but PG_* environment variables are set. Please set DATABASE_URL.")
+            raise RuntimeError(
+                "DATABASE_URL is empty but PG_* environment variables are set. Please set DATABASE_URL."
+            )
 
         if PG_SSLMODE and "sslmode=" not in dsn:
             dsn = _append_sslmode_to_url(dsn, PG_SSLMODE)
@@ -77,16 +87,24 @@ def _create_pool() -> Any:
             dsn = _append_sslmode_to_url(dsn, "require")
 
         connect_timeout = settings.DB_CONNECT_TIMEOUT
-        dsn_with_timeout = f"{dsn}?connect_timeout={connect_timeout}" if "?" not in dsn else f"{dsn}&connect_timeout={connect_timeout}"
+        dsn_with_timeout = (
+            f"{dsn}?connect_timeout={connect_timeout}"
+            if "?" not in dsn
+            else f"{dsn}&connect_timeout={connect_timeout}"
+        )
 
         if PSYCOPG3_AVAILABLE:
             # psycopg v3: prefer pool when available, else return DSN to connect per-use
             if PSYCOPG3_POOL:
-                return ConnectionPool(dsn_with_timeout, min_size=MINCONN, max_size=MAXCONN)
+                return ConnectionPool(
+                    dsn_with_timeout, min_size=MINCONN, max_size=MAXCONN
+                )
             return {"driver": "psycopg3", "dsn": dsn_with_timeout}
         if PSYCOPG2_AVAILABLE:
             return SimpleConnectionPool(MINCONN, MAXCONN, dsn=dsn_with_timeout)
-        raise RuntimeError("No Postgres driver available. Install psycopg[binary] or psycopg2-binary.")
+        raise RuntimeError(
+            "No Postgres driver available. Install psycopg[binary] or psycopg2-binary."
+        )
 
     return None
 
@@ -97,7 +115,9 @@ def _get_pool() -> Any:
         try:
             POOL = _create_pool()
         except Exception as exc:
-            raise RuntimeError("Failed to initialize DB connection pool: %s" % exc) from exc
+            raise RuntimeError(
+                "Failed to initialize DB connection pool: %s" % exc
+            ) from exc
     return POOL
 
 
@@ -121,7 +141,11 @@ def get_conn() -> Iterator[Any]:
             conn.close()
     else:
         # Postgres
-        if PSYCOPG3_AVAILABLE and isinstance(pool, dict) and pool.get("driver") == "psycopg3":
+        if (
+            PSYCOPG3_AVAILABLE
+            and isinstance(pool, dict)
+            and pool.get("driver") == "psycopg3"
+        ):
             # No pool available: connect on demand
             conn = psycopg.connect(pool.get("dsn"))  # type: ignore
             try:
@@ -147,7 +171,8 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
     """
     cur = conn.cursor()
     # Create customers, products, orders, order_lines, employees, timesheets, inventory, api_keys, api_key_audit, admin_audit
-    cur.executescript("""
+    cur.executescript(
+        """
     CREATE TABLE IF NOT EXISTS customers (
       customer_id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -257,39 +282,41 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
       max_users INTEGER,
       features TEXT
     );
-    """)
+    """
+    )
     # Insert minimal seed data if missing
     cur.execute(
         "INSERT OR IGNORE INTO customers(customer_id, name, nip, address, email) VALUES (?,?,?,?,?)",
-        ('CUST-ALFA', 'Alfa Sp. z o.o.', '1234567890', 'Warszawa', 'biuro@alfa.pl')
+        ("CUST-ALFA", "Alfa Sp. z o.o.", "1234567890", "Warszawa", "biuro@alfa.pl"),
     )
     cur.execute(
         "INSERT OR IGNORE INTO products(product_id, name, std_cost, price) VALUES (?,?,?,?)",
-        ('P-100', 'Gadzet A', 10, 30)
+        ("P-100", "Gadzet A", 10, 30),
     )
     cur.execute(
         "INSERT OR IGNORE INTO products(product_id, name, std_cost, price) VALUES (?,?,?,?)",
-        ('P-101', 'Komponent X', 2, 5)
+        ("P-101", "Komponent X", 2, 5),
     )
     cur.execute(
         "INSERT OR IGNORE INTO employees(emp_id, name, role, hourly_rate) VALUES (?,?,?,?)",
-        ('E-01', 'Jan Kowalski', 'Operator', 45.00)
+        ("E-01", "Jan Kowalski", "Operator", 45.00),
     )
     cur.execute(
         "INSERT OR IGNORE INTO orders(order_id, order_date, customer_id, status, due_date) VALUES (?,?,?,?,?)",
-        ('ORD-0001', None, 'CUST-ALFA', 'Planned', None)
+        ("ORD-0001", None, "CUST-ALFA", "Planned", None),
     )
     cur.execute(
         "INSERT OR IGNORE INTO order_lines(order_id, line_no, product_id, qty, unit_price, discount_pct) VALUES (?,?,?,?,?,?)",
-        ('ORD-0001', 1, 'P-100', 50, 30, 0.05)
+        ("ORD-0001", 1, "P-100", 50, 30, 0.05),
     )
     cur.execute(
         "INSERT OR IGNORE INTO inventory(txn_id, txn_date, product_id, qty_change, reason) VALUES (?,?,?,?,?)",
-        ('TXN-PO-1', None, 'P-101', 500, 'PO')
+        ("TXN-PO-1", None, "P-101", 500, "PO"),
     )
     conn.commit()
 
-    cur.executescript("""
+    cur.executescript(
+        """
     CREATE VIEW IF NOT EXISTS v_order_finance AS
     SELECT
       o.order_id,
@@ -316,8 +343,10 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
     LEFT JOIN order_lines ol ON o.order_id = ol.order_id
     LEFT JOIN products p ON ol.product_id = p.product_id
     GROUP BY o.order_id;
-    """)
-    cur.executescript("""
+    """
+    )
+    cur.executescript(
+        """
     CREATE VIEW IF NOT EXISTS v_shortages AS
     SELECT
       ol.order_id,
@@ -339,8 +368,10 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
         ELSE 0
       END AS shortage_qty
     FROM order_lines ol;
-    """)
-    cur.executescript("""
+    """
+    )
+    cur.executescript(
+        """
     CREATE VIEW IF NOT EXISTS v_planned_time AS
     SELECT
       o.order_id,
@@ -364,41 +395,44 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
     LEFT JOIN order_lines ol ON o.order_id = ol.order_id
     LEFT JOIN timesheets t ON o.order_id = t.order_id
     GROUP BY o.order_id;
-    """)
+    """
+    )
     # Insert minimal seed data for development views
     cur.execute(
         "INSERT OR IGNORE INTO orders(order_id, order_date, customer_id, status, due_date) VALUES (?,?,?,?,?)",
-        ('ORD-0002', None, 'CUST-ALFA', 'Planned', None)
+        ("ORD-0002", None, "CUST-ALFA", "Planned", None),
     )
     cur.execute(
         "INSERT OR IGNORE INTO order_lines(order_id, line_no, product_id, qty, unit_price, discount_pct) VALUES (?,?,?,?,?,?)",
-        ('ORD-0002', 1, 'P-100', 20, 30, 0.05)
+        ("ORD-0002", 1, "P-100", 20, 30, 0.05),
     )
     cur.execute(
         "INSERT OR IGNORE INTO order_lines(order_id, line_no, product_id, qty, unit_price, discount_pct) VALUES (?,?,?,?,?,?)",
-        ('ORD-0002', 2, 'P-101', 10, 5, 0)
+        ("ORD-0002", 2, "P-101", 10, 5, 0),
     )
     cur.execute(
         "INSERT OR IGNORE INTO timesheets(emp_id, ts_date, order_id, operation_no, hours) VALUES (?,?,?,?,?)",
-        ('E-01', None, 'ORD-0002', 1, 2)
+        ("E-01", None, "ORD-0002", 1, 2),
     )
     cur.execute(
         "INSERT OR IGNORE INTO inventory(txn_id, txn_date, product_id, qty_change, reason) VALUES (?,?,?,?,?)",
-        ('TXN-PO-2', None, 'P-100', 200, 'PO')
+        ("TXN-PO-2", None, "P-100", 200, "PO"),
     )
     cur.execute(
         "INSERT OR IGNORE INTO inventory(txn_id, txn_date, product_id, qty_change, reason) VALUES (?,?,?,?,?)",
-        ('TXN-PO-3', None, 'P-101', 50, 'PO')
+        ("TXN-PO-3", None, "P-101", 50, "PO"),
     )
     conn.commit()
 
-    cur.executescript("""
+    cur.executescript(
+        """
     CREATE TABLE IF NOT EXISTS order_id_seq (
       prefix TEXT PRIMARY KEY,
       last_suffix INTEGER NOT NULL DEFAULT 0
     );
     INSERT OR IGNORE INTO order_id_seq(prefix, last_suffix) VALUES ('ORD', 1);
-    """)
+    """
+    )
 
 
 def fetch_all(sql: str, params: Optional[Tuple] = None) -> List[dict]:
@@ -408,11 +442,13 @@ def fetch_all(sql: str, params: Optional[Tuple] = None) -> List[dict]:
         with get_conn() as conn:
             cur = conn.cursor()
             # translate %s placeholders (Postgres style) to ? for sqlite
-            sql_exec = sql.replace('%s', '?') if params else sql
+            sql_exec = sql.replace("%s", "?") if params else sql
             # Convert Decimal params to float for sqlite binding
             bind_params = params
             if params:
-                bind_params = tuple(float(p) if isinstance(p, Decimal) else p for p in params)
+                bind_params = tuple(
+                    float(p) if isinstance(p, Decimal) else p for p in params
+                )
             cur.execute(sql_exec, bind_params or ())
             rows = cur.fetchall()
             cur.close()
@@ -426,6 +462,7 @@ def fetch_all(sql: str, params: Optional[Tuple] = None) -> List[dict]:
                     return cur.fetchall()
             else:
                 from psycopg2.extras import RealDictCursor  # type: ignore
+
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:  # type: ignore
                     cur.execute(sql, params or ())
                     return cur.fetchall()
@@ -436,7 +473,7 @@ def fetch_one(sql: str, params: Optional[Tuple] = None) -> Optional[dict]:
     if pool is None:
         with get_conn() as conn:
             cur = conn.cursor()
-            sql_exec = sql.replace('%s', '?') if params else sql
+            sql_exec = sql.replace("%s", "?") if params else sql
             cur.execute(sql_exec, params or ())
             row = cur.fetchone()
             return dict(row) if row is not None else None
@@ -448,6 +485,7 @@ def fetch_one(sql: str, params: Optional[Tuple] = None) -> Optional[dict]:
                     return cur.fetchone()
             else:
                 from psycopg2.extras import RealDictCursor  # type: ignore
+
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:  # type: ignore
                     cur.execute(sql, params or ())
                     return cur.fetchone()
@@ -478,10 +516,12 @@ def execute(sql: str, params: Optional[Tuple] = None, returning: bool = False):
     if pool is None:
         with get_conn() as conn:
             cur = conn.cursor()
-            sql_exec = sql.replace('%s', '?') if params else sql
+            sql_exec = sql.replace("%s", "?") if params else sql
             bind_params = params
             if params:
-                bind_params = tuple(float(p) if isinstance(p, Decimal) else p for p in params)
+                bind_params = tuple(
+                    float(p) if isinstance(p, Decimal) else p for p in params
+                )
             cur.execute(sql_exec, bind_params or ())
             rows = _fetch_returning_rows(cur) if returning else None
             conn.commit()
@@ -494,6 +534,7 @@ def execute(sql: str, params: Optional[Tuple] = None, returning: bool = False):
                     return _fetch_returning_rows(cur) if returning else None
             else:
                 from psycopg2.extras import RealDictCursor  # type: ignore
+
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:  # type: ignore
                     cur.execute(sql, params or ())
                     if returning:
@@ -510,7 +551,7 @@ def init_db():
     if db_url:
         # PostgreSQL setup
         # ... existing code
-        
+
         # Use PostgreSQL syntax for table creation
         commands = [
             """
@@ -540,13 +581,13 @@ def init_db():
                 event_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 details JSONB
             )
-            """
+            """,
         ]
         # ... existing code
     else:
         # SQLite fallback
         # ... existing code
-        
+
         # Use SQLite syntax for table creation
         commands = [
             """
@@ -576,24 +617,30 @@ def init_db():
                 event_time TEXT DEFAULT CURRENT_TIMESTAMP,
                 details TEXT
             )
-            """
+            """,
         ]
         # ... existing code
 
 
-def next_order_id(prefix: str = 'ORD') -> str:
+def next_order_id(prefix: str = "ORD") -> str:
     pool = _get_pool()
     if pool is None:
         with get_conn() as conn:
             cur = conn.cursor()
-            cur.execute("SELECT last_suffix FROM order_id_seq WHERE prefix = ?", (prefix,))
+            cur.execute(
+                "SELECT last_suffix FROM order_id_seq WHERE prefix = ?", (prefix,)
+            )
             row = cur.fetchone()
             suffix = (row[0] if row else 0) + 1
-            cur.execute("INSERT INTO order_id_seq(prefix, last_suffix) VALUES(?, ?) ON CONFLICT(prefix) DO UPDATE SET last_suffix=excluded.last_suffix", (prefix, suffix))
+            cur.execute(
+                "INSERT INTO order_id_seq(prefix, last_suffix) VALUES(?, ?) ON CONFLICT(prefix) DO UPDATE SET last_suffix=excluded.last_suffix",
+                (prefix, suffix),
+            )
             conn.commit()
             return f"{prefix}-{suffix:04d}"
     # Postgres path - rely on SQL_NEXT_ORDER_ID
     from queries import SQL_NEXT_ORDER_ID
+
     row = fetch_one(SQL_NEXT_ORDER_ID)
-    suffix = row.get('next_suffix') if row else '0001'
+    suffix = row.get("next_suffix") if row else "0001"
     return f"{prefix}-{suffix}"

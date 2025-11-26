@@ -18,9 +18,7 @@ def employees_list(
     offset: Optional[int] = Query(None, ge=0),
 ):
     try:
-        sql = (
-            "SELECT emp_id, name, role, hourly_rate FROM employees ORDER BY emp_id"
-        )
+        sql = "SELECT emp_id, name, role, hourly_rate FROM employees ORDER BY emp_id"
         params: List = []
         if limit is not None:
             sql += " LIMIT %s"
@@ -33,7 +31,11 @@ def employees_list(
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.get("/api/employees/{emp_id}", response_model=Optional[Employee], summary="Get employee by ID")
+@router.get(
+    "/api/employees/{emp_id}",
+    response_model=Optional[Employee],
+    summary="Get employee by ID",
+)
 def employee_get(emp_id: str):
     try:
         return fetch_one(
@@ -44,7 +46,12 @@ def employee_get(emp_id: str):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.post("/api/employees", response_model=Employee, status_code=201, summary="Create employee")
+@router.post(
+    "/api/employees",
+    response_model=Employee,
+    status_code=201,
+    summary="Create employee",
+)
 def create_employee(payload: EmployeeCreate, _ok: bool = Depends(check_api_key)):
     try:
         rows = execute(
@@ -68,8 +75,12 @@ def create_employee(payload: EmployeeCreate, _ok: bool = Depends(check_api_key))
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.put("/api/employees/{emp_id}", response_model=Employee, summary="Update employee")
-def update_employee(emp_id: str, payload: EmployeeUpdate, _ok: bool = Depends(check_api_key)):
+@router.put(
+    "/api/employees/{emp_id}", response_model=Employee, summary="Update employee"
+)
+def update_employee(
+    emp_id: str, payload: EmployeeUpdate, _ok: bool = Depends(check_api_key)
+):
     try:
         updates = []
         params = []
@@ -107,4 +118,3 @@ def delete_employee(emp_id: str, _ok: bool = Depends(check_api_key)):
         return {"deleted": True}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
-

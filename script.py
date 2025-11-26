@@ -18,19 +18,21 @@ from transformers import pipeline
 
 # --- KONFIGURACJA MODELU -------------------------------------------------
 
-MODEL_NAME = "gpt2"        # łatwo podmienisz np. na "gpt2-medium"
-MAX_EXTRA_TOKENS = 50      # ile tokenów ponad długość promptu
-MAX_TOTAL_LENGTH = 256     # twardy limit długości generacji (prompt + output)
+MODEL_NAME = "gpt2"  # łatwo podmienisz np. na "gpt2-medium"
+MAX_EXTRA_TOKENS = 50  # ile tokenów ponad długość promptu
+MAX_TOTAL_LENGTH = 256  # twardy limit długości generacji (prompt + output)
 
 
 # --- WĄTEK ŁADOWANIA MODELU ----------------------------------------------
+
 
 class ModelLoaderThread(QThread):
     """
     Wątek do ładowania modelu w tle, żeby nie blokować GUI.
     """
-    loaded = pyqtSignal(object)   # emituje załadowany pipeline/generator
-    error = pyqtSignal(str)       # emituje tekst błędu
+
+    loaded = pyqtSignal(object)  # emituje załadowany pipeline/generator
+    error = pyqtSignal(str)  # emituje tekst błędu
 
     def run(self) -> None:
         try:
@@ -46,14 +48,18 @@ class ModelLoaderThread(QThread):
 
 # --- WĄTEK GENEROWANIA ODPOWIEDZI ----------------------------------------
 
+
 class GenerationThread(QThread):
     """
     Wątek generujący odpowiedź – UI pozostaje responsywne.
     """
+
     generated = pyqtSignal(str)
     error = pyqtSignal(str)
 
-    def __init__(self, prompt: str, generator: Any, parent: Optional[QThread] = None) -> None:
+    def __init__(
+        self, prompt: str, generator: Any, parent: Optional[QThread] = None
+    ) -> None:
         super().__init__(parent)
         self.prompt = prompt
         self.generator = generator
@@ -79,7 +85,7 @@ class GenerationThread(QThread):
 
             # Spróbuj usunąć prompt z przodu — defensywnie
             if full_text.startswith(self.prompt):
-                response_raw = full_text[len(self.prompt):]
+                response_raw = full_text[len(self.prompt) :]
             else:
                 response_raw = full_text
 
@@ -100,6 +106,7 @@ class GenerationThread(QThread):
 
 # --- GŁÓWNE OKNO CZATU ---------------------------------------------------
 
+
 class ChatGPTClone(QWidget):
     """
     Prosty widżet czatu oparty o lokalny model HuggingFace (gpt2).
@@ -115,8 +122,8 @@ class ChatGPTClone(QWidget):
         self.setWindowTitle("ChatGPT Clone")
         self.resize(600, 400)
 
-        self.conversation: str = ""          # prosty log tekstowy rozmowy
-        self.generator: Optional[Any] = None # ustawiany po załadowaniu modelu
+        self.conversation: str = ""  # prosty log tekstowy rozmowy
+        self.generator: Optional[Any] = None  # ustawiany po załadowaniu modelu
 
         self._loader_thread: Optional[ModelLoaderThread] = None
         self._gen_thread: Optional[GenerationThread] = None
@@ -231,6 +238,7 @@ class ChatGPTClone(QWidget):
 
 
 # --- ENTRYPOINT ----------------------------------------------------------
+
 
 def main() -> None:
     app = QApplication(sys.argv)

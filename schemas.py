@@ -14,6 +14,7 @@ MAX_STATUS_LEN = 16
 
 class OrderStatus(str, Enum):
     """Enum for order statuses."""
+
     New = "New"
     Planned = "Planned"
     InProd = "InProd"
@@ -23,6 +24,7 @@ class OrderStatus(str, Enum):
 
 class InventoryReason(str, Enum):
     """Enum for inventory transaction reasons."""
+
     PO = "PO"
     WO = "WO"
     Sale = "Sale"
@@ -34,6 +36,7 @@ class InventoryReason(str, Enum):
 
 class Order(BaseModel):
     """Read model for an order."""
+
     model_config = ConfigDict(from_attributes=True)
 
     order_id: str
@@ -50,6 +53,7 @@ class Order(BaseModel):
 
 class Finance(BaseModel):
     """Read model for financial data related to an order."""
+
     model_config = ConfigDict(from_attributes=True)
 
     order_id: str
@@ -62,6 +66,7 @@ class Finance(BaseModel):
 # ----- WRITE MODELS (requests) -----
 class OrderCreate(BaseModel):
     """Write model for creating a new order."""
+
     model_config = ConfigDict(from_attributes=True)
 
     # order_id becomes optional; backend will auto-assign when omitted
@@ -82,9 +87,12 @@ class OrderCreate(BaseModel):
 
 class OrderUpdate(BaseModel):
     """Write model for updating an existing order."""
+
     model_config = ConfigDict(from_attributes=True)
 
-    customer_id: Optional[str] = Field(None, min_length=1, max_length=MAX_CUSTOMER_ID_LEN)
+    customer_id: Optional[str] = Field(
+        None, min_length=1, max_length=MAX_CUSTOMER_ID_LEN
+    )
     status: Optional[OrderStatus] = None
     due_date: Optional[date] = None
     contact_person: Optional[str] = Field(None, max_length=MAX_CONTACT_PERSON_LEN)
@@ -96,6 +104,7 @@ class OrderUpdate(BaseModel):
 
 class OrderLineCreate(BaseModel):
     """Write model for creating a new order line."""
+
     model_config = ConfigDict(from_attributes=True)
 
     order_id: str
@@ -122,6 +131,7 @@ class OrderLineCreate(BaseModel):
 
 class TimesheetCreate(BaseModel):
     """Write model for creating a new timesheet entry."""
+
     model_config = ConfigDict(from_attributes=True)
 
     emp_id: str
@@ -138,6 +148,7 @@ class TimesheetCreate(BaseModel):
 
 class InventoryCreate(BaseModel):
     """Write model for creating a new inventory transaction."""
+
     model_config = ConfigDict(from_attributes=True)
 
     txn_id: str
@@ -155,6 +166,7 @@ class InventoryCreate(BaseModel):
 
 class UserPublic(BaseModel):
     """Public-facing user model, safe to return from API."""
+
     model_config = ConfigDict(from_attributes=True)
     user_id: str
     email: str
@@ -170,6 +182,7 @@ class UserPublic(BaseModel):
 
 class UserCreateAdmin(BaseModel):
     """Model for an admin creating a new user."""
+
     email: str = Field(..., min_length=5)
     company_id: Optional[str] = None
     is_admin: bool = False
@@ -183,6 +196,7 @@ class UserCreateAdmin(BaseModel):
 
 class UserLogin(BaseModel):
     """Model for user login request."""
+
     email: str
     password: str
 
@@ -193,6 +207,7 @@ class UserLogin(BaseModel):
 
 class PasswordChange(BaseModel):
     """Model for user changing their own password."""
+
     old_password: str
     new_password: str = Field(..., min_length=8)
 
@@ -203,6 +218,7 @@ class PasswordChange(BaseModel):
 
 class SubscriptionPlanCreate(BaseModel):
     """Model for creating a new subscription plan."""
+
     plan_id: str
     name: str
     max_orders: Optional[int] = None
@@ -216,6 +232,7 @@ class SubscriptionPlanCreate(BaseModel):
 
 class SubscriptionPlan(BaseModel):
     """Read model for a subscription plan."""
+
     plan_id: str
     name: str
     max_orders: Optional[int] = None
@@ -225,17 +242,20 @@ class SubscriptionPlan(BaseModel):
 
 class PasswordResetRequest(BaseModel):
     """Model for requesting a password reset."""
+
     email: str = Field(..., min_length=5)
 
 
 class PasswordReset(BaseModel):
     """Model for performing a password reset with a token."""
+
     token: str = Field(..., min_length=1)
     new_password: str = Field(..., min_length=8)
 
 
 class Product(BaseModel):
     """Read model for a product."""
+
     model_config = ConfigDict(from_attributes=True)
     product_id: str
     name: str
@@ -247,6 +267,7 @@ class Product(BaseModel):
 
 class ProductCreate(BaseModel):
     """Write model for creating a new product."""
+
     model_config = ConfigDict(from_attributes=True)
     product_id: str = Field(..., min_length=1)
     name: str = Field(..., min_length=1)
@@ -258,6 +279,7 @@ class ProductCreate(BaseModel):
 
 class ProductUpdate(BaseModel):
     """Write model for updating an existing product."""
+
     model_config = ConfigDict(from_attributes=True)
     name: Optional[str] = None
     unit: Optional[str] = None
@@ -268,6 +290,7 @@ class ProductUpdate(BaseModel):
 
 class Customer(BaseModel):
     """Read model for a customer."""
+
     model_config = ConfigDict(from_attributes=True)
     customer_id: str
     name: str
@@ -279,6 +302,7 @@ class Customer(BaseModel):
 
 class CustomerCreate(BaseModel):
     """Write model for creating a new customer."""
+
     model_config = ConfigDict(from_attributes=True)
     customer_id: str = Field(..., min_length=1, max_length=MAX_CUSTOMER_ID_LEN)
     name: str = Field(..., min_length=1, max_length=120)
@@ -287,13 +311,22 @@ class CustomerCreate(BaseModel):
     email: Optional[str] = Field(None, max_length=120)
     contact_person: Optional[str] = Field(None, max_length=MAX_CONTACT_PERSON_LEN)
 
-    @field_validator("customer_id", "name", "nip", "address", "email", "contact_person", mode="before")
+    @field_validator(
+        "customer_id",
+        "name",
+        "nip",
+        "address",
+        "email",
+        "contact_person",
+        mode="before",
+    )
     def _strip_customer_fields(cls, value: Optional[str]):
         return value.strip() if isinstance(value, str) else value
 
 
 class CustomerUpdate(BaseModel):
     """Write model for updating an existing customer."""
+
     model_config = ConfigDict(from_attributes=True)
     name: Optional[str] = Field(None, max_length=120)
     nip: Optional[str] = Field(None, max_length=20)
@@ -308,6 +341,7 @@ class CustomerUpdate(BaseModel):
 
 class Employee(BaseModel):
     """Read model for an employee."""
+
     model_config = ConfigDict(from_attributes=True)
     emp_id: str
     name: str
@@ -317,6 +351,7 @@ class Employee(BaseModel):
 
 class EmployeeCreate(BaseModel):
     """Write model for creating a new employee."""
+
     model_config = ConfigDict(from_attributes=True)
     emp_id: str = Field(..., min_length=1)
     name: str = Field(..., min_length=1)
@@ -330,6 +365,7 @@ class EmployeeCreate(BaseModel):
 
 class EmployeeUpdate(BaseModel):
     """Write model for updating an existing employee."""
+
     model_config = ConfigDict(from_attributes=True)
     name: Optional[str] = None
     role: Optional[str] = None
@@ -338,6 +374,7 @@ class EmployeeUpdate(BaseModel):
 
 class Timesheet(BaseModel):
     """Read model for a timesheet entry."""
+
     model_config = ConfigDict(from_attributes=True)
     ts_id: int
     emp_id: str
@@ -350,6 +387,7 @@ class Timesheet(BaseModel):
 
 class TimesheetUpdate(BaseModel):
     """Write model for updating an existing timesheet entry."""
+
     model_config = ConfigDict(from_attributes=True)
     emp_id: Optional[str] = None
     ts_date: Optional[date] = None
@@ -361,6 +399,7 @@ class TimesheetUpdate(BaseModel):
 
 class Inventory(BaseModel):
     """Read model for an inventory transaction."""
+
     model_config = ConfigDict(from_attributes=True)
     txn_id: str
     txn_date: date
@@ -373,6 +412,7 @@ class Inventory(BaseModel):
 
 class InventoryUpdate(BaseModel):
     """Write model for updating an existing inventory transaction."""
+
     model_config = ConfigDict(from_attributes=True)
     txn_date: Optional[date] = None
     product_id: Optional[str] = None

@@ -11,7 +11,9 @@ SQL_INSERT_USER = (
     "INSERT INTO users (user_id, email, company_id, password_hash, is_admin, subscription_plan) "
     "VALUES (%s, %s, %s, %s, %s, %s) RETURNING user_id;"
 )
-SQL_UPDATE_PASSWORD = "UPDATE users SET password_hash = %s WHERE user_id = %s RETURNING user_id;"
+SQL_UPDATE_PASSWORD = (
+    "UPDATE users SET password_hash = %s WHERE user_id = %s RETURNING user_id;"
+)
 
 
 def create_or_update_power_user():

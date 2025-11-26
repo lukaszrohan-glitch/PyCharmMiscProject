@@ -23,6 +23,7 @@ ensure_admin_audit()
 
 # ---- Zarządzanie użytkownikami (JWT admin) ----
 
+
 @router.post("/api/admin/users", summary="Admin: create user")
 def admin_create_user(payload: UserCreateAdmin, _admin=Depends(require_admin)):
     """
@@ -101,6 +102,7 @@ def admin_list_admin_audit(limit: int = 100, _admin=Depends(require_admin)):
 
 # ---- Admin API keys (x-admin-key, osobny sekret z ENV) ----
 
+
 @router.get("/api/admin/api-keys", summary="List API keys (x-admin-key)")
 def admin_list_keys(_ok: bool = Depends(check_admin_key)):
     """
@@ -130,7 +132,9 @@ def admin_delete_key(key_id: int, _ok: bool = Depends(check_admin_key)):
     return {"deleted": row}
 
 
-@router.post("/api/admin/api-keys/{key_id}/rotate", summary="Rotate API key (x-admin-key)")
+@router.post(
+    "/api/admin/api-keys/{key_id}/rotate", summary="Rotate API key (x-admin-key)"
+)
 def admin_rotate_key(key_id: int, _ok: bool = Depends(check_admin_key)):
     try:
         new = api_keys.rotate_api_key(key_id, by="admin")
@@ -188,22 +192,29 @@ def admin_purge_audit(days: int = 30, _ok: bool = Depends(check_admin_key)):
 # ---- Legacy ścieżki bez prefiksu /api dla admin-key ----
 # Zostawione dla kompatybilności wstecznej.
 
+
 @router.get("/admin/api-keys", summary="List API keys (legacy x-admin-key)")
 def legacy_admin_list_keys(_ok: bool = Depends(check_admin_key)):
     return admin_list_keys(_ok)
 
 
 @router.post("/admin/api-keys", summary="Create API key (legacy x-admin-key)")
-def legacy_admin_create_key(payload: Dict[str, str], _ok: bool = Depends(check_admin_key)):
+def legacy_admin_create_key(
+    payload: Dict[str, str], _ok: bool = Depends(check_admin_key)
+):
     return admin_create_key(payload, _ok)
 
 
-@router.delete("/admin/api-keys/{key_id}", summary="Delete API key (legacy x-admin-key)")
+@router.delete(
+    "/admin/api-keys/{key_id}", summary="Delete API key (legacy x-admin-key)"
+)
 def legacy_admin_delete_key(key_id: int, _ok: bool = Depends(check_admin_key)):
     return admin_delete_key(key_id, _ok)
 
 
-@router.post("/admin/api-keys/{key_id}/rotate", summary="Rotate API key (legacy x-admin-key)")
+@router.post(
+    "/admin/api-keys/{key_id}/rotate", summary="Rotate API key (legacy x-admin-key)"
+)
 def legacy_admin_rotate_key(key_id: int, _ok: bool = Depends(check_admin_key)):
     return admin_rotate_key(key_id, _ok)
 
@@ -219,6 +230,7 @@ def legacy_admin_purge_audit(days: int = 30, _ok: bool = Depends(check_admin_key
 
 
 # ---- Import endpoint: JSON + CSV (JWT admin) ----
+
 
 @router.post("/api/import/csv", summary="Import data from JSON or CSV upload")
 async def import_csv(
@@ -389,6 +401,8 @@ def _do_import(entity_type: str, data_rows: List[Dict]) -> int:
             imported += 1
 
     else:
-        raise HTTPException(status_code=400, detail=f"Unknown entity_type: {entity_type}")
+        raise HTTPException(
+            status_code=400, detail=f"Unknown entity_type: {entity_type}"
+        )
 
     return imported

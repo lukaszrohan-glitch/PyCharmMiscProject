@@ -20,11 +20,22 @@ from security import check_api_key
 router = APIRouter(tags=["Finance", "Analytics"])
 
 
-def _readonly_ok(authorization=Header(None), x_api_key=Header(None), api_key: Optional[str] = None):
-    return check_api_key(authorization=authorization, x_api_key=x_api_key, api_key=api_key, allow_readonly=True)
+def _readonly_ok(
+    authorization=Header(None), x_api_key=Header(None), api_key: Optional[str] = None
+):
+    return check_api_key(
+        authorization=authorization,
+        x_api_key=x_api_key,
+        api_key=api_key,
+        allow_readonly=True,
+    )
 
 
-@router.get("/api/finance/{order_id}", response_model=Optional[Finance], summary="Finance by order")
+@router.get(
+    "/api/finance/{order_id}",
+    response_model=Optional[Finance],
+    summary="Finance by order",
+)
 def finance_one(order_id: str, _ok: bool = Depends(_readonly_ok)):
     """Szczegóły finansowe dla zlecenia (read-only)."""
     try:
@@ -83,7 +94,12 @@ def top_customers(
     _ok: bool = Depends(check_api_key),
 ):
     try:
-        rows = fetch_all(SQL_TOP_CUSTOMERS, (date_from, date_from, date_to, date_to, limit)) or []
+        rows = (
+            fetch_all(
+                SQL_TOP_CUSTOMERS, (date_from, date_from, date_to, date_to, limit)
+            )
+            or []
+        )
         return rows
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
@@ -97,7 +113,10 @@ def top_orders(
     _ok: bool = Depends(check_api_key),
 ):
     try:
-        rows = fetch_all(SQL_TOP_ORDERS, (date_from, date_from, date_to, date_to, limit)) or []
+        rows = (
+            fetch_all(SQL_TOP_ORDERS, (date_from, date_from, date_to, date_to, limit))
+            or []
+        )
         return rows
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))

@@ -17,25 +17,46 @@ from security import check_api_key
 router = APIRouter(tags=["Inventory"])
 
 
-def _readonly_dep(authorization=Header(None), x_api_key=Header(None), api_key: Optional[str] = None):
-    return check_api_key(authorization=authorization, x_api_key=x_api_key, api_key=api_key, allow_readonly=True)
+def _readonly_dep(
+    authorization=Header(None), x_api_key=Header(None), api_key: Optional[str] = None
+):
+    return check_api_key(
+        authorization=authorization,
+        x_api_key=x_api_key,
+        api_key=api_key,
+        allow_readonly=True,
+    )
 
 
 @router.get("/api/inventory/export", summary="Export inventory as CSV")
 def export_inventory_csv(_ok: bool = Depends(_readonly_dep)):
     """Export all inventory transactions as CSV for Excel/import workflows."""
     try:
-        rows = fetch_all(
-            "SELECT txn_id, txn_date, product_id, qty_change, reason, lot, location FROM inventory ORDER BY txn_date DESC",
-            None,
-        ) or []
+        rows = (
+            fetch_all(
+                "SELECT txn_id, txn_date, product_id, qty_change, reason, lot, location FROM inventory ORDER BY txn_date DESC",
+                None,
+            )
+            or []
+        )
         import io, csv
+
         buf = io.StringIO()
         writer = csv.writer(buf)
-        header = ["txn_id", "txn_date", "product_id", "qty_change", "reason", "lot", "location"]
+        header = [
+            "txn_id",
+            "txn_date",
+            "product_id",
+            "qty_change",
+            "reason",
+            "lot",
+            "location",
+        ]
         writer.writerow(header)
         for r in rows:
-            writer.writerow([r.get(col) if r.get(col) is not None else "" for col in header])
+            writer.writerow(
+                [r.get(col) if r.get(col) is not None else "" for col in header]
+            )
         csv_bytes = buf.getvalue().encode("utf-8-sig")
         mem = io.BytesIO(csv_bytes)
         mem.seek(0)
@@ -48,7 +69,11 @@ def export_inventory_csv(_ok: bool = Depends(_readonly_dep)):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.get("/api/inventory", response_model=List[Inventory], summary="List inventory transactions")
+@router.get(
+    "/api/inventory",
+    response_model=List[Inventory],
+    summary="List inventory transactions",
+)
 def inventory_list(
     limit: Optional[int] = Query(None, ge=1, le=5000),
     offset: Optional[int] = Query(None, ge=0),
@@ -70,7 +95,11 @@ def inventory_list(
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.get("/api/inventory/{txn_id}", response_model=Optional[Inventory], summary="Get inventory by ID")
+@router.get(
+    "/api/inventory/{txn_id}",
+    response_model=Optional[Inventory],
+    summary="Get inventory by ID",
+)
 def inventory_get(txn_id: str):
     try:
         return fetch_one(
@@ -85,9 +114,13 @@ def inventory_get(txn_id: str):
 @router.post("/api/inventory", status_code=201, summary="Create inventory transaction")
 def create_inventory_txn(payload: InventoryCreate, _ok: bool = Depends(check_api_key)):
     try:
-        exists = fetch_one("SELECT 1 FROM inventory WHERE txn_id = %s", (payload.txn_id,))
+        exists = fetch_one(
+            "SELECT 1 FROM inventory WHERE txn_id = %s", (payload.txn_id,)
+        )
         if exists:
-            raise HTTPException(status_code=409, detail="Inventory transaction already exists")
+            raise HTTPException(
+                status_code=409, detail="Inventory transaction already exists"
+            )
         rows = execute(
             SQL_INSERT_INVENTORY,
             (
@@ -95,25 +128,37 @@ def create_inventory_txn(payload: InventoryCreate, _ok: bool = Depends(check_api
                 payload.txn_date,
                 payload.product_id,
                 payload.qty_change,
-                payload.reason.value if hasattr(payload.reason, "value") else payload.reason,
+                (
+                    payload.reason.value
+                    if hasattr(payload.reason, "value")
+                    else payload.reason
+                ),
                 payload.lot,
                 payload.location,
             ),
             returning=True,
         )
         if not rows:
-            raise HTTPException(status_code=500, detail="Failed to create inventory transaction")
+            raise HTTPException(
+                status_code=500, detail="Failed to create inventory transaction"
+            )
         return rows[0]
     except HTTPException:
         raise
     except UniqueViolation:
-        raise HTTPException(status_code=409, detail="Inventory transaction already exists")
+        raise HTTPException(
+            status_code=409, detail="Inventory transaction already exists"
+        )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.put("/api/inventory/{txn_id}", response_model=Inventory, summary="Update inventory")
-def update_inventory(txn_id: str, payload: InventoryUpdate, _ok: bool = Depends(check_api_key)):
+@router.put(
+    "/api/inventory/{txn_id}", response_model=Inventory, summary="Update inventory"
+)
+def update_inventory(
+    txn_id: str, payload: InventoryUpdate, _ok: bool = Depends(check_api_key)
+):
     try:
         updates = []
         params = []
@@ -145,7 +190,9 @@ def update_inventory(txn_id: str, payload: InventoryUpdate, _ok: bool = Depends(
         )
         rows = execute(sql, params, returning=True)
         if not rows:
-            raise HTTPException(status_code=404, detail="Inventory transaction not found")
+            raise HTTPException(
+                status_code=404, detail="Inventory transaction not found"
+            )
         return rows[0]
     except HTTPException:
         raise
@@ -163,9 +210,12 @@ def delete_inventory(txn_id: str, _ok: bool = Depends(check_api_key)):
 
 
 @router.post("/api/inventory/import", summary="Import inventory from CSV")
-def import_inventory_csv(file: UploadFile = File(...), _ok: bool = Depends(check_api_key)):
+def import_inventory_csv(
+    file: UploadFile = File(...), _ok: bool = Depends(check_api_key)
+):
     """Import inventory transactions from CSV: txn_id, txn_date, product_id, qty_change, reason, lot, location"""
     import csv, io
+
     try:
         content = file.file.read().decode("utf-8-sig")
     except Exception as exc:

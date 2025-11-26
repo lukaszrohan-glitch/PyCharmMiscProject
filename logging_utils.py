@@ -3,15 +3,17 @@ import os
 import sys
 from logging.handlers import RotatingFileHandler
 from typing import Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 try:
     from pythonjsonlogger import jsonlogger
+
     HAS_JSON_LOGGER = True
 except ImportError:
     HAS_JSON_LOGGER = False
 
 LOG_NAME = "smb_tool"
+
 
 def setup_logging() -> logging.Logger:
     """Configure application logging in a consistent way.
@@ -22,7 +24,7 @@ def setup_logging() -> logging.Logger:
     - Avoids duplicate handlers and unifies uvicorn/fastapi loggers
     """
     os.makedirs("logs", exist_ok=True)
-    
+
     use_json = os.getenv("LOG_FORMAT", "text").lower() == "json"
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
 
@@ -35,20 +37,22 @@ def setup_logging() -> logging.Logger:
                 "name": "logger",
                 "levelname": "level",
                 "pathname": "file",
-                "lineno": "line"
-            }
+                "lineno": "line",
+            },
         )
     else:
         formatter = logging.Formatter(
             "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S"
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
 
     # Shared handlers
-    file_handler = RotatingFileHandler("logs/app.log", maxBytes=5_000_000, backupCount=3)
+    file_handler = RotatingFileHandler(
+        "logs/app.log", maxBytes=5_000_000, backupCount=3
+    )
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(formatter)
-    
+
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(getattr(logging, log_level, logging.INFO))
     console_handler.setFormatter(formatter)
@@ -77,7 +81,9 @@ def setup_logging() -> logging.Logger:
 
     return logger
 
+
 logger = logging.getLogger(LOG_NAME)
+
 
 def log_error(error: Exception, context: Optional[Dict[str, Any]] = None) -> None:
     """Log an error with optional context and traceback."""
@@ -86,17 +92,23 @@ def log_error(error: Exception, context: Optional[Dict[str, Any]] = None) -> Non
         extra={
             "error_type": type(error).__name__,
             "error_msg": str(error),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "context": context or {},
         },
         exc_info=True,
     )
 
+
 def log_api_request(method: str, path: str, user_id: Optional[str] = None) -> None:
     """Log an API request."""
-    logger.info(f"API Request - Method: {method}, Path: {path}, User: {user_id or 'anonymous'}")
+    logger.info(
+        f"API Request - Method: {method}, Path: {path}, User: {user_id or 'anonymous'}"
+    )
 
-def log_auth_event(event_type: str, user_id: str, success: bool, details: Optional[Dict] = None) -> None:
+
+def log_auth_event(
+    event_type: str, user_id: str, success: bool, details: Optional[Dict] = None
+) -> None:
     """Log authentication events."""
     logger.info(
         f"Auth Event - Type: {event_type}, User: {user_id}, Success: {success}, Details: {details or {}}"

@@ -11,8 +11,8 @@ def test_no_duplicate_route_methods():
     duplicates = []
 
     for route in app.routes:
-        path = getattr(route, 'path', None)
-        methods = getattr(route, 'methods', None)
+        path = getattr(route, "path", None)
+        methods = getattr(route, "methods", None)
         if not path or not methods:
             continue
         for m in methods:
@@ -23,4 +23,3 @@ def test_no_duplicate_route_methods():
                 seen[path].add(m)
 
     assert not duplicates, f"Duplicate routes detected: {duplicates}"
-

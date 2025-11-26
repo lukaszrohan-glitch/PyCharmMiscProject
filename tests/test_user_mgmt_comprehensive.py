@@ -12,17 +12,21 @@ class TestUserTableCreation:
 
     def test_ensure_user_tables_creates_tables(self, app_client):
         user_mgmt.ensure_user_tables()
-        
-        users_table = db.fetch_one("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
-        plans_table = db.fetch_one("SELECT name FROM sqlite_master WHERE type='table' AND name='subscription_plans'")
-        
+
+        users_table = db.fetch_one(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='users'"
+        )
+        plans_table = db.fetch_one(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='subscription_plans'"
+        )
+
         assert users_table is not None
         assert plans_table is not None
 
     def test_ensure_user_tables_creates_admin_user(self, app_client):
         user_mgmt.ensure_user_tables()
-        admin_email = os.getenv('ADMIN_EMAIL', 'admin@arkuszowniasmb.pl')
-        
+        admin_email = os.getenv("ADMIN_EMAIL", "admin@arkuszowniasmb.pl")
+
         admin = db.fetch_one("SELECT * FROM users WHERE email = ?", (admin_email,))
         assert admin is not None
         assert admin["is_admin"] is True or admin["is_admin"] == 1
@@ -30,8 +34,8 @@ class TestUserTableCreation:
     def test_ensure_user_tables_idempotent(self, app_client):
         user_mgmt.ensure_user_tables()
         user_mgmt.ensure_user_tables()
-        
-        admin_email = os.getenv('ADMIN_EMAIL', 'admin@arkuszowniasmb.pl')
+
+        admin_email = os.getenv("ADMIN_EMAIL", "admin@arkuszowniasmb.pl")
         admin = db.fetch_one("SELECT * FROM users WHERE email = ?", (admin_email,))
         assert admin is not None
 
@@ -41,14 +45,14 @@ class TestUserCreation:
 
     def test_create_user_basic(self, app_client):
         user_mgmt.ensure_user_tables()
-        
+
         user = user_mgmt.create_user(
             email="newuser@test.com",
             company_id="COMP-001",
             is_admin=False,
-            subscription_plan="free"
+            subscription_plan="free",
         )
-        
+
         assert user is not None
         assert user["email"] == "newuser@test.com"
         assert user["company_id"] == "COMP-001"
@@ -59,28 +63,28 @@ class TestUserCreation:
 
     def test_create_user_with_custom_password(self, app_client):
         user_mgmt.ensure_user_tables()
-        
+
         custom_password = "SecurePass123!@"
         user = user_mgmt.create_user(
             email="custompass@test.com",
             company_id="COMP-002",
             is_admin=False,
             subscription_plan="pro",
-            initial_password=custom_password
+            initial_password=custom_password,
         )
-        
+
         assert user["initial_password"] == custom_password
 
     def test_create_user_admin(self, app_client):
         user_mgmt.ensure_user_tables()
-        
+
         user = user_mgmt.create_user(
             email="admin@test.com",
             company_id="COMP-003",
             is_admin=True,
-            subscription_plan="enterprise"
+            subscription_plan="enterprise",
         )
-        
+
         assert user["is_admin"] is True or user["is_admin"] == 1
 
     def test_create_user_duplicate_email_fails(self, app_client):
@@ -89,47 +93,47 @@ class TestUserCreation:
             email="duplicate@test.com",
             company_id="COMP-001",
             is_admin=False,
-            subscription_plan="free"
+            subscription_plan="free",
         )
-        
+
         with pytest.raises(HTTPException) as exc_info:
             user_mgmt.create_user(
                 email="duplicate@test.com",
                 company_id="COMP-002",
                 is_admin=False,
-                subscription_plan="free"
+                subscription_plan="free",
             )
         assert exc_info.value.status_code == 500
 
     def test_create_user_password_too_short_fails(self, app_client):
         user_mgmt.ensure_user_tables()
-        
+
         with pytest.raises(HTTPException) as exc_info:
             user_mgmt.create_user(
                 email="shortpwd@test.com",
                 company_id="COMP-001",
                 is_admin=False,
                 subscription_plan="free",
-                initial_password="short"
+                initial_password="short",
             )
         assert exc_info.value.status_code == 400
 
     def test_create_user_generates_unique_ids(self, app_client):
         user_mgmt.ensure_user_tables()
-        
+
         user1 = user_mgmt.create_user(
             email="user1@test.com",
             company_id="COMP-001",
             is_admin=False,
-            subscription_plan="free"
+            subscription_plan="free",
         )
         user2 = user_mgmt.create_user(
             email="user2@test.com",
             company_id="COMP-001",
             is_admin=False,
-            subscription_plan="free"
+            subscription_plan="free",
         )
-        
+
         assert user1["user_id"] != user2["user_id"]
 
 
@@ -144,11 +148,11 @@ class TestUserLogin:
             company_id="COMP-001",
             is_admin=False,
             subscription_plan="free",
-            initial_password=password
+            initial_password=password,
         )
-        
+
         result = user_mgmt.login_user("login@test.com", password)
-        
+
         assert "tokens" in result
         assert "access_token" in result["tokens"]
         assert "refresh_token" in result["tokens"]
@@ -157,7 +161,7 @@ class TestUserLogin:
 
     def test_login_invalid_email(self, app_client):
         user_mgmt.ensure_user_tables()
-        
+
         with pytest.raises(HTTPException) as exc_info:
             user_mgmt.login_user("nonexistent@test.com", "AnyPassword123!")
         assert exc_info.value.status_code == 401
@@ -170,9 +174,9 @@ class TestUserLogin:
             company_id="COMP-001",
             is_admin=False,
             subscription_plan="free",
-            initial_password="CorrectPass123!"
+            initial_password="CorrectPass123!",
         )
-        
+
         with pytest.raises(HTTPException) as exc_info:
             user_mgmt.login_user("wrongpwd@test.com", "WrongPass123!")
         assert exc_info.value.status_code == 401
@@ -186,16 +190,18 @@ class TestUserLogin:
             company_id="COMP-001",
             is_admin=False,
             subscription_plan="free",
-            initial_password=password
+            initial_password=password,
         )
-        
+
         for _ in range(3):
             try:
                 user_mgmt.login_user(email, "WrongPass123!")
             except HTTPException:
                 pass
-        
-        user = db.fetch_one("SELECT failed_login_attempts FROM users WHERE email = ?", (email,))
+
+        user = db.fetch_one(
+            "SELECT failed_login_attempts FROM users WHERE email = ?", (email,)
+        )
         assert user["failed_login_attempts"] == 3
 
     def test_login_resets_failed_attempts_on_success(self, app_client):
@@ -207,19 +213,21 @@ class TestUserLogin:
             company_id="COMP-001",
             is_admin=False,
             subscription_plan="free",
-            initial_password=password
+            initial_password=password,
         )
-        
+
         for _ in range(2):
             try:
                 user_mgmt.login_user(email, "WrongPass123!")
             except HTTPException:
                 pass
-        
+
         result = user_mgmt.login_user(email, password)
         assert "tokens" in result
-        
-        user = db.fetch_one("SELECT failed_login_attempts FROM users WHERE email = ?", (email,))
+
+        user = db.fetch_one(
+            "SELECT failed_login_attempts FROM users WHERE email = ?", (email,)
+        )
         assert user["failed_login_attempts"] == 0
 
 
@@ -235,13 +243,13 @@ class TestPasswordManagement:
             company_id="COMP-001",
             is_admin=False,
             subscription_plan="free",
-            initial_password=old_password
+            initial_password=old_password,
         )
         user_id = created["user_id"]
-        
+
         result = user_mgmt.change_password(user_id, old_password, new_password)
         assert result["changed"] is True
-        
+
         login_result = user_mgmt.login_user("changepwd@test.com", new_password)
         assert "tokens" in login_result
 
@@ -252,30 +260,29 @@ class TestPasswordManagement:
             company_id="COMP-001",
             is_admin=False,
             subscription_plan="free",
-            initial_password="CorrectPass123!"
+            initial_password="CorrectPass123!",
         )
-        
+
         with pytest.raises(HTTPException) as exc_info:
-            user_mgmt.change_password(created["user_id"], "WrongPass123!", "NewPass456!")
+            user_mgmt.change_password(
+                created["user_id"], "WrongPass123!", "NewPass456!"
+            )
         assert exc_info.value.status_code == 401
 
     def test_request_password_reset_existing_user(self, app_client):
         user_mgmt.ensure_user_tables()
         email = "resetreq@test.com"
         user_mgmt.create_user(
-            email=email,
-            company_id="COMP-001",
-            is_admin=False,
-            subscription_plan="free"
+            email=email, company_id="COMP-001", is_admin=False, subscription_plan="free"
         )
-        
+
         result = user_mgmt.request_password_reset(email)
         assert "reset_token" in result
         assert result["reset_token"] is not None
 
     def test_request_password_reset_nonexistent_user(self, app_client):
         user_mgmt.ensure_user_tables()
-        
+
         result = user_mgmt.request_password_reset("nonexistent@test.com")
         assert "message" in result
         assert "If email exists" in result["message"]
@@ -287,16 +294,16 @@ class TestPasswordManagement:
             company_id="COMP-001",
             is_admin=False,
             subscription_plan="free",
-            initial_password="OldPass123!"
+            initial_password="OldPass123!",
         )
-        
+
         reset_result = user_mgmt.request_password_reset("tokenreset@test.com")
         reset_token = reset_result["reset_token"]
-        
+
         new_password = "NewTokenPass456!"
         result = user_mgmt.reset_password_with_token(reset_token, new_password)
         assert result["changed"] is True
-        
+
         login_result = user_mgmt.login_user("tokenreset@test.com", new_password)
         assert "tokens" in login_result
 
@@ -306,19 +313,19 @@ class TestPasswordManagement:
             email="shortpwdreset@test.com",
             company_id="COMP-001",
             is_admin=False,
-            subscription_plan="free"
+            subscription_plan="free",
         )
-        
+
         reset_result = user_mgmt.request_password_reset("shortpwdreset@test.com")
         reset_token = reset_result["reset_token"]
-        
+
         with pytest.raises(HTTPException) as exc_info:
             user_mgmt.reset_password_with_token(reset_token, "short")
         assert exc_info.value.status_code == 400
 
     def test_reset_password_invalid_token(self, app_client):
         user_mgmt.ensure_user_tables()
-        
+
         with pytest.raises(HTTPException) as exc_info:
             user_mgmt.reset_password_with_token("invalid-token-xyz", "NewPass456!")
         assert exc_info.value.status_code == 400
@@ -329,14 +336,10 @@ class TestTokenGeneration:
 
     def test_make_token_structure(self, app_client):
         user_mgmt.ensure_user_tables()
-        user = {
-            "user_id": "U-test123",
-            "email": "token@test.com",
-            "is_admin": False
-        }
-        
+        user = {"user_id": "U-test123", "email": "token@test.com", "is_admin": False}
+
         tokens = user_mgmt._make_token(user)
-        
+
         assert "access_token" in tokens
         assert "refresh_token" in tokens
         assert "expires_in" in tokens
@@ -344,15 +347,11 @@ class TestTokenGeneration:
 
     def test_decode_token_success(self, app_client):
         user_mgmt.ensure_user_tables()
-        user = {
-            "user_id": "U-test123",
-            "email": "decode@test.com",
-            "is_admin": False
-        }
-        
+        user = {"user_id": "U-test123", "email": "decode@test.com", "is_admin": False}
+
         tokens = user_mgmt._make_token(user)
         auth_header = f"Bearer {tokens['access_token']}"
-        
+
         payload = user_mgmt.decode_token(auth_header)
         assert payload["sub"] == "U-test123"
         assert payload["email"] == "decode@test.com"
@@ -373,10 +372,12 @@ class TestTokenGeneration:
             "sub": "U-test123",
             "email": "expired@test.com",
             "exp": datetime.utcnow() - timedelta(hours=1),
-            "type": "access"
+            "type": "access",
         }
-        expired_token = jwt.encode(expired_payload, user_mgmt.JWT_SECRET, algorithm=user_mgmt.JWT_ALG)
-        
+        expired_token = jwt.encode(
+            expired_payload, user_mgmt.JWT_SECRET, algorithm=user_mgmt.JWT_ALG
+        )
+
         with pytest.raises(HTTPException) as exc_info:
             user_mgmt.decode_token(f"Bearer {expired_token}")
         assert exc_info.value.status_code == 401
@@ -392,13 +393,13 @@ class TestUserRetrieval:
             email=email,
             company_id="COMP-001",
             is_admin=True,
-            subscription_plan="enterprise"
+            subscription_plan="enterprise",
         )
         user_id = created["user_id"]
-        
+
         login_result = user_mgmt.login_user(email, created["initial_password"])
         auth_header = f"Bearer {login_result['tokens']['access_token']}"
-        
+
         user = user_mgmt.get_current_user(auth_header)
         assert user["user_id"] == user_id
         assert user["email"] == email
@@ -415,12 +416,12 @@ class TestUserRetrieval:
             email="admin@test.com",
             company_id="COMP-001",
             is_admin=True,
-            subscription_plan="enterprise"
+            subscription_plan="enterprise",
         )
-        
+
         login_result = user_mgmt.login_user("admin@test.com", admin["initial_password"])
         auth_header = f"Bearer {login_result['tokens']['access_token']}"
-        
+
         user = user_mgmt.get_current_user(auth_header)
         admin_user = user_mgmt.require_admin(user)
         assert admin_user["is_admin"] is True or admin_user["is_admin"] == 1
@@ -431,14 +432,16 @@ class TestUserRetrieval:
             email="nonadmin@test.com",
             company_id="COMP-001",
             is_admin=False,
-            subscription_plan="free"
+            subscription_plan="free",
         )
-        
-        login_result = user_mgmt.login_user("nonadmin@test.com", non_admin["initial_password"])
+
+        login_result = user_mgmt.login_user(
+            "nonadmin@test.com", non_admin["initial_password"]
+        )
         auth_header = f"Bearer {login_result['tokens']['access_token']}"
-        
+
         user = user_mgmt.get_current_user(auth_header)
-        
+
         with pytest.raises(HTTPException) as exc_info:
             user_mgmt.require_admin(user)
         assert exc_info.value.status_code == 403
@@ -453,15 +456,15 @@ class TestListUsers:
             email="list1@test.com",
             company_id="COMP-001",
             is_admin=False,
-            subscription_plan="free"
+            subscription_plan="free",
         )
         user_mgmt.create_user(
             email="list2@test.com",
             company_id="COMP-002",
             is_admin=True,
-            subscription_plan="pro"
+            subscription_plan="pro",
         )
-        
+
         users = user_mgmt.list_users()
         assert isinstance(users, list)
         assert len(users) >= 2
@@ -471,7 +474,7 @@ class TestListUsers:
 
     def test_list_users_contains_admin_flag(self, app_client):
         user_mgmt.ensure_user_tables()
-        
+
         users = user_mgmt.list_users()
         assert len(users) > 0
         for user in users:
@@ -485,15 +488,15 @@ class TestSubscriptionPlans:
 
     def test_create_plan(self, app_client):
         user_mgmt.ensure_user_tables()
-        
+
         plan = user_mgmt.create_plan(
             plan_id="plan-basic",
             name="Basic Plan",
             max_orders=100,
             max_users=5,
-            features=["export", "api-access"]
+            features=["export", "api-access"],
         )
-        
+
         assert plan is not None
         assert plan["plan_id"] == "plan-basic"
         assert plan["name"] == "Basic Plan"
@@ -502,15 +505,15 @@ class TestSubscriptionPlans:
 
     def test_create_plan_without_features(self, app_client):
         user_mgmt.ensure_user_tables()
-        
+
         plan = user_mgmt.create_plan(
             plan_id="plan-minimal",
             name="Minimal Plan",
             max_orders=50,
             max_users=1,
-            features=None
+            features=None,
         )
-        
+
         assert plan is not None
         assert plan["plan_id"] == "plan-minimal"
 
@@ -521,16 +524,16 @@ class TestSubscriptionPlans:
             name="Plan One",
             max_orders=100,
             max_users=5,
-            features=["feature1"]
+            features=["feature1"],
         )
         user_mgmt.create_plan(
             plan_id="plan-2",
             name="Plan Two",
             max_orders=500,
             max_users=20,
-            features=["feature1", "feature2"]
+            features=["feature1", "feature2"],
         )
-        
+
         plans = user_mgmt.list_plans()
         assert isinstance(plans, list)
         assert len(plans) >= 2
@@ -545,11 +548,13 @@ class TestSubscriptionPlans:
             name="Features Plan",
             max_orders=100,
             max_users=10,
-            features=["feature1", "feature2", "feature3"]
+            features=["feature1", "feature2", "feature3"],
         )
-        
+
         plans = user_mgmt.list_plans()
-        features_plan = next((p for p in plans if p["plan_id"] == "plan-features"), None)
+        features_plan = next(
+            (p for p in plans if p["plan_id"] == "plan-features"), None
+        )
         assert features_plan is not None
         assert isinstance(features_plan["features"], list)
         assert "feature1" in features_plan["features"]

@@ -2,6 +2,7 @@
 CSRF Protection Middleware for FastAPI
 Implements double-submit cookie pattern for CSRF protection.
 """
+
 import secrets
 from fastapi import Request, Response, HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -69,21 +70,19 @@ class CSRFProtectMiddleware(BaseHTTPMiddleware):
 
         if not csrf_cookie:
             raise HTTPException(
-                status_code=403,
-                detail="CSRF cookie missing. Please refresh the page."
+                status_code=403, detail="CSRF cookie missing. Please refresh the page."
             )
 
         if not csrf_header:
             raise HTTPException(
                 status_code=403,
-                detail="CSRF token missing in request header (X-CSRF-Token)"
+                detail="CSRF token missing in request header (X-CSRF-Token)",
             )
 
         # Constant-time comparison to prevent timing attacks
         if not secrets.compare_digest(csrf_cookie, csrf_header):
             raise HTTPException(
-                status_code=403,
-                detail="CSRF token mismatch. Please refresh the page."
+                status_code=403, detail="CSRF token mismatch. Please refresh the page."
             )
 
         # CSRF validation passed
@@ -94,4 +93,3 @@ class CSRFProtectMiddleware(BaseHTTPMiddleware):
 def get_csrf_token(request: Request) -> str:
     """Helper to get CSRF token from request cookies."""
     return request.cookies.get(CSRF_COOKIE_NAME, "")
-

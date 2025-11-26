@@ -2,6 +2,7 @@
 CSV Export Fix Verification Script
 Tests that NULL values are preserved in CSV exports
 """
+
 import io
 import csv
 from typing import Dict, List, Any
@@ -18,7 +19,7 @@ def test_csv_export_preservation():
             "status": "New",
             "order_date": "2025-01-01",
             "due_date": None,  # NULL value
-            "contact_person": "John Doe"
+            "contact_person": "John Doe",
         },
         {
             "order_id": "ORD-002",
@@ -26,7 +27,7 @@ def test_csv_export_preservation():
             "status": "InProgress",
             "order_date": "2025-01-02",
             "due_date": "2025-01-15",
-            "contact_person": None  # NULL value
+            "contact_person": None,  # NULL value
         },
         {
             "order_id": "ORD-003",
@@ -34,15 +35,22 @@ def test_csv_export_preservation():
             "status": "Done",
             "order_date": None,  # NULL value
             "due_date": None,  # NULL value
-            "contact_person": None  # NULL value
-        }
+            "contact_person": None,  # NULL value
+        },
     ]
 
     # OLD METHOD (BROKEN - converts None to "")
     print("=== OLD METHOD (BROKEN) ===")
     buf_old = io.StringIO()
     writer_old = csv.writer(buf_old)
-    header = ["order_id", "customer_id", "status", "order_date", "due_date", "contact_person"]
+    header = [
+        "order_id",
+        "customer_id",
+        "status",
+        "order_date",
+        "due_date",
+        "contact_person",
+    ]
     writer_old.writerow(header)
 
     for r in test_rows:
@@ -61,7 +69,9 @@ def test_csv_export_preservation():
 
     for r in test_rows:
         # NEW: r.get(col) if r.get(col) is not None else ""
-        writer_new.writerow([r.get(col) if r.get(col) is not None else "" for col in header])
+        writer_new.writerow(
+            [r.get(col) if r.get(col) is not None else "" for col in header]
+        )
 
     print(buf_new.getvalue())
     print()
@@ -91,4 +101,3 @@ def test_csv_export_preservation():
 
 if __name__ == "__main__":
     test_csv_export_preservation()
-

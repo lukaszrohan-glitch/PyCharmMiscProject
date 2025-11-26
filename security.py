@@ -34,6 +34,7 @@ def check_api_key(
     if authorization and authorization.startswith("Bearer "):
         try:
             from user_mgmt import decode_token  # lazy import to avoid cycles
+
             token = authorization.split(" ", 1)[1]
             decode_token(token)
             return True
@@ -48,8 +49,8 @@ def check_api_key(
         raise HTTPException(status_code=401, detail="Invalid or missing API key")
 
     # Env keys first (allow runtime override via environment)
-    env_keys_raw = os.getenv('API_KEYS') or settings.API_KEYS
-    env_keys = [k.strip() for k in env_keys_raw.split(',')] if env_keys_raw else []
+    env_keys_raw = os.getenv("API_KEYS") or settings.API_KEYS
+    env_keys = [k.strip() for k in env_keys_raw.split(",")] if env_keys_raw else []
     if env_keys and key in env_keys:
         return True
 
@@ -60,6 +61,7 @@ def check_api_key(
             try:
                 if row.get("id"):
                     from auth import mark_last_used, log_api_key_event
+
                     mark_last_used(row.get("id"))
                     log_api_key_event(row.get("id"), "used", "api")
             except Exception as e:
@@ -73,7 +75,7 @@ def check_api_key(
 
 def check_admin_key(x_admin_key: Optional[str] = Header(None)):
     # Read from environment at call time to allow tests or runtime overrides
-    admin_key = os.getenv('ADMIN_KEY') or settings.ADMIN_KEY
+    admin_key = os.getenv("ADMIN_KEY") or settings.ADMIN_KEY
     if not admin_key:
         raise HTTPException(status_code=401, detail="Admin key not configured")
     if x_admin_key != admin_key:

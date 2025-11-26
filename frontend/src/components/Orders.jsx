@@ -325,18 +325,27 @@ export default function Orders({ lang }) {
               </div>
               <div className="form-group">
                 <label>{t.orderId}</label>
-                <input
-                  type="text"
-                  name="order_id"
-                  value={formData.order_id}
-                  onChange={handleInputChange}
-                  disabled={!!editingOrder}
-                  placeholder={autoSuggestion || 'Auto'}
-                />
-                {renderHint('order_id')}
-                {!editingOrder && autoSuggestion && (
-                  <p className="form-hint">{t.autoNext}: {autoSuggestion}</p>
+                {editingOrder ? (
+                  <input
+                    type="text"
+                    value={formData.order_id}
+                    disabled
+                    className="input-readonly"
+                  />
+                ) : (
+                  <div className="auto-id-display">
+                    <span className="auto-id-label">
+                      {lang === 'pl' ? '🔄 Automatycznie nadany: ' : '🔄 Auto-assigned: '}
+                    </span>
+                    <strong>{autoSuggestion || '(generowanie...)'}</strong>
+                    <p className="form-hint">
+                      {lang === 'pl'
+                        ? 'Numer zostanie nadany automatycznie po zapisaniu.'
+                        : 'Order ID will be generated automatically on save.'}
+                    </p>
+                  </div>
                 )}
+                {renderHint('order_id')}
               </div>
               <div className="form-group">
                 <label>{t.customer}</label>

@@ -2,11 +2,14 @@
 Password validation utilities for security compliance.
 Enforces strong password policies to prevent weak passwords.
 """
+
 import re
 from typing import Tuple, List
 
 
-def validate_password_strength(password: str, strict: bool = False) -> Tuple[bool, List[str]]:
+def validate_password_strength(
+    password: str, strict: bool = False
+) -> Tuple[bool, List[str]]:
     """
     Validate password meets configurable security requirements.
 
@@ -40,7 +43,9 @@ def validate_password_strength(password: str, strict: bool = False) -> Tuple[boo
             errors.append("Password must contain at least one digit")
 
         if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
-            errors.append("Password must contain at least one special character (!@#$%^&*(),.?\":{}|<>)")
+            errors.append(
+                'Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)'
+            )
 
         # Check for common weak passwords
         weak_passwords = {

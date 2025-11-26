@@ -21,8 +21,15 @@ from security import check_api_key
 router = APIRouter(tags=["Orders"])
 
 
-def _readonly_dep(authorization=Header(None), x_api_key=Header(None), api_key: Optional[str] = None):
-    return check_api_key(authorization=authorization, x_api_key=x_api_key, api_key=api_key, allow_readonly=True)
+def _readonly_dep(
+    authorization=Header(None), x_api_key=Header(None), api_key: Optional[str] = None
+):
+    return check_api_key(
+        authorization=authorization,
+        x_api_key=x_api_key,
+        api_key=api_key,
+        allow_readonly=True,
+    )
 
 
 @router.get("/api/orders/export", summary="Export orders as CSV")
@@ -31,12 +38,22 @@ def export_orders_csv(_ok: bool = Depends(_readonly_dep)):
     try:
         rows = fetch_all(SQL_ORDERS, None) or []
         import io, csv
+
         buf = io.StringIO()
         writer = csv.writer(buf)
-        header = ["order_id", "customer_id", "status", "order_date", "due_date", "contact_person"]
+        header = [
+            "order_id",
+            "customer_id",
+            "status",
+            "order_date",
+            "due_date",
+            "contact_person",
+        ]
         writer.writerow(header)
         for r in rows:
-            writer.writerow([r.get(col) if r.get(col) is not None else "" for col in header])
+            writer.writerow(
+                [r.get(col) if r.get(col) is not None else "" for col in header]
+            )
         csv_bytes = buf.getvalue().encode("utf-8-sig")
         mem = io.BytesIO(csv_bytes)
         mem.seek(0)
@@ -113,7 +130,7 @@ def order_get(order_id: str):
 )
 def create_order(payload: OrderCreate, _ok: bool = Depends(check_api_key)):
     try:
-        order_id = (payload.order_id or '').strip() if payload.order_id else None
+        order_id = (payload.order_id or "").strip() if payload.order_id else None
         if not order_id:
             order_id = next_order_id()
         existing = fetch_one(SQL_FIND_ORDER, (order_id,))
@@ -127,9 +144,11 @@ def create_order(payload: OrderCreate, _ok: bool = Depends(check_api_key)):
             (
                 order_id,
                 payload.customer_id,
-                payload.status.value
-                if hasattr(payload.status, "value")
-                else payload.status,
+                (
+                    payload.status.value
+                    if hasattr(payload.status, "value")
+                    else payload.status
+                ),
                 payload.due_date,
                 payload.contact_person,
             ),
@@ -182,7 +201,9 @@ def create_order_line(payload: OrderLineCreate, _ok: bool = Depends(check_api_ke
     response_model=Order,
     summary="Update order",
 )
-def update_order(order_id: str, payload: OrderUpdate, _ok: bool = Depends(check_api_key)):
+def update_order(
+    order_id: str, payload: OrderUpdate, _ok: bool = Depends(check_api_key)
+):
     try:
         updates = []
         params = []
@@ -244,14 +265,8 @@ def migrate_contact_person(_ok: bool = Depends(check_api_key)):
     do tables customers i orders (jeśli jej nie ma).
     """
     try:
-        execute(
-            "ALTER TABLE customers "
-            "ADD COLUMN IF NOT EXISTS contact_person text;"
-        )
-        execute(
-            "ALTER TABLE orders "
-            "ADD COLUMN IF NOT EXISTS contact_person text;"
-        )
+        execute("ALTER TABLE customers ADD COLUMN IF NOT EXISTS contact_person text;")
+        execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS contact_person text;")
         return {"ok": True}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
@@ -266,7 +281,9 @@ def get_next_order_id_hint(_ok: bool = Depends(_readonly_dep)):
 
 
 @router.get("/api/orders/validate", summary="Validate an order ID before submit")
-def validate_order(order_id: str = Query(..., min_length=1), customer_id: Optional[str] = None):
+def validate_order(
+    order_id: str = Query(..., min_length=1), customer_id: Optional[str] = None
+):
     try:
         exists = fetch_one(SQL_FIND_ORDER, (order_id.strip(),))
         if exists:

@@ -98,8 +98,8 @@ UPDATE api_keys SET last_used = CURRENT_TIMESTAMP WHERE id = %s RETURNING id;
 
 
 # hashing params
-PBKDF2_ITERATIONS = int(os.getenv('APIKEY_PBKDF2_ITER', '200000'))
-HASH_NAME = 'sha256'
+PBKDF2_ITERATIONS = int(os.getenv("APIKEY_PBKDF2_ITER", "200000"))
+HASH_NAME = "sha256"
 SALT_BYTES = 16
 KEY_BYTES = 32
 
@@ -111,6 +111,7 @@ def ensure_table():
     try:
         # Choose dialect-specific DDL to avoid noisy errors in PG logs
         from db import _get_pool
+
         pool = _get_pool()
         if pool is None:
             # sqlite fallback (also created during DB init, but keep idempotent)
@@ -128,17 +129,25 @@ def ensure_table():
 def _hash_key(plaintext: str, salt: Optional[bytes] = None) -> Tuple[str, str]:
     if salt is None:
         salt = secrets.token_bytes(SALT_BYTES)
-    dk = hashlib.pbkdf2_hmac(HASH_NAME, plaintext.encode('utf-8'), salt, PBKDF2_ITERATIONS, dklen=KEY_BYTES)
-    return binascii.hexlify(dk).decode('ascii'), binascii.hexlify(salt).decode('ascii')
+    dk = hashlib.pbkdf2_hmac(
+        HASH_NAME, plaintext.encode("utf-8"), salt, PBKDF2_ITERATIONS, dklen=KEY_BYTES
+    )
+    return binascii.hexlify(dk).decode("ascii"), binascii.hexlify(salt).decode("ascii")
 
 
 def _verify_key(plaintext: str, stored_hash_hex: str, salt_hex: str) -> bool:
     salt = binascii.unhexlify(salt_hex)
-    dk = hashlib.pbkdf2_hmac(HASH_NAME, plaintext.encode('utf-8'), salt, PBKDF2_ITERATIONS, dklen=KEY_BYTES)
-    return binascii.hexlify(dk).decode('ascii') == stored_hash_hex
+    dk = hashlib.pbkdf2_hmac(
+        HASH_NAME, plaintext.encode("utf-8"), salt, PBKDF2_ITERATIONS, dklen=KEY_BYTES
+    )
+    return binascii.hexlify(dk).decode("ascii") == stored_hash_hex
 
 
-def create_api_key(label: Optional[str] = None, created_at: Optional[datetime] = None, active: bool = True) -> Dict[str, Any]:
+def create_api_key(
+    label: Optional[str] = None,
+    created_at: Optional[datetime] = None,
+    active: bool = True,
+) -> Dict[str, Any]:
     """Create a new API key. Returns a dict with id, label, created_at, active and plaintext 'api_key' (only here).
     The plaintext is shown only once and is not stored in plaintext long-term (key_text is stored but can be nullified later).
     """
@@ -160,17 +169,24 @@ def create_api_key(label: Optional[str] = None, created_at: Optional[datetime] =
             pass
         # fetch the inserted row by hash+salt
         try:
-            row = fetch_one("SELECT id, key_text, label, created_at, active FROM api_keys WHERE key_hash = ? AND salt = ? LIMIT 1", (key_hash, salt))
+            row = fetch_one(
+                "SELECT id, key_text, label, created_at, active FROM api_keys WHERE key_hash = ? AND salt = ? LIMIT 1",
+                (key_hash, salt),
+            )
         except Exception:
             row = None
     else:
         # Postgres path: use parametrized SQL with RETURNING
-        rows = execute(SQL_INSERT_API_KEY, (None, key_hash, salt, label, created_at, active), returning=True)
+        rows = execute(
+            SQL_INSERT_API_KEY,
+            (None, key_hash, salt, label, created_at, active),
+            returning=True,
+        )
         row = rows[0] if rows else None
 
     if row:
         # include plaintext only in the returned payload
-        row['api_key'] = plaintext
+        row["api_key"] = plaintext
     return row
 
 
@@ -192,8 +208,8 @@ def get_api_key(key_text_or_plain: str):
     try:
         rows = fetch_all(SQL_GET_API_KEY_BY_HASH)
         for r in rows:
-            if r.get('key_hash') and r.get('salt'):
-                if _verify_key(key_text_or_plain, r['key_hash'], r['salt']):
+            if r.get("key_hash") and r.get("salt"):
+                if _verify_key(key_text_or_plain, r["key_hash"], r["salt"]):
                     return r
     except Exception:
         pass
@@ -204,6 +220,7 @@ def get_api_key(key_text_or_plain: str):
 def delete_api_key_by_id(key_id: int):
     try:
         from db import _get_pool
+
         pool = _get_pool()
         if pool is None:
             # sqlite: emulate RETURNING by selecting first
@@ -224,7 +241,7 @@ def delete_api_key_by_keytext(key_text: str):
     found = get_api_key(key_text)
     if not found:
         return None
-    return delete_api_key_by_id(found.get('id'))
+    return delete_api_key_by_id(found.get("id"))
 
 
 def rotate_api_key(key_id: int, by: Optional[str] = None) -> Dict[str, Any]:
@@ -235,11 +252,16 @@ def rotate_api_key(key_id: int, by: Optional[str] = None) -> Dict[str, Any]:
     except Exception:
         pass
     # Create new key
-    new_key_row = create_api_key(label=f'rotated-from-{key_id}')
+    new_key_row = create_api_key(label=f"rotated-from-{key_id}")
     # Log audit (use helper to ensure sqlite gets event_time)
     try:
-        details = {'rotated_from': key_id, 'new_id': new_key_row.get('id') if new_key_row else None}
-        log_api_key_event(new_key_row.get('id') if new_key_row else None, 'rotated', by, details)
+        details = {
+            "rotated_from": key_id,
+            "new_id": new_key_row.get("id") if new_key_row else None,
+        }
+        log_api_key_event(
+            new_key_row.get("id") if new_key_row else None, "rotated", by, details
+        )
     except Exception:
         pass
     # mark old key inactive explicitly (some sqlite paths skipped earlier update)
@@ -250,10 +272,21 @@ def rotate_api_key(key_id: int, by: Optional[str] = None) -> Dict[str, Any]:
     return new_key_row
 
 
-def log_api_key_event(api_key_id: Optional[int], event_type: str, event_by: Optional[str] = None, details: Optional[dict] = None):
+def log_api_key_event(
+    api_key_id: Optional[int],
+    event_type: str,
+    event_by: Optional[str] = None,
+    details: Optional[dict] = None,
+):
     try:
         from db import _get_pool
-        payload = (api_key_id, event_type, event_by, json.dumps(details) if details else None)
+
+        payload = (
+            api_key_id,
+            event_type,
+            event_by,
+            json.dumps(details) if details else None,
+        )
         pool = _get_pool()
         if pool is None:
             # sqlite: include event_time using datetime('now')
@@ -270,8 +303,13 @@ def mark_last_used(api_key_id: int):
     try:
         # Don't rely on RETURNING for sqlite path
         from db import _get_pool
+
         if _get_pool() is None:
-            execute("UPDATE api_keys SET last_used = datetime('now') WHERE id = ?", (api_key_id,), returning=False)
+            execute(
+                "UPDATE api_keys SET last_used = datetime('now') WHERE id = ?",
+                (api_key_id,),
+                returning=False,
+            )
         else:
             execute(SQL_UPDATE_LAST_USED, (api_key_id,))
     except Exception:

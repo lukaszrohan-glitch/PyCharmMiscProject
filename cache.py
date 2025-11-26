@@ -2,6 +2,7 @@
 Redis-based caching layer for performance optimization.
 Provides decorator-based caching with TTL and automatic invalidation.
 """
+
 import json
 import hashlib
 import functools
@@ -18,12 +19,12 @@ _redis_client: Optional[redis.Redis] = None
 def get_redis_client() -> Optional[redis.Redis]:
     """Get Redis client instance (lazy initialization)."""
     global _redis_client
-    
+
     if _redis_client is not None:
         return _redis_client
-    
+
     redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-    
+
     try:
         _redis_client = redis.from_url(
             redis_url,
@@ -46,36 +47,37 @@ def get_redis_client() -> Optional[redis.Redis]:
 def cache(ttl: int = 300, key_prefix: str = ""):
     """
     Decorator to cache function results in Redis.
-    
+
     Args:
         ttl: Time to live in seconds (default: 5 minutes)
         key_prefix: Prefix for cache keys
-    
+
     Example:
         @cache(ttl=600, key_prefix="products")
         def get_all_products():
             return fetch_from_db()
     """
+
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> Any:
             client = get_redis_client()
-            
+
             # Skip cache if Redis unavailable
             if client is None:
                 return func(*args, **kwargs)
-            
+
             # Generate cache key from function name and arguments
             key_parts = [
                 key_prefix or func.__module__,
                 func.__name__,
                 str(args),
-                str(sorted(kwargs.items()))
+                str(sorted(kwargs.items())),
             ]
             cache_key = hashlib.md5(
                 json.dumps(key_parts, sort_keys=True).encode()
             ).hexdigest()
-            
+
             # Try to get from cache
             try:
                 cached = client.get(cache_key)
@@ -84,41 +86,38 @@ def cache(ttl: int = 300, key_prefix: str = ""):
                     return json.loads(cached)
             except Exception as e:
                 logger.warning(f"Cache read error: {e}")
-            
+
             # Cache miss - execute function
             logger.debug(f"Cache MISS: {func.__name__}")
             result = func(*args, **kwargs)
-            
+
             # Store in cache
             try:
-                client.setex(
-                    cache_key,
-                    ttl,
-                    json.dumps(result, default=str)
-                )
+                client.setex(cache_key, ttl, json.dumps(result, default=str))
             except Exception as e:
                 logger.warning(f"Cache write error: {e}")
-            
+
             return result
-        
+
         return wrapper
+
     return decorator
 
 
 def invalidate_cache(pattern: str):
     """
     Invalidate cache keys matching pattern.
-    
+
     Args:
         pattern: Redis key pattern (e.g., "products:*")
-    
+
     Example:
         invalidate_cache("products:*")  # Clear all product caches
     """
     client = get_redis_client()
     if client is None:
         return
-    
+
     try:
         keys = client.keys(pattern)
         if keys:
@@ -133,7 +132,7 @@ def clear_all_cache():
     client = get_redis_client()
     if client is None:
         return
-    
+
     try:
         client.flushdb()
         logger.info("All cache cleared")
@@ -146,7 +145,7 @@ def get_cache_stats() -> dict:
     client = get_redis_client()
     if client is None:
         return {"status": "unavailable"}
-    
+
     try:
         info = client.info("stats")
         return {
@@ -159,4 +158,3 @@ def get_cache_stats() -> dict:
     except Exception as e:
         logger.error(f"Cache stats error: {e}")
         return {"status": "error", "error": str(e)}
-

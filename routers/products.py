@@ -32,7 +32,11 @@ def products_list(
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.get("/api/products/{product_id}", response_model=Optional[Product], summary="Get product by ID")
+@router.get(
+    "/api/products/{product_id}",
+    response_model=Optional[Product],
+    summary="Get product by ID",
+)
 def product_get(product_id: str):
     try:
         return fetch_one(
@@ -43,7 +47,9 @@ def product_get(product_id: str):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.post("/api/products", response_model=Product, status_code=201, summary="Create product")
+@router.post(
+    "/api/products", response_model=Product, status_code=201, summary="Create product"
+)
 def create_product(payload: ProductCreate, _ok: bool = Depends(check_api_key)):
     try:
         rows = execute(
@@ -69,8 +75,12 @@ def create_product(payload: ProductCreate, _ok: bool = Depends(check_api_key)):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.put("/api/products/{product_id}", response_model=Product, summary="Update product")
-def update_product(product_id: str, payload: ProductUpdate, _ok: bool = Depends(check_api_key)):
+@router.put(
+    "/api/products/{product_id}", response_model=Product, summary="Update product"
+)
+def update_product(
+    product_id: str, payload: ProductUpdate, _ok: bool = Depends(check_api_key)
+):
     try:
         updates = []
         params = []
@@ -114,4 +124,3 @@ def delete_product(product_id: str, _ok: bool = Depends(check_api_key)):
         return {"deleted": True}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
-

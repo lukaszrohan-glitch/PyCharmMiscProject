@@ -112,7 +112,7 @@ class TestOrderCreationEndpoint:
             "order_id": "ORD-NEW-001",
             "customer_id": "CUST-ALFA",
             "status": "Planned",
-            "due_date": "2025-12-31"
+            "due_date": "2025-12-31",
         }
         response = app_client.post("/api/orders", json=payload)
         assert response.status_code == 401
@@ -121,15 +121,10 @@ class TestOrderCreationEndpoint:
         auth.ensure_table()
         created_key = auth.create_api_key(label="test-key-create-order")
         api_key = created_key["api_key"]
-        
-        payload = {
-            "order_id": "ORD-TEST-CREATE",
-            "customer_id": "CUST-ALFA"
-        }
+
+        payload = {"order_id": "ORD-TEST-CREATE", "customer_id": "CUST-ALFA"}
         response = app_client.post(
-            "/api/orders",
-            json=payload,
-            headers={"x-api-key": api_key}
+            "/api/orders", json=payload, headers={"x-api-key": api_key}
         )
         assert response.status_code == 201
         data = response.json()
@@ -139,37 +134,25 @@ class TestOrderCreationEndpoint:
         auth.ensure_table()
         created_key = auth.create_api_key(label="test-key-duplicate")
         api_key = created_key["api_key"]
-        
-        payload = {
-            "order_id": "ORD-DUP-TEST",
-            "customer_id": "CUST-ALFA"
-        }
-        
+
+        payload = {"order_id": "ORD-DUP-TEST", "customer_id": "CUST-ALFA"}
+
         response1 = app_client.post(
-            "/api/orders",
-            json=payload,
-            headers={"x-api-key": api_key}
+            "/api/orders", json=payload, headers={"x-api-key": api_key}
         )
         assert response1.status_code == 201
-        
+
         response2 = app_client.post(
-            "/api/orders",
-            json=payload,
-            headers={"x-api-key": api_key}
+            "/api/orders", json=payload, headers={"x-api-key": api_key}
         )
         assert response2.status_code == 409
 
     def test_create_order_with_env_api_key(self, app_client):
         os.environ["API_KEYS"] = "test-env-key-123"
-        
-        payload = {
-            "order_id": "ORD-ENV-KEY",
-            "customer_id": "CUST-ALFA"
-        }
+
+        payload = {"order_id": "ORD-ENV-KEY", "customer_id": "CUST-ALFA"}
         response = app_client.post(
-            "/api/orders",
-            json=payload,
-            headers={"x-api-key": "test-env-key-123"}
+            "/api/orders", json=payload, headers={"x-api-key": "test-env-key-123"}
         )
         assert response.status_code == 201
 
@@ -183,7 +166,7 @@ class TestOrderLineCreationEndpoint:
             "line_no": 99,
             "product_id": "P-100",
             "qty": 10,
-            "unit_price": 30
+            "unit_price": 30,
         }
         response = app_client.post("/api/order-lines", json=payload)
         assert response.status_code == 401
@@ -192,19 +175,17 @@ class TestOrderLineCreationEndpoint:
         auth.ensure_table()
         created_key = auth.create_api_key(label="test-key-orderline")
         api_key = created_key["api_key"]
-        
+
         payload = {
             "order_id": "ORD-0001",
             "line_no": 99,
             "product_id": "P-100",
             "qty": 10,
             "unit_price": 30,
-            "discount_pct": 0.05
+            "discount_pct": 0.05,
         }
         response = app_client.post(
-            "/api/order-lines",
-            json=payload,
-            headers={"x-api-key": api_key}
+            "/api/order-lines", json=payload, headers={"x-api-key": api_key}
         )
         assert response.status_code == 201
         data = response.json()
@@ -215,10 +196,7 @@ class TestTimesheetCreationEndpoint:
     """Test timesheet creation endpoint."""
 
     def test_create_timesheet_without_api_key(self, app_client):
-        payload = {
-            "emp_id": "E-01",
-            "hours": 8.0
-        }
+        payload = {"emp_id": "E-01", "hours": 8.0}
         response = app_client.post("/api/timesheets", json=payload)
         assert response.status_code == 401
 
@@ -226,17 +204,15 @@ class TestTimesheetCreationEndpoint:
         auth.ensure_table()
         created_key = auth.create_api_key(label="test-key-timesheet")
         api_key = created_key["api_key"]
-        
+
         payload = {
             "emp_id": "E-01",
             "hours": 8.5,
             "order_id": "ORD-0001",
-            "operation_no": 1
+            "operation_no": 1,
         }
         response = app_client.post(
-            "/api/timesheets",
-            json=payload,
-            headers={"x-api-key": api_key}
+            "/api/timesheets", json=payload, headers={"x-api-key": api_key}
         )
         assert response.status_code == 201
         data = response.json()
@@ -251,7 +227,7 @@ class TestInventoryCreationEndpoint:
             "txn_id": "TXN-001",
             "product_id": "P-100",
             "qty_change": 100,
-            "reason": "PO"
+            "reason": "PO",
         }
         response = app_client.post("/api/inventory", json=payload)
         assert response.status_code == 401
@@ -260,17 +236,15 @@ class TestInventoryCreationEndpoint:
         auth.ensure_table()
         created_key = auth.create_api_key(label="test-key-inventory")
         api_key = created_key["api_key"]
-        
+
         payload = {
             "txn_id": "TXN-NEW-001",
             "product_id": "P-100",
             "qty_change": 50,
-            "reason": "PO"
+            "reason": "PO",
         }
         response = app_client.post(
-            "/api/inventory",
-            json=payload,
-            headers={"x-api-key": api_key}
+            "/api/inventory", json=payload, headers={"x-api-key": api_key}
         )
         assert response.status_code == 201
         data = response.json()
@@ -288,13 +262,10 @@ class TestAuthLoginEndpoint:
             company_id="COMP-001",
             is_admin=False,
             subscription_plan="free",
-            initial_password=password
+            initial_password=password,
         )
-        
-        payload = {
-            "email": "login@test.com",
-            "password": password
-        }
+
+        payload = {"email": "login@test.com", "password": password}
         response = app_client.post("/api/auth/login", json=payload)
         assert response.status_code == 200
         data = response.json()
@@ -303,10 +274,7 @@ class TestAuthLoginEndpoint:
         assert data["user"]["email"] == "login@test.com"
 
     def test_login_invalid_email(self, app_client):
-        payload = {
-            "email": "nonexistent@test.com",
-            "password": "AnyPassword123!"
-        }
+        payload = {"email": "nonexistent@test.com", "password": "AnyPassword123!"}
         response = app_client.post("/api/auth/login", json=payload)
         assert response.status_code == 401
 
@@ -317,13 +285,10 @@ class TestAuthLoginEndpoint:
             company_id="COMP-001",
             is_admin=False,
             subscription_plan="free",
-            initial_password="CorrectPass123!"
+            initial_password="CorrectPass123!",
         )
-        
-        payload = {
-            "email": "wrongpwd@test.com",
-            "password": "WrongPass123!"
-        }
+
+        payload = {"email": "wrongpwd@test.com", "password": "WrongPass123!"}
         response = app_client.post("/api/auth/login", json=payload)
         assert response.status_code == 401
 
@@ -339,18 +304,16 @@ class TestUserProfileEndpoint:
             company_id="COMP-001",
             is_admin=True,
             subscription_plan="pro",
-            initial_password=password
+            initial_password=password,
         )
-        
+
         login_resp = app_client.post(
-            "/api/auth/login",
-            json={"email": "profile@test.com", "password": password}
+            "/api/auth/login", json={"email": "profile@test.com", "password": password}
         )
         token = login_resp.json()["tokens"]["access_token"]
-        
+
         response = app_client.get(
-            "/api/user/profile",
-            headers={"Authorization": f"Bearer {token}"}
+            "/api/user/profile", headers={"Authorization": f"Bearer {token}"}
         )
         assert response.status_code == 200
         data = response.json()
@@ -374,23 +337,20 @@ class TestChangePasswordEndpoint:
             company_id="COMP-001",
             is_admin=False,
             subscription_plan="free",
-            initial_password=old_password
+            initial_password=old_password,
         )
-        
+
         login_resp = app_client.post(
             "/api/auth/login",
-            json={"email": "changepwd@test.com", "password": old_password}
+            json={"email": "changepwd@test.com", "password": old_password},
         )
         token = login_resp.json()["tokens"]["access_token"]
-        
-        payload = {
-            "old_password": old_password,
-            "new_password": new_password
-        }
+
+        payload = {"old_password": old_password, "new_password": new_password}
         response = app_client.post(
             "/api/auth/change-password",
             json=payload,
-            headers={"Authorization": f"Bearer {token}"}
+            headers={"Authorization": f"Bearer {token}"},
         )
         assert response.status_code == 200
         assert response.json()["changed"] is True
@@ -405,12 +365,11 @@ class TestPasswordResetEndpoints:
             email="resetreq@test.com",
             company_id="COMP-001",
             is_admin=False,
-            subscription_plan="free"
+            subscription_plan="free",
         )
-        
+
         response = app_client.post(
-            "/api/auth/request-reset",
-            json={"email": "resetreq@test.com"}
+            "/api/auth/request-reset", json={"email": "resetreq@test.com"}
         )
         assert response.status_code == 200
         data = response.json()
@@ -424,19 +383,17 @@ class TestPasswordResetEndpoints:
             company_id="COMP-001",
             is_admin=False,
             subscription_plan="free",
-            initial_password=old_password
+            initial_password=old_password,
         )
-        
+
         reset_resp = app_client.post(
-            "/api/auth/request-reset",
-            json={"email": "tokenreset@test.com"}
+            "/api/auth/request-reset", json={"email": "tokenreset@test.com"}
         )
         reset_token = reset_resp.json()["reset_token"]
-        
+
         new_password = "NewTokenPass456!"
         response = app_client.post(
-            "/api/auth/reset",
-            json={"token": reset_token, "new_password": new_password}
+            "/api/auth/reset", json={"token": reset_token, "new_password": new_password}
         )
         assert response.status_code == 200
         assert response.json()["changed"] is True
@@ -447,26 +404,25 @@ class TestAdminCreateUserEndpoint:
 
     def test_admin_create_user_success(self, app_client):
         user_mgmt.ensure_user_tables()
-        admin_email = os.getenv('ADMIN_EMAIL', 'admin@arkuszowniasmb.pl')
-        admin_password = os.getenv('ADMIN_PASSWORD', 'SMB#Admin2025!')
-        
+        admin_email = os.getenv("ADMIN_EMAIL", "admin@arkuszowniasmb.pl")
+        admin_password = os.getenv("ADMIN_PASSWORD", "SMB#Admin2025!")
+
         login_resp = app_client.post(
-            "/api/auth/login",
-            json={"email": admin_email, "password": admin_password}
+            "/api/auth/login", json={"email": admin_email, "password": admin_password}
         )
         if login_resp.status_code == 200:
             token = login_resp.json()["tokens"]["access_token"]
-            
+
             payload = {
                 "email": "newadminuser@test.com",
                 "company_id": "COMP-002",
                 "is_admin": False,
-                "subscription_plan": "pro"
+                "subscription_plan": "pro",
             }
             response = app_client.post(
                 "/api/admin/users",
                 json=payload,
-                headers={"Authorization": f"Bearer {token}"}
+                headers={"Authorization": f"Bearer {token}"},
             )
             assert response.status_code == 200
 
@@ -478,25 +434,24 @@ class TestAdminCreateUserEndpoint:
             company_id="COMP-001",
             is_admin=False,
             subscription_plan="free",
-            initial_password=password
+            initial_password=password,
         )
-        
+
         login_resp = app_client.post(
-            "/api/auth/login",
-            json={"email": "nonadmin@test.com", "password": password}
+            "/api/auth/login", json={"email": "nonadmin@test.com", "password": password}
         )
         token = login_resp.json()["tokens"]["access_token"]
-        
+
         payload = {
             "email": "restricted@test.com",
             "company_id": "COMP-001",
             "is_admin": False,
-            "subscription_plan": "free"
+            "subscription_plan": "free",
         }
         response = app_client.post(
             "/api/admin/users",
             json=payload,
-            headers={"Authorization": f"Bearer {token}"}
+            headers={"Authorization": f"Bearer {token}"},
         )
         assert response.status_code == 403
 
@@ -506,19 +461,17 @@ class TestAdminListUsersEndpoint:
 
     def test_admin_list_users_success(self, app_client):
         user_mgmt.ensure_user_tables()
-        admin_email = os.getenv('ADMIN_EMAIL', 'admin@arkuszowniasmb.pl')
-        admin_password = os.getenv('ADMIN_PASSWORD', 'SMB#Admin2025!')
-        
+        admin_email = os.getenv("ADMIN_EMAIL", "admin@arkuszowniasmb.pl")
+        admin_password = os.getenv("ADMIN_PASSWORD", "SMB#Admin2025!")
+
         login_resp = app_client.post(
-            "/api/auth/login",
-            json={"email": admin_email, "password": admin_password}
+            "/api/auth/login", json={"email": admin_email, "password": admin_password}
         )
         if login_resp.status_code == 200:
             token = login_resp.json()["tokens"]["access_token"]
-            
+
             response = app_client.get(
-                "/api/admin/users",
-                headers={"Authorization": f"Bearer {token}"}
+                "/api/admin/users", headers={"Authorization": f"Bearer {token}"}
             )
             assert response.status_code == 200
             data = response.json()
@@ -530,45 +483,43 @@ class TestSubscriptionPlansEndpoints:
 
     def test_admin_create_plan_success(self, app_client):
         user_mgmt.ensure_user_tables()
-        admin_email = os.getenv('ADMIN_EMAIL', 'admin@arkuszowniasmb.pl')
-        admin_password = os.getenv('ADMIN_PASSWORD', 'SMB#Admin2025!')
-        
+        admin_email = os.getenv("ADMIN_EMAIL", "admin@arkuszowniasmb.pl")
+        admin_password = os.getenv("ADMIN_PASSWORD", "SMB#Admin2025!")
+
         login_resp = app_client.post(
-            "/api/auth/login",
-            json={"email": admin_email, "password": admin_password}
+            "/api/auth/login", json={"email": admin_email, "password": admin_password}
         )
         if login_resp.status_code == 200:
             token = login_resp.json()["tokens"]["access_token"]
-            
+
             payload = {
                 "plan_id": "plan-test-001",
                 "name": "Test Plan",
                 "max_orders": 100,
                 "max_users": 5,
-                "features": ["export", "api"]
+                "features": ["export", "api"],
             }
             response = app_client.post(
                 "/api/admin/subscription-plans",
                 json=payload,
-                headers={"Authorization": f"Bearer {token}"}
+                headers={"Authorization": f"Bearer {token}"},
             )
             assert response.status_code == 200
 
     def test_admin_list_plans_success(self, app_client):
         user_mgmt.ensure_user_tables()
-        admin_email = os.getenv('ADMIN_EMAIL', 'admin@arkuszowniasmb.pl')
-        admin_password = os.getenv('ADMIN_PASSWORD', 'SMB#Admin2025!')
-        
+        admin_email = os.getenv("ADMIN_EMAIL", "admin@arkuszowniasmb.pl")
+        admin_password = os.getenv("ADMIN_PASSWORD", "SMB#Admin2025!")
+
         login_resp = app_client.post(
-            "/api/auth/login",
-            json={"email": admin_email, "password": admin_password}
+            "/api/auth/login", json={"email": admin_email, "password": admin_password}
         )
         if login_resp.status_code == 200:
             token = login_resp.json()["tokens"]["access_token"]
-            
+
             response = app_client.get(
                 "/api/admin/subscription-plans",
-                headers={"Authorization": f"Bearer {token}"}
+                headers={"Authorization": f"Bearer {token}"},
             )
             assert response.status_code == 200
             data = response.json()
@@ -584,11 +535,10 @@ class TestAdminApiKeyEndpoints:
 
     def test_admin_list_keys_with_admin_key(self, app_client):
         auth.ensure_table()
-        os.environ['ADMIN_KEY'] = 'test-admin-key'
-        
+        os.environ["ADMIN_KEY"] = "test-admin-key"
+
         response = app_client.get(
-            "/api/admin/api-keys",
-            headers={"x-admin-key": "test-admin-key"}
+            "/api/admin/api-keys", headers={"x-admin-key": "test-admin-key"}
         )
         assert response.status_code == 200
         data = response.json()
@@ -596,13 +546,13 @@ class TestAdminApiKeyEndpoints:
 
     def test_admin_create_key_with_admin_key(self, app_client):
         auth.ensure_table()
-        os.environ['ADMIN_KEY'] = 'test-admin-key'
-        
+        os.environ["ADMIN_KEY"] = "test-admin-key"
+
         payload = {"label": "admin-created-key"}
         response = app_client.post(
             "/api/admin/api-keys",
             json=payload,
-            headers={"x-admin-key": "test-admin-key"}
+            headers={"x-admin-key": "test-admin-key"},
         )
         assert response.status_code == 200
         data = response.json()
@@ -610,14 +560,14 @@ class TestAdminApiKeyEndpoints:
 
     def test_admin_rotate_key_with_admin_key(self, app_client):
         auth.ensure_table()
-        os.environ['ADMIN_KEY'] = 'test-admin-key'
-        
+        os.environ["ADMIN_KEY"] = "test-admin-key"
+
         created = auth.create_api_key(label="rotate-test")
         key_id = created["id"]
-        
+
         response = app_client.post(
             f"/api/admin/api-keys/{key_id}/rotate",
-            headers={"x-admin-key": "test-admin-key"}
+            headers={"x-admin-key": "test-admin-key"},
         )
         assert response.status_code == 200
         data = response.json()
@@ -625,24 +575,22 @@ class TestAdminApiKeyEndpoints:
 
     def test_admin_delete_key_with_admin_key(self, app_client):
         auth.ensure_table()
-        os.environ['ADMIN_KEY'] = 'test-admin-key'
-        
+        os.environ["ADMIN_KEY"] = "test-admin-key"
+
         created = auth.create_api_key(label="delete-test")
         key_id = created["id"]
-        
+
         response = app_client.delete(
-            f"/api/admin/api-keys/{key_id}",
-            headers={"x-admin-key": "test-admin-key"}
+            f"/api/admin/api-keys/{key_id}", headers={"x-admin-key": "test-admin-key"}
         )
         assert response.status_code == 200
 
     def test_admin_api_key_audit(self, app_client):
         auth.ensure_table()
-        os.environ['ADMIN_KEY'] = 'test-admin-key'
-        
+        os.environ["ADMIN_KEY"] = "test-admin-key"
+
         response = app_client.get(
-            "/api/admin/api-key-audit",
-            headers={"x-admin-key": "test-admin-key"}
+            "/api/admin/api-key-audit", headers={"x-admin-key": "test-admin-key"}
         )
         assert response.status_code == 200
         data = response.json()
@@ -650,10 +598,10 @@ class TestAdminApiKeyEndpoints:
 
     def test_admin_purge_audit(self, app_client):
         auth.ensure_table()
-        os.environ['ADMIN_KEY'] = 'test-admin-key'
-        
+        os.environ["ADMIN_KEY"] = "test-admin-key"
+
         response = app_client.delete(
             "/api/admin/api-key-audit?days=30",
-            headers={"x-admin-key": "test-admin-key"}
+            headers={"x-admin-key": "test-admin-key"},
         )
         assert response.status_code == 200

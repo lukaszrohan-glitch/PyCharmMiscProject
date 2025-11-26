@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 import db
 import main
 
+
 @pytest.fixture(scope="function", autouse=True)
 def app_client():
     # Use a unique temporary SQLite file per test to avoid file-locking on Windows

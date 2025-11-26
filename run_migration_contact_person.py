@@ -1,7 +1,8 @@
 import psycopg2
 
 # Wklej tu swój DATABASE_PUBLIC_URL z Railway (CAŁY, w cudzysłowie)
-DATABASE_URL = "postgresql://postgres:YOOgZmPdkOteYXenkjcYArWkRdRJrbyo@switchyard.proxy.rlwy.net:28247/railway
+DATABASE_URL = "postgresql://postgres:YOOgZmPdkOteYXenkjcYArWkRdRJrbyo@switchyard.proxy.rlwy.net:28247/railway"
+
 
 def main():
     conn = psycopg2.connect(DATABASE_URL)
@@ -15,6 +16,7 @@ def main():
     cur.close()
     conn.close()
     print("Migration done – contact_person columns are in place.")
+
 
 if __name__ == "__main__":
     main()
