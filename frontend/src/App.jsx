@@ -26,6 +26,7 @@ export default function App() {
   const [initialFinanceOrderId, setInitialFinanceOrderId] = useState(null);
   const [showGuide, setShowGuide] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const { profile, checkingAuth, logout } = useAuth();
 
   // zapisujemy język przy zmianie
@@ -70,33 +71,76 @@ export default function App() {
 
   const jumpToFinance = (orderId) => {
     setInitialFinanceOrderId(orderId);
+    setIsTransitioning(true);
     setCurrentView('financials');
+    setTimeout(() => setIsTransitioning(false), 300);
   };
 
+  // Smooth view transitions
+  const handleViewChange = (newView) => {
+    if (newView === currentView) return;
+    setIsTransitioning(true);
+    setCurrentView(newView);
+    // Reset after animation duration
+    setTimeout(() => setIsTransitioning(false), 300);
+  };
+
+  // Update document title when view changes
+  useEffect(() => {
+    const viewTitle = {
+      dashboard: lang === 'pl' ? 'Panel główny' : 'Dashboard',
+      orders: lang === 'pl' ? 'Zamówienia' : 'Orders',
+      inventory: lang === 'pl' ? 'Magazyn' : 'Inventory',
+      clients: lang === 'pl' ? 'Klienci' : 'Clients',
+      timesheets: lang === 'pl' ? 'Czas pracy' : 'Timesheets',
+      reports: lang === 'pl' ? 'Raporty' : 'Reports',
+      financials: lang === 'pl' ? 'Finanse' : 'Financials',
+      admin: lang === 'pl' ? 'Administracja' : 'Admin',
+    }[currentView] || 'Synterra';
+
+    document.title = `${viewTitle} - Synterra`;
+  }, [currentView, lang]);
+
   const renderView = () => {
+
+    let content;
     switch (currentView) {
       case 'orders':
-        return <Orders lang={lang} />;
+        content = <Orders lang={lang} />;
+        break;
       case 'inventory':
-        return <Inventory lang={lang} />;
+        content = <Inventory lang={lang} />;
+        break;
       case 'clients':
-        return <Clients lang={lang} />;
+        content = <Clients lang={lang} />;
+        break;
       case 'timesheets':
-        return <Timesheets lang={lang} />;
+        content = <Timesheets lang={lang} />;
+        break;
       case 'reports':
-        return <Reports lang={lang} />;
+        content = <Reports lang={lang} />;
+        break;
       case 'financials':
-        return <Financials lang={lang} initialOrderId={initialFinanceOrderId} />;
+        content = <Financials lang={lang} initialOrderId={initialFinanceOrderId} />;
+        break;
       case 'admin':
         // prosty guard po stronie frontu – backend i tak musi sprawdzać
         if (profile?.is_admin) {
-          return <Admin lang={lang} />;
+          content = <Admin lang={lang} />;
+        } else {
+          content = <Dashboard lang={lang} setCurrentView={setCurrentView} />;
         }
-        return <Dashboard lang={lang} setCurrentView={setCurrentView} />;
+        break;
       case 'dashboard':
       default:
-        return <Dashboard lang={lang} setCurrentView={setCurrentView} />;
+        content = <Dashboard lang={lang} setCurrentView={setCurrentView} />;
     }
+
+    return (
+      <div className={styles.viewWrapper} key={currentView}>
+        {content}
+      </div>
+    );
   };
 
   // podczas sprawdzania autoryzacji – prosty ekran ładowania
@@ -123,7 +167,7 @@ export default function App() {
         lang={lang}
         setLang={setLang}
         currentView={currentView}
-        setCurrentView={setCurrentView}
+        setCurrentView={handleViewChange}
         profile={profile}
         onSettings={handleSettings}
         onLogout={handleLogout}
@@ -132,7 +176,14 @@ export default function App() {
         isHelpOpen={showHelp}
       />
       <main id="main-content" className={styles.mainContent}>
-        <div className={styles.container}>{renderView()}</div>
+        <div className={`${styles.container} ${isTransitioning ? styles.transitioning : ''}`}>
+          {isTransitioning && (
+            <div className={styles.loadingOverlay}>
+              <div className={styles.spinner} />
+            </div>
+          )}
+          {renderView()}
+        </div>
       </main>
       {isSettingsOpen && (
         <Settings
@@ -140,7 +191,7 @@ export default function App() {
           onClose={() => setSettingsOpen(false)}
           onOpenAdmin={() => {
             setSettingsOpen(false);
-            setCurrentView('admin');
+            handleViewChange('admin');
           }}
           lang={lang}
         />

@@ -199,6 +199,10 @@
 
 .menuItemActive {
   background: var(--brand-primary);
+  color: white;
+  font-weight: var(--font-weight-semibold);
+  box-shadow: 0 0 0 2px var(--brand-primary-light);
+  position: relative;
   color: var(--text-on-brand);
   font-weight: var(--font-weight-medium);
 }
