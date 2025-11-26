@@ -90,45 +90,45 @@
 }
 
 .badgeNew {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--status-info-bg);
+  color: var(--status-info);
 }
 
 .badgePlanned {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--status-warning-bg);
+  color: var(--status-warning);
 }
 
 .badgeInProd {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--status-success-bg);
+  color: var(--status-success);
 }
 
 .badgeDone {
-  background: #e5e7eb;
-  color: #374151;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
 }
 
 .priority {
-  padding: 0.25rem 0.75rem;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  font-weight: 600;
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
 }
 
 .priorityhigh {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--status-error-bg);
+  color: var(--status-error);
 }
 
 .prioritymedium {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--status-warning-bg);
+  color: var(--status-warning);
 }
 
 .prioritylow {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--status-info-bg);
+  color: var(--status-info);
 }
 
 .progressBar {
@@ -219,8 +219,8 @@
 }
 
 .shortage {
-  color: #dc2626;
-  font-weight: 600;
+  color: var(--status-error);
+  font-weight: var(--font-weight-semibold);
 }
 
 .modalActions {

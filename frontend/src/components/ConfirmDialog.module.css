@@ -49,75 +49,77 @@
 }
 
 .title {
-  margin: 0 0 16px 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #212529;
+  margin: 0 0 var(--spacing-4) 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
 }
 
 .message {
-  margin: 0 0 24px 0;
-  color: #6c757d;
-  line-height: 1.6;
+  margin: 0 0 var(--spacing-6) 0;
+  color: var(--text-secondary);
+  line-height: var(--line-height-base);
 }
 
 .actions {
   display: flex;
-  gap: 12px;
+  gap: var(--spacing-3);
   justify-content: flex-end;
 }
 
 .cancelBtn,
 .confirmBtn {
-  padding: 10px 20px;
+  padding: var(--spacing-2) var(--spacing-5);
   border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
   min-width: 80px;
 }
 
 .cancelBtn {
-  background: #f8f9fa;
-  color: #6c757d;
-  border: 1px solid #dee2e6;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-secondary);
 }
 
 .cancelBtn:hover {
-  background: #e9ecef;
+  background: var(--border-secondary);
 }
 
 .cancelBtn:focus {
-  outline: 2px solid #0d6efd;
+  outline: 2px solid var(--border-focus);
   outline-offset: 2px;
 }
 
 .confirmBtn {
-  background: #0d6efd;
-  color: white;
+  background: var(--brand-primary);
+  color: var(--text-on-brand);
 }
 
 .confirmBtn:hover {
-  background: #0b5ed7;
+  background: var(--brand-primary-hover);
 }
 
 .confirmBtn--danger {
-  background: #dc3545;
+  background: var(--status-error);
 }
 
 .confirmBtn--danger:hover {
-  background: #bb2d3b;
+  background: var(--status-error);
+  filter: brightness(0.9);
 }
 
 .confirmBtn--warning {
-  background: #ffc107;
-  color: #000;
+  background: var(--status-warning);
+  color: var(--text-primary);
 }
 
 .confirmBtn--warning:hover {
-  background: #ffca2c;
+  background: var(--status-warning);
+  filter: brightness(1.1);
 }
 
 .confirmBtn:focus {

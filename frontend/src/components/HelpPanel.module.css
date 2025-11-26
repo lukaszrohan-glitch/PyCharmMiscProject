@@ -34,7 +34,7 @@
 .dark .panel {
   background: rgba(15, 23, 42, 0.95);
   border-color: rgba(71, 85, 105, 0.85);
-  color: #f8fafc;
+  color: var(--text-on-brand);
 }
 
 .header {

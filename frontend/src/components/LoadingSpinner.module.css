@@ -58,17 +58,17 @@
 }
 
 .bounce1 {
-  background-color: #0d6efd;
+  background-color: var(--brand-primary);
   animation-delay: -0.32s;
 }
 
 .bounce2 {
-  background-color: #0d6efd;
+  background-color: var(--brand-primary);
   animation-delay: -0.16s;
 }
 
 .bounce3 {
-  background-color: #0d6efd;
+  background-color: var(--brand-primary);
 }
 
 @keyframes bounce {
@@ -85,9 +85,9 @@
 }
 
 .text {
-  color: #6c757d;
-  font-size: 14px;
-  font-weight: 500;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
 }
 
 /* Accessibility: respect prefers-reduced-motion */
