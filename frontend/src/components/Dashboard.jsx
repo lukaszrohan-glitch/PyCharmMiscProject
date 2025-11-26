@@ -152,6 +152,8 @@ export default function Dashboard({ lang, setCurrentView }) {
 
   const cards = [
     { view: 'orders', icon: <IconOrders />, title: lang === 'pl' ? 'Zamówienia' : 'Orders', text: lang === 'pl' ? 'Zarządzaj zamówieniami klientów' : 'Manage customer orders' },
+    { view: 'products', icon: <IconWarehouse />, title: lang === 'pl' ? 'Produkty' : 'Products', text: lang === 'pl' ? 'Katalog produktów i usług' : 'Product and service catalog' },
+    { view: 'production', icon: <IconOrders />, title: lang === 'pl' ? 'Planowanie produkcji' : 'Production Planning', text: lang === 'pl' ? 'Harmonogram i receptury (BOM)' : 'Schedule and BOM' },
     { view: 'clients', icon: <IconClients />, title: lang === 'pl' ? 'Klienci' : 'Clients', text: lang === 'pl' ? 'Zarządzaj klientami' : 'Manage customers' },
     { view: 'inventory', icon: <IconWarehouse />, title: lang === 'pl' ? 'Magazyn' : 'Inventory', text: lang === 'pl' ? 'Kontroluj stany magazynowe' : 'Control inventory levels' },
     { view: 'timesheets', icon: <IconTimesheets />, title: lang === 'pl' ? 'Czas pracy' : 'Timesheets', text: lang === 'pl' ? 'Monitoruj czas pracowników' : 'Monitor employee time' },

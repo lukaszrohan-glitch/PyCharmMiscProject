@@ -33,6 +33,8 @@ export default function Header({
     () => [
       { id: 'dashboard', label: lang === 'pl' ? 'Panel główny' : 'Home' },
       { id: 'orders', label: tt('orders') || (lang === 'pl' ? 'Zamówienia' : 'Orders') },
+      { id: 'products', label: lang === 'pl' ? 'Produkty' : 'Products' },
+      { id: 'production', label: lang === 'pl' ? 'Planowanie' : 'Planning' },
       { id: 'clients', label: lang === 'pl' ? 'Klienci' : 'Clients' },
       { id: 'inventory', label: tt('inventory') || (lang === 'pl' ? 'Magazyn' : 'Inventory') },
       { id: 'timesheets', label: tt('timesheets') || (lang === 'pl' ? 'Czas pracy' : 'Timesheets') },

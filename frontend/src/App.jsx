@@ -12,6 +12,8 @@ import Clients from './components/Clients';
 import Admin from './components/Admin';
 import UserGuide from './components/UserGuide';
 import HelpPanel from './components/HelpPanel';
+import Products from './components/Products';
+import Production from './components/Production';
 import { useAuth } from './auth/useAuth';
 import styles from './App.module.css';
 
@@ -107,7 +109,13 @@ export default function App() {
     let content;
     switch (currentView) {
       case 'orders':
-        content = <Orders lang={lang} />;
+        content = <Orders lang={lang} jumpToFinance={jumpToFinance} />;
+        break;
+      case 'products':
+        content = <Products lang={lang} />;
+        break;
+      case 'production':
+        content = <Production lang={lang} />;
         break;
       case 'inventory':
         content = <Inventory lang={lang} />;

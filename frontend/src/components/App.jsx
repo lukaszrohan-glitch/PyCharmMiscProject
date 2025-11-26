@@ -16,6 +16,7 @@ export default function App({
   onLogout,
   onSearchSelect,
   jumpToFinance,
+  children,
 }) {
   const [showGuide, setShowGuide] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
@@ -42,7 +43,9 @@ export default function App({
         onOpenHelp={() => setShowHelp((prev) => !prev)}
         isHelpOpen={showHelp}
       />
-      {/* Placeholder for routed content */}
+      <main id="main-content" className={styles.mainContent}>
+        {children}
+      </main>
       {showGuide && (
         <UserGuide
           lang={lang}
