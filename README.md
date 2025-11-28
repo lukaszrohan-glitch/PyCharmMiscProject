@@ -2,6 +2,43 @@
 
 Manufacturing and order management system for small and medium businesses.
 
+## 🚀 Quick Start & Railway Deployment
+
+### Required Environment Variables
+
+Before deploying to Railway, you MUST set these environment variables:
+
+```bash
+JWT_SECRET=<64-byte-hex-string>
+ADMIN_EMAIL=admin@arkuszowniasmb.pl
+ADMIN_PASSWORD=<secure-password>
+CORS_ORIGINS=https://synterra.up.railway.app
+```
+
+**⚠️ CRITICAL**: Without `JWT_SECRET`, authentication will fail!
+
+### Setting Variables on Railway
+
+**Option 1: Railway Dashboard (Recommended)**
+1. Go to https://railway.app/dashboard
+2. Select your project → Variables tab
+3. Add each variable listed above
+
+**Option 2: Railway CLI**
+```powershell
+# Run the setup script
+.\scripts\setup-railway-vars.ps1
+
+# Or manually:
+railway variables --set "JWT_SECRET=your-secret-here"
+railway variables --set "ADMIN_EMAIL=admin@arkuszowniasmb.pl"
+# ... etc
+```
+
+📖 **Full setup guide**: See [RAILWAY_VARIABLES_SETUP.md](./RAILWAY_VARIABLES_SETUP.md)
+
+---
+
 ## Frontend navigation overview
 
 - Global header inspired by Apple design:
