@@ -15,10 +15,22 @@ from queries import SQL_CUSTOMERS
 router = APIRouter(tags=["Customers"])
 
 
+def _readonly_dep(
+    authorization=Header(None), x_api_key=Header(None), api_key: Optional[str] = None
+):
+    return check_api_key(
+        authorization=authorization,
+        x_api_key=x_api_key,
+        api_key=api_key,
+        allow_readonly=True,
+    )
+
+
 @router.get("/api/customers", response_model=List[Customer], summary="List customers")
 def customers_list(
     limit: Optional[int] = Query(None, ge=1, le=5000),
     offset: Optional[int] = Query(None, ge=0),
+    _ok: bool = Depends(_readonly_dep),
 ):
     try:
         sql = SQL_CUSTOMERS

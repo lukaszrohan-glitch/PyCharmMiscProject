@@ -149,16 +149,6 @@ export default function Dashboard({ lang, setCurrentView }) {
     }
   ];
 
-  const cards = [
-    { view: 'orders', icon: <IconOrders />, title: lang === 'pl' ? 'Zamówienia' : 'Orders' },
-    { view: 'products', icon: <IconWarehouse />, title: lang === 'pl' ? 'Produkty' : 'Products' },
-    { view: 'clients', icon: <IconClients />, title: lang === 'pl' ? 'Klienci' : 'Clients' },
-    { view: 'inventory', icon: <IconWarehouse />, title: lang === 'pl' ? 'Magazyn' : 'Inventory' },
-    { view: 'timesheets', icon: <IconTimesheets />, title: lang === 'pl' ? 'Czas pracy' : 'Timesheets' },
-    { view: 'reports', icon: <IconReports />, title: lang === 'pl' ? 'Raporty' : 'Reports' },
-    { view: 'financials', icon: <IconFinance />, title: lang === 'pl' ? 'Finanse' : 'Financials' }
-  ];
-
   return (
     <>
       {/* Statistics Row */}
@@ -207,20 +197,6 @@ export default function Dashboard({ lang, setCurrentView }) {
         </div>
       )}
 
-      {/* Quick Actions */}
-      <div className={styles.cards}>
-        {cards.map(card => (
-          <button
-            key={card.view}
-            type="button"
-            className={styles.card}
-            onClick={() => setCurrentView(card.view)}
-          >
-            <div className={styles.cardIcon}>{card.icon}</div>
-            <h3 className={styles.cardTitle}>{card.title}</h3>
-          </button>
-        ))}
-      </div>
     </>
   );
 }

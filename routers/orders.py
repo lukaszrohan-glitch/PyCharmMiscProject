@@ -84,6 +84,7 @@ def _normalize_status(value: Optional[str]) -> Optional[str]:
 def orders_list(
     limit: Optional[int] = Query(None, ge=1, le=1000),
     offset: Optional[int] = Query(None, ge=0),
+    _ok: bool = Depends(_readonly_dep),
 ):
     try:
         sql = SQL_ORDERS
@@ -282,7 +283,9 @@ def get_next_order_id_hint(_ok: bool = Depends(_readonly_dep)):
 
 @router.get("/api/orders/validate", summary="Validate an order ID before submit")
 def validate_order(
-    order_id: str = Query(..., min_length=1), customer_id: Optional[str] = None
+    order_id: str = Query(..., min_length=1),
+    customer_id: Optional[str] = None,
+    _ok: bool = Depends(_readonly_dep),
 ):
     try:
         exists = fetch_one(SQL_FIND_ORDER, (order_id.strip(),))

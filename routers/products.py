@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, Header
 
 from db import fetch_all, fetch_one, execute
 from schemas import Product, ProductCreate, ProductUpdate
@@ -13,10 +13,22 @@ from queries import SQL_PRODUCTS
 router = APIRouter(tags=["Products"])
 
 
+def _readonly_dep(
+    authorization=Header(None), x_api_key=Header(None), api_key: Optional[str] = None
+):
+    return check_api_key(
+        authorization=authorization,
+        x_api_key=x_api_key,
+        api_key=api_key,
+        allow_readonly=True,
+    )
+
+
 @router.get("/api/products", response_model=List[Product], summary="List products")
 def products_list(
     limit: Optional[int] = Query(None, ge=1, le=5000),
     offset: Optional[int] = Query(None, ge=0),
+    _ok: bool = Depends(_readonly_dep),
 ):
     try:
         sql = SQL_PRODUCTS

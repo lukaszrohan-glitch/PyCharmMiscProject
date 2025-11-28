@@ -40,7 +40,12 @@ def check_api_key(
             return True
         except Exception as e:
             logger.debug(f"JWT token validation failed: {e}")
+            # If readonly is allowed and we have a Bearer token (even if invalid),
+            # allow access. This prevents logged-in users from getting API key errors.
+            if allow_readonly:
+                return True
 
+    # If readonly allowed and no key required, permit access
     if allow_readonly and not key:
         return True
 

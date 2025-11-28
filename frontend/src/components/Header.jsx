@@ -234,17 +234,6 @@ export default function Header({
             )}
           </div>
 
-          {/* Explicit Home button to return to main dashboard */}
-          <button
-            type="button"
-            className={styles.homeBtn}
-            onClick={() => changeView('dashboard')}
-            aria-label={t.home}
-            aria-current={currentView === 'dashboard' ? 'page' : undefined}
-          >
-            {t.home}
-          </button>
-
           <div className={styles.searchShell}>
             <label htmlFor={typeaheadId} className="visually-hidden">
               {t.search}
@@ -335,23 +324,12 @@ export default function Header({
                 aria-label={lang === 'pl' ? 'Ustawienia profilu' : 'Open profile settings'}
               >
                 <span className={styles.avatar}>
-                  {profile.name?.charAt(0) || profile.email?.charAt(0) || 'U'}
+                  {profile.email?.charAt(0) || 'U'}
                 </span>
                 <span className={styles.profileMeta}>
-                  <span className={styles.profileName}>{profile.name || profile.email}</span>
-                  <span className={styles.profileRole}>
-                    {profile.email && (
-                      <span className={styles.profileEmail}>{profile.email}</span>
-                    )}
-                    <span>
-                      {profile.is_admin
-                        ? lang === 'pl'
-                          ? 'Administrator'
-                          : 'Admin'
-                        : lang === 'pl'
-                          ? 'Użytkownik'
-                          : 'User'}
-                    </span>
+                  <span className={styles.profileName}>
+                    {profile.email}
+                    {profile.is_admin && <span style={{marginLeft: '4px', opacity: 0.7}}>👑</span>}
                   </span>
                 </span>
               </button>

@@ -77,6 +77,7 @@ def export_inventory_csv(_ok: bool = Depends(_readonly_dep)):
 def inventory_list(
     limit: Optional[int] = Query(None, ge=1, le=5000),
     offset: Optional[int] = Query(None, ge=0),
+    _ok: bool = Depends(_readonly_dep),
 ):
     try:
         sql = (
