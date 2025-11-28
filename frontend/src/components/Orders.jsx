@@ -124,21 +124,7 @@ export default function Orders({ lang }) {
     }
   }, [])
 
-  useEffect(() => {
-    loadOrders()
-    loadCustomers()
-    fetchAutoSuggestion()
-  }, [loadOrders, loadCustomers, fetchAutoSuggestion])
-
-  useEffect(() => {
-     if (!showForm) {
-       setFieldErrors({})
-       return
-     }
-     if (!formData.order_id) return
-     validateOrder(formData.order_id, formData.customer_id)
-  }, [formData.order_id, formData.customer_id, showForm, validateOrder])
-
+  // Define validateOrder BEFORE the useEffect that uses it
   const validateOrder = useCallback(async (orderId, customerId) => {
     if (!orderId) return
     try {
@@ -153,6 +139,21 @@ export default function Orders({ lang }) {
       }
     }
   }, [lang])
+
+  useEffect(() => {
+    loadOrders()
+    loadCustomers()
+    fetchAutoSuggestion()
+  }, [loadOrders, loadCustomers, fetchAutoSuggestion])
+
+  useEffect(() => {
+     if (!showForm) {
+       setFieldErrors({})
+       return
+     }
+     if (!formData.order_id) return
+     validateOrder(formData.order_id, formData.customer_id)
+  }, [formData.order_id, formData.customer_id, showForm, validateOrder])
 
   const handleAddClick = () => {
     setEditingOrder(null)
