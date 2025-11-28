@@ -1,5 +1,3 @@
-import { useState, useEffect } from 'react';
-import * as api from '../services/api';
 import styles from '../App.module.css';
 import { useI18n } from '../i18n';
 
@@ -81,73 +79,6 @@ const IconFinance = () => (
 
 export default function Dashboard({ lang, setCurrentView }) {
   const { t } = useI18n();
-  const [stats, setStats] = useState({
-    ordersTotal: 0,
-    ordersNew: 0,
-    clientsTotal: 0,
-    inventoryItems: 0,
-    lowStockCount: 0
-  });
-  const [recentOrders, setRecentOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const loadDashboardData = async () => {
-      try {
-        // Load statistics
-        const [orders, clients, inventory] = await Promise.all([
-          api.getOrders(),
-          api.getCustomers(),
-          api.getInventory()
-        ]);
-
-        const newOrders = orders.filter(o => o.status === 'New').length;
-
-        const lowStock = inventory.filter(item =>
-          item.balance !== null && item.balance < 10
-        ).length;
-
-        setStats({
-          ordersTotal: orders.length,
-          ordersNew: newOrders,
-          clientsTotal: clients.length,
-          inventoryItems: inventory.length,
-          lowStockCount: lowStock
-        });
-
-        // Get recent 5 orders
-        setRecentOrders(orders.slice(0, 5));
-      } catch (err) {
-        console.error('Dashboard data load failed:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadDashboardData();
-  }, []);
-
-  const statCards = [
-    {
-      label: t?.dashboard?.totalOrders || (lang === 'pl' ? 'Zamówienia' : 'Total Orders'),
-      value: stats.ordersTotal,
-      subtext: `${stats.ordersNew} ${lang === 'pl' ? 'nowych' : 'new'}`,
-      color: '#0891b2'
-    },
-    {
-      label: t?.dashboard?.clients || (lang === 'pl' ? 'Klienci' : 'Clients'),
-      value: stats.clientsTotal,
-      color: '#8b5cf6'
-    },
-    {
-      label: t?.dashboard?.inventory || (lang === 'pl' ? 'Produkty' : 'Inventory'),
-      value: stats.inventoryItems,
-      subtext: stats.lowStockCount > 0
-        ? `${stats.lowStockCount} ${lang === 'pl' ? 'niski stan' : 'low stock'}`
-        : null,
-      color: stats.lowStockCount > 0 ? '#ef4444' : '#10b981'
-    }
-  ];
 
   const navTiles = [
     {
@@ -193,40 +124,20 @@ export default function Dashboard({ lang, setCurrentView }) {
   ];
 
   return (
-    <>
-      {/* Statistics Row */}
-      {!loading && (
-        <div className={styles.statsRow}>
-          {statCards.map((stat, idx) => (
-            <div key={idx} className={styles.statCard}>
-              <div className={styles.statValue} style={{ color: stat.color }}>
-                {stat.value}
-              </div>
-              <div className={styles.statLabel}>{stat.label}</div>
-              {stat.subtext && (
-                <div className={styles.statSubtext}>{stat.subtext}</div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Navigation Tiles */}
-      <div className={styles.navTiles}>
-        {navTiles.map(tile => (
-          <button
-            key={tile.key}
-            type="button"
-            className={styles.navTile}
-            onClick={() => setCurrentView(tile.key)}
-          >
-            <div className={styles.navTileIcon}>
-              {tile.icon}
-            </div>
-            <h3 className={styles.navTileTitle}>{tile.title}</h3>
-          </button>
-        ))}
-      </div>
-    </>
+    <div className={styles.dashboardGrid}>
+      {navTiles.map(tile => (
+        <button
+          key={tile.key}
+          type="button"
+          className={styles.navTile}
+          onClick={() => setCurrentView(tile.key)}
+        >
+          <div className={styles.navTileIcon}>
+            {tile.icon}
+          </div>
+          <h3 className={styles.navTileTitle}>{tile.title}</h3>
+        </button>
+      ))}
+    </div>
   );
 }
