@@ -136,6 +136,8 @@ class ErrorBoundary extends Component {
                 }}
                 onMouseOver={(e) => (e.target.style.background = '#0b5ed7')}
                 onMouseOut={(e) => (e.target.style.background = '#0d6efd')}
+                onFocus={(e) => (e.target.style.background = '#0b5ed7')}
+                onBlur={(e) => (e.target.style.background = '#0d6efd')}
               >
                 🔄 Odśwież stronę
               </button>
@@ -154,6 +156,8 @@ class ErrorBoundary extends Component {
                 }}
                 onMouseOver={(e) => (e.target.style.background = '#5a6268')}
                 onMouseOut={(e) => (e.target.style.background = '#6c757d')}
+                onFocus={(e) => (e.target.style.background = '#5a6268')}
+                onBlur={(e) => (e.target.style.background = '#6c757d')}
               >
                 🏠 Strona główna
               </button>

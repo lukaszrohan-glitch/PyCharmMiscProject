@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
+import styles from './UserGuide.module.css'
 
 export default function UserGuide(props) {
-  const { lang, onClose } = props
+  const { lang } = props
   const content = useMemo(
     () => ({
       pl: {
@@ -418,67 +419,62 @@ export default function UserGuide(props) {
   const guide = content[lang] || content.pl
 
   return (
-    <div className="guide-overlay" role="dialog" aria-modal="true" aria-label={guide.title}>
-      <div className="page user-guide">
-        <button className="guide-close" onClick={onClose} aria-label={lang === 'pl' ? 'Zamknij przewodnik' : 'Close guide'}>
-          ×
-        </button>
-        <header className="user-guide-header">
-          <h1 className="user-guide-title">{guide.title}</h1>
-          <p className="user-guide-intro">{guide.intro}</p>
-        </header>
+    <div className={styles.page}>
+      <header className={styles.header}>
+        <h1 className={styles.title}>{guide.title}</h1>
+        <p className={styles.intro}>{guide.intro}</p>
+      </header>
 
-        <section className="user-guide-section">
-          <h2 className="user-guide-section-title">
-            {lang === 'pl' ? 'Nawigacja i pasek górny' : 'Navigation & top bar'}
-          </h2>
-          <p className="user-guide-text">{guide.navigationIntro}</p>
-          <ul className="user-guide-list">
-            {guide.navigationItems.map((item, idx) => (
-              <li key={idx}>{item}</li>
-            ))}
-          </ul>
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>
+          {lang === 'pl' ? 'Nawigacja i pasek górny' : 'Navigation & top bar'}
+        </h2>
+        <p className={styles.text}>{guide.navigationIntro}</p>
+        <ul className={styles.list}>
+          {guide.navigationItems.map((item, idx) => (
+            <li key={idx}>{item}</li>
+          ))}
+        </ul>
+      </section>
+
+      {guide.sections.map((section, index) => (
+        <section key={index} className={styles.section}>
+          <h2 className={styles.sectionTitle}>{section.title}</h2>
+
+          {section.items.map((item, itemIndex) => (
+            <article key={itemIndex} className={styles.block}>
+              {item.subtitle && (
+                <h3 className={styles.subtitle}>{item.subtitle}</h3>
+              )}
+
+              {item.text && <p className={styles.text}>{item.text}</p>}
+
+              {item.list && (
+                <ul className={styles.list}>
+                  {item.list.map((entry, entryIndex) => (
+                    <li key={entryIndex}>{entry}</li>
+                  ))}
+                </ul>
+              )}
+
+              {item.steps && (
+                <ol className={styles.steps}>
+                  {item.steps.map((step, stepIndex) => (
+                    <li key={stepIndex}>{step}</li>
+                  ))}
+                </ol>
+              )}
+            </article>
+          ))}
         </section>
+      ))}
 
-        {guide.sections.map((section, index) => (
-          <section key={index} className="user-guide-section">
-            <h2 className="user-guide-section-title">{section.title}</h2>
-
-            {section.items.map((item, itemIndex) => (
-              <article key={itemIndex} className="user-guide-block">
-                {item.subtitle && (
-                  <h3 className="user-guide-subtitle">{item.subtitle}</h3>
-                )}
-
-                {item.text && <p className="user-guide-text">{item.text}</p>}
-
-                {item.list && (
-                  <ul className="user-guide-list">
-                    {item.list.map((entry, entryIndex) => (
-                      <li key={entryIndex}>{entry}</li>
-                    ))}
-                  </ul>
-                )}
-
-                {item.steps && (
-                  <ol className="user-guide-steps">
-                    {item.steps.map((step, stepIndex) => (
-                      <li key={stepIndex}>{step}</li>
-                    ))}
-                  </ol>
-                )}
-              </article>
-            ))}
-          </section>
-        ))}
-
-        <div className="guide-footer">
-          <p>
-            {lang === 'pl'
-              ? '🆘 Potrzebujesz pomocy? Skontaktuj się z administratorem systemu.'
-              : '🆘 Need help? Contact the system administrator.'}
-          </p>
-        </div>
+      <div className={styles.footer}>
+        <p>
+          {lang === 'pl'
+            ? '🆘 Potrzebujesz pomocy? Skontaktuj się z administratorem systemu.'
+            : '🆘 Need help? Contact the system administrator.'}
+        </p>
       </div>
     </div>
   )

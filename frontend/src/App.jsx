@@ -11,7 +11,6 @@ import Financials from './components/Financials';
 import Clients from './components/Clients';
 import Admin from './components/Admin';
 import UserGuide from './components/UserGuide';
-import HelpPanel from './components/HelpPanel';
 import Products from './components/Products';
 import Production from './components/Production';
 import { useAuth } from './auth/useAuth';
@@ -26,8 +25,6 @@ export default function App() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [isSettingsOpen, setSettingsOpen] = useState(false);
   const [initialFinanceOrderId, setInitialFinanceOrderId] = useState(null);
-  const [showGuide, setShowGuide] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const { profile, checkingAuth, logout } = useAuth();
 
@@ -130,6 +127,9 @@ export default function App() {
       case 'financials':
         content = <Financials lang={lang} initialOrderId={initialFinanceOrderId} />;
         break;
+      case 'help':
+        content = <UserGuide lang={lang} />;
+        break;
       case 'admin':
         // prosty guard po stronie frontu – backend i tak musi sprawdzać
         if (profile?.is_admin) {
@@ -179,8 +179,6 @@ export default function App() {
         onSettings={handleSettings}
         onLogout={handleLogout}
         onSearchSelect={jumpToFinance}
-        onOpenHelp={() => setShowHelp(true)}
-        isHelpOpen={showHelp}
       />
       <main id="main-content" className={styles.mainContent}>
         <div className={`${styles.container} ${isTransitioning ? styles.transitioning : ''}`}>
@@ -201,17 +199,6 @@ export default function App() {
             handleViewChange('admin');
           }}
           lang={lang}
-        />
-      )}
-      {showGuide && <UserGuide lang={lang} onClose={() => setShowGuide(false)} />}
-      {showHelp && (
-        <HelpPanel
-          lang={lang}
-          onClose={() => setShowHelp(false)}
-          onOpenGuide={() => {
-            setShowHelp(false);
-            setShowGuide(true);
-          }}
         />
       )}
     </div>

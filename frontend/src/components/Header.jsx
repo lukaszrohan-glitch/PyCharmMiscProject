@@ -13,8 +13,6 @@ export default function Header({
   onSettings,
   onLogout,
   onSearchSelect,
-  onOpenHelp,
-  isHelpOpen,
 }) {
   const { t: tt } = useI18n(lang)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -39,6 +37,7 @@ export default function Header({
       { id: 'inventory', label: tt('inventory') || (lang === 'pl' ? 'Magazyn' : 'Inventory') },
       { id: 'timesheets', label: tt('timesheets') || (lang === 'pl' ? 'Czas pracy' : 'Timesheets') },
       { id: 'reports', label: tt('reports') || (lang === 'pl' ? 'Raporty' : 'Reports') },
+      { id: 'help', label: tt('help') || (lang === 'pl' ? 'Pomoc' : 'Help') },
     ],
     [lang, tt],
   )
@@ -305,7 +304,7 @@ export default function Header({
           </div>
         </nav>
 
-        {/* RIGHT: language, help, profile */}
+        {/* RIGHT: language, profile */}
         <div className={styles.rightCluster}>
           <div className={styles.langSwitch} role="group" aria-label={lang === 'pl' ? 'Wybór języka' : 'Language selection'}>
             <button
@@ -327,23 +326,6 @@ export default function Header({
               EN
             </button>
           </div>
-
-          <div className={styles.helpCluster}>
-            <button
-              className={styles.helpBtn}
-              onClick={() => {
-                onOpenHelp?.()
-                setMenuOpen(false)
-              }}
-              aria-haspopup="dialog"
-              aria-expanded={isHelpOpen}
-              aria-label={t.help}
-              title={t.help}
-               type="button"
-            >
-               <span aria-hidden="true">?</span>
-             </button>
-           </div>
 
           {profile && (
             <div className={styles.profileCluster}>

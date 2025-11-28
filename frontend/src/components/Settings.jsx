@@ -91,7 +91,13 @@ export default function Settings({ profile, onClose, onOpenAdmin }) {
 
   return (
     <>
-      <button type="button" className={styles.overlay} aria-label={t('close')} onClick={onClose} />
+      <button
+        type="button"
+        className={styles.overlay}
+        onClick={onClose}
+        aria-label={t('close')}
+        tabIndex={-1}
+      />
       <div
         role="dialog"
         aria-modal="true"
