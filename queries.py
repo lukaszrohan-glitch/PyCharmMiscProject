@@ -65,16 +65,28 @@ VALUES (%s, COALESCE(%s, CURRENT_DATE), %s, %s, %s, %s, %s)
 RETURNING txn_id, txn_date, product_id, qty_change, reason, lot, location;
 """
 
-# Indexes for performance
+# Indexes for performance - Comprehensive coverage for all frequent queries
 SQL_CREATE_INDEXES = """
 CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_date ON orders(order_date DESC);
+CREATE INDEX IF NOT EXISTS idx_orders_due_date ON orders(due_date) WHERE due_date IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_orders_composite ON orders(status, order_date DESC);
+CREATE INDEX IF NOT EXISTS idx_order_lines_order ON order_lines(order_id);
 CREATE INDEX IF NOT EXISTS idx_order_lines_product ON order_lines(product_id);
+CREATE INDEX IF NOT EXISTS idx_order_lines_composite ON order_lines(order_id, line_no);
 CREATE INDEX IF NOT EXISTS idx_timesheets_emp ON timesheets(emp_id);
 CREATE INDEX IF NOT EXISTS idx_timesheets_order ON timesheets(order_id);
+CREATE INDEX IF NOT EXISTS idx_timesheets_date ON timesheets(ts_date DESC);
+CREATE INDEX IF NOT EXISTS idx_timesheets_approved ON timesheets(approved) WHERE approved = FALSE;
 CREATE INDEX IF NOT EXISTS idx_inventory_product ON inventory(product_id);
-CREATE INDEX IF NOT EXISTS idx_inventory_date ON inventory(txn_date);
+CREATE INDEX IF NOT EXISTS idx_inventory_date ON inventory(txn_date DESC);
+CREATE INDEX IF NOT EXISTS idx_inventory_reason ON inventory(reason);
+CREATE INDEX IF NOT EXISTS idx_customers_active ON customers(active) WHERE active = TRUE;
+CREATE INDEX IF NOT EXISTS idx_products_type ON products(make_or_buy);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_active ON users(active) WHERE active = TRUE;
+CREATE INDEX IF NOT EXISTS idx_api_keys_active ON api_keys(active) WHERE active = 1;
 """
 
 # ANALYTICS QUERIES

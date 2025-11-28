@@ -272,18 +272,36 @@ app.include_router(inventory_router)
 
 # ---- Apply Route-Specific Rate Limits ----
 # Apply rate limits to sensitive endpoints after routers are included
-try:
-    # Login endpoint: 5 attempts per minute
-    for route in app.routes:
-        if hasattr(route, "path") and route.path == "/api/auth/login":
-            route.endpoint = limiter.limit("5/minute")(route.endpoint)
-            app_logger.info("Applied rate limit to /api/auth/login: 5/minute")
+RATE_LIMITS = {
+    "/api/auth/login": "5/minute",
+    "/api/auth/request-reset": "3/hour",
+    "/api/auth/reset": "5/hour",
+    "/api/orders/export": "10/minute",
+    "/api/inventory/export": "10/minute",
+    "/api/customers/export": "10/minute",
+    "/api/admin": "20/minute",  # Admin endpoints
+}
 
-    # Password reset request: 3 attempts per hour
+try:
     for route in app.routes:
-        if hasattr(route, "path") and route.path == "/api/auth/request-reset":
-            route.endpoint = limiter.limit("3/hour")(route.endpoint)
-            app_logger.info("Applied rate limit to /api/auth/request-reset: 3/hour")
+        if not hasattr(route, "path"):
+            continue
+
+        path = route.path
+
+        # Apply exact matches
+        if path in RATE_LIMITS:
+            route.endpoint = limiter.limit(RATE_LIMITS[path])(route.endpoint)
+            app_logger.info(f"Applied rate limit to {path}: {RATE_LIMITS[path]}")
+
+        # Apply pattern matches (e.g., /api/admin/*)
+        for pattern, limit in RATE_LIMITS.items():
+            if pattern.endswith("*") or pattern.endswith("/"):
+                prefix = pattern.rstrip("/*")
+                if path.startswith(prefix) and path != prefix:
+                    route.endpoint = limiter.limit(limit)(route.endpoint)
+                    app_logger.info(f"Applied rate limit to {path}: {limit}")
+                    break
 except Exception as e:
     app_logger.warning(f"Failed to apply route-specific rate limits: {e}")
 
@@ -301,11 +319,36 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    error_id = str(uuid.uuid4())
+    request_id = getattr(request.state, "request_id", "unknown")
+
     if isinstance(exc, HTTPException):
-        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
-    # Log unexpected errors
-    app_logger.error("Unhandled exception", exc_info=True)
-    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail, "error_id": error_id}
+        )
+
+    # Log full details server-side (never expose to client)
+    app_logger.error(
+        f"Unhandled exception [{error_id}]",
+        extra={
+            "error_id": error_id,
+            "request_id": request_id,
+            "path": request.url.path,
+            "method": request.method,
+            "user_agent": request.headers.get("user-agent"),
+        },
+        exc_info=True
+    )
+
+    # Return sanitized error to client
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "An unexpected error occurred. Please contact support.",
+            "error_id": error_id
+        }
+    )
 
 
 # --- Frontend SPA routing (Railway deployment) ---
