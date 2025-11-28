@@ -35,23 +35,27 @@
   flex: 0 0 auto;
   display: flex;
   align-items: center;
+  justify-content: center;
+  position: absolute;
+  left: var(--space-6);
 }
 
 .logoWrap {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
   padding: var(--space-2);
   border: none;
   background: transparent;
   border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: var(--transition-colors);
+  transition: all 0.2s var(--ease-apple);
   user-select: none;
 }
 
 .logoWrap:hover {
   background: var(--surface-tertiary);
+  transform: scale(1.02);
 }
 
 .logoWrap:active {
@@ -63,22 +67,33 @@
   outline-offset: 2px;
 }
 
+.logoMotion {
+  display: none; /* For animation placeholder if needed */
+}
+
 .logoSvg {
-  height: 40px;
+  height: 36px;
   width: auto;
   flex-shrink: 0;
+  animation: pulse 3s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.95; transform: scale(1.03); }
 }
 
 .logoTextBlock {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  line-height: 1;
+  gap: 2px;
+  line-height: 1.1;
+  text-align: center;
 }
 
 .logoText {
   font-size: var(--text-lg);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-bold);
   letter-spacing: var(--tracking-tight);
   color: var(--text-primary);
 }
@@ -230,21 +245,32 @@
 }
 
 .homeBtn {
-  border-radius: var(--radius-full);
-  border: 1px solid var(--border-primary);
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  padding: var(--spacing-2) var(--spacing-4);
-  font-size: var(--font-size-base); /* Increased from sm to base */
-  font-weight: var(--font-weight-medium);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xl);
+  border: none;
+  background: var(--brand-primary);
+  color: white;
+  padding: var(--spacing-3) var(--spacing-6);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: all var(--transition-fast);
-  min-height: 40px; /* Increased from 36px for better touch targets */
+  transition: all 0.2s var(--ease-apple);
+  min-height: 44px;
+  box-shadow: 0 2px 8px rgba(8, 145, 178, 0.25);
+  letter-spacing: var(--tracking-tight);
 }
 
 .homeBtn:hover {
-  background: var(--bg-tertiary);
-  transform: translateY(-1px);
+  background: var(--brand-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(8, 145, 178, 0.35);
+}
+
+.homeBtn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(8, 145, 178, 0.2);
 }
 
 .homeBtn:focus-visible {
@@ -253,9 +279,25 @@
 }
 
 .homeBtn[aria-current="page"] {
-  background: var(--brand-primary);
-  color: var(--text-on-brand);
-  border-color: var(--brand-primary);
+  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-hover) 100%);
+  box-shadow: 0 4px 16px rgba(8, 145, 178, 0.4);
+  position: relative;
+}
+
+.homeBtn[aria-current="page"]::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: var(--radius-xl);
+  border: 2px solid var(--brand-primary);
+  opacity: 0.3;
+  animation: pulse-ring 2s ease-out infinite;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.05); opacity: 0.1; }
+  100% { transform: scale(1); opacity: 0.3; }
 }
 
 .searchShell {

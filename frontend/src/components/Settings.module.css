@@ -402,72 +402,136 @@
   outline-offset: 2px;
 }
 
-.spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* Admin Section */
-.adminSection {
-  padding-top: var(--spacing-6);
-  border-top: 1px solid var(--border-secondary);
-}
-
-.adminActions {
+/* Password Input Wrapper with Icon */
+.passwordInputWrapper {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-3);
+  align-items: center;
 }
 
-.adminBtn {
-  height: 52px;
-  padding: 0 var(--spacing-6);
-  border-radius: var(--radius-xl);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  transition: all var(--transition-fast);
+.passwordInputWrapper .input {
+  padding-right: 48px;
+  width: 100%;
+}
+
+.passwordIcon {
+  position: absolute;
+  right: 16px;
+  font-size: 18px;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* Password Requirements Checklist */
+.passwordRequirements {
+  margin-top: var(--space-3);
+  padding: var(--space-4);
+  background: var(--surface-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+}
+
+.requirementTitle {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+}
+
+.requirementList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.requirementList li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  transition: color 0.2s var(--ease-apple);
+}
+
+.requirementList li.requirementMet {
+  color: var(--color-green-600);
+  font-weight: var(--weight-medium);
+}
+
+.requirementIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-2);
-  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); /* Synterra teal gradient */
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: bold;
+  background: var(--surface-tertiary);
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.requirementList li.requirementMet .requirementIcon {
+  background: var(--color-green-100);
+  color: var(--color-green-700);
+}
+
+/* Admin Button Styling */
+.btnAdmin {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   color: white;
   border: none;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
   position: relative;
   overflow: hidden;
 }
 
-.adminBtn::before {
+.btnAdmin::before {
   content: '';
   position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%);
-  transform: translateX(-100%);
-  transition: transform 0.6s;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
 }
 
-.adminBtn:hover::before {
-  transform: translateX(100%);
+.btnAdmin:hover:not(:disabled)::before {
+  left: 100%;
 }
 
-.adminBtn:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-1px);
+.btnAdmin:hover:not(:disabled) {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+  transform: translateY(-2px);
 }
 
-.adminBtn:focus-visible {
-  outline: 2px solid var(--border-focus);
-  outline-offset: 2px;
+.btnAdmin:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+.adminIcon {
+  font-size: 20px;
+  display: inline-flex;
+  animation: rotateGear 3s linear infinite;
+}
+
+@keyframes rotateGear {
+  0%, 90%, 100% { transform: rotate(0deg); }
+  92%, 98% { transform: rotate(15deg); }
+  94%, 96% { transform: rotate(-15deg); }
+}
+
+.adminSection {
+  border-top: 2px solid var(--border-light);
+  padding-top: var(--space-6);
+  margin-top: var(--space-8);
 }
 
 /* Responsive */
@@ -533,4 +597,3 @@
     outline-width: 3px;
   }
 }
-

@@ -4,13 +4,13 @@ import { changePassword } from '../services/api'
 import { useToast } from '../lib/toastContext'
 import styles from './Settings.module.css'
 
-export default function Settings({ profile, onClose, onOpenAdmin }) {
+export default function Settings({ profile, onClose, onOpenAdmin, lang = 'en' }) {
   const [oldPassword, setOldPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [passwordStrength, setPasswordStrength] = useState('weak')
   const toast = useToast()
-  const { t } = useI18n()
+  const { t } = useI18n(lang)
   const modalRef = useRef(null)
   const closeButtonRef = useRef(null)
 
@@ -184,23 +184,46 @@ export default function Settings({ profile, onClose, onOpenAdmin }) {
                 <label htmlFor="new-password" className={styles.label}>
                   {t('new_password')} <span>*</span>
                 </label>
-                <input
-                  id="new-password"
-                  type="password"
-                  className={styles.input}
-                  value={newPassword}
-                  onChange={e => setNewPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  minLength={8}
-                  disabled={loading}
-                  autoComplete="new-password"
-                  aria-required="true"
-                  aria-invalid={newPassword && !isStrongPassword(newPassword) ? 'true' : 'false'}
-                  aria-describedby="password-help password-strength"
-                />
-                <div id="password-help" className={styles.helpText}>
-                  {t('password_hint')}
+                <div className={styles.passwordInputWrapper}>
+                  <input
+                    id="new-password"
+                    type="password"
+                    className={styles.input}
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    minLength={8}
+                    disabled={loading}
+                    autoComplete="new-password"
+                    aria-required="true"
+                    aria-invalid={newPassword && !isStrongPassword(newPassword) ? 'true' : 'false'}
+                    aria-describedby="password-help password-strength"
+                  />
+                  <span className={styles.passwordIcon} aria-hidden="true">🔒</span>
+                </div>
+                <div id="password-help" className={styles.passwordRequirements}>
+                  <div className={styles.requirementTitle}>
+                    {lang === 'pl' ? 'Hasło musi zawierać:' : 'Password must contain:'}
+                  </div>
+                  <ul className={styles.requirementList}>
+                    <li className={newPassword.length >= 8 ? styles.requirementMet : ''}>
+                      <span className={styles.requirementIcon}>{newPassword.length >= 8 ? '✓' : '○'}</span>
+                      {lang === 'pl' ? 'Co najmniej 8 znaków' : 'At least 8 characters'}
+                    </li>
+                    <li className={/[A-Z]/.test(newPassword) ? styles.requirementMet : ''}>
+                      <span className={styles.requirementIcon}>{/[A-Z]/.test(newPassword) ? '✓' : '○'}</span>
+                      {lang === 'pl' ? 'Jedną wielką literę' : 'One uppercase letter'}
+                    </li>
+                    <li className={/\d/.test(newPassword) ? styles.requirementMet : ''}>
+                      <span className={styles.requirementIcon}>{/\d/.test(newPassword) ? '✓' : '○'}</span>
+                      {lang === 'pl' ? 'Jedną cyfrę' : 'One digit'}
+                    </li>
+                    <li className={/[@$!%*#?&]/.test(newPassword) ? styles.requirementMet : ''}>
+                      <span className={styles.requirementIcon}>{/[@$!%*#?&]/.test(newPassword) ? '✓' : '○'}</span>
+                      {lang === 'pl' ? 'Jeden znak specjalny' : 'One special character'}
+                    </li>
+                  </ul>
                 </div>
                 {newPassword && (
                   <div
@@ -235,16 +258,16 @@ export default function Settings({ profile, onClose, onOpenAdmin }) {
           {profile?.is_admin && (
             <section className={`${styles.section} ${styles.adminSection}`}>
               <h3 className={styles.sectionTitle}>
-                {t('admin_tools')}
+                <span aria-hidden="true">👑</span> {lang === 'pl' ? 'Narzędzia administratora' : 'Admin Tools'}
               </h3>
               <div className={styles.adminActions}>
                 <button
                   type="button"
-                  className={styles.adminBtn}
+                  className={`${styles.btn} ${styles.btnAdmin}`}
                   onClick={onOpenAdmin}
                 >
-                  <span aria-hidden="true">⚙️</span>
-                  <span>{t('admin_panel')}</span>
+                  <span className={styles.adminIcon} aria-hidden="true">⚙️</span>
+                  <span>{lang === 'pl' ? 'Panel administratora' : 'Admin Panel'}</span>
                 </button>
               </div>
             </section>

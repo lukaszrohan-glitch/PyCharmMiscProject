@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import styles from './Header.module.css'
-import { useI18n } from '../i18n'
 import * as api from '../services/api'
 import SynterraLogo from './SynterraLogo'
 
@@ -14,7 +13,7 @@ export default function Header({
   onLogout,
   onSearchSelect,
 }) {
-  const { t: tt } = useI18n(lang)
+  // useI18n hook available if needed for future translations
   const [menuOpen, setMenuOpen] = useState(false)
   const [orders, setOrders] = useState([])
   const [q, setQ] = useState('')
@@ -29,18 +28,18 @@ export default function Header({
 
   const laptopNav = useMemo(
     () => [
-      { id: 'dashboard', label: tt('dashboard') || (lang === 'pl' ? 'Panel główny' : 'Home') },
+      { id: 'dashboard', label: lang === 'pl' ? 'Panel główny' : 'Dashboard' },
       { id: 'orders', label: lang === 'pl' ? 'Zamówienia' : 'Orders' },
       { id: 'products', label: lang === 'pl' ? 'Produkty' : 'Products' },
-      { id: 'production', label: lang === 'pl' ? 'Planowanie' : 'Planning' },
       { id: 'clients', label: lang === 'pl' ? 'Klienci' : 'Clients' },
       { id: 'inventory', label: lang === 'pl' ? 'Magazyn' : 'Inventory' },
       { id: 'timesheets', label: lang === 'pl' ? 'Czas pracy' : 'Timesheets' },
       { id: 'reports', label: lang === 'pl' ? 'Raporty' : 'Reports' },
       { id: 'financials', label: lang === 'pl' ? 'Finanse' : 'Financials' },
       { id: 'help', label: lang === 'pl' ? 'Pomoc' : 'Help' },
+      { id: 'settings', label: lang === 'pl' ? 'Ustawienia' : 'Settings' },
     ],
-    [lang, tt],
+    [lang],
   )
 
   const t = {

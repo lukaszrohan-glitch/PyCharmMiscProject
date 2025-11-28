@@ -152,7 +152,6 @@ export default function Dashboard({ lang, setCurrentView }) {
   const cards = [
     { view: 'orders', icon: <IconOrders />, title: lang === 'pl' ? 'Zamówienia' : 'Orders' },
     { view: 'products', icon: <IconWarehouse />, title: lang === 'pl' ? 'Produkty' : 'Products' },
-    { view: 'production', icon: <IconOrders />, title: lang === 'pl' ? 'Planowanie produkcji' : 'Production Planning' },
     { view: 'clients', icon: <IconClients />, title: lang === 'pl' ? 'Klienci' : 'Clients' },
     { view: 'inventory', icon: <IconWarehouse />, title: lang === 'pl' ? 'Magazyn' : 'Inventory' },
     { view: 'timesheets', icon: <IconTimesheets />, title: lang === 'pl' ? 'Czas pracy' : 'Timesheets' },
@@ -221,15 +220,6 @@ export default function Dashboard({ lang, setCurrentView }) {
             <h3 className={styles.cardTitle}>{card.title}</h3>
           </button>
         ))}
-      </div>
-
-      <div className={styles.status}>
-        <div className={styles.statusBadge}>
-          <span className={styles.statusDot}></span>
-          <span className={styles.statusText}>
-            {lang === 'pl' ? 'System działa poprawnie' : 'System operational'}
-          </span>
-        </div>
       </div>
     </>
   );
