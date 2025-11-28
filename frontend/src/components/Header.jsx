@@ -37,7 +37,6 @@ export default function Header({
       { id: 'reports', label: lang === 'pl' ? 'Raporty' : 'Reports' },
       { id: 'financials', label: lang === 'pl' ? 'Finanse' : 'Financials' },
       { id: 'help', label: lang === 'pl' ? 'Pomoc' : 'Help' },
-      { id: 'settings', label: lang === 'pl' ? 'Ustawienia' : 'Settings' },
     ],
     [lang],
   )
@@ -221,15 +220,6 @@ export default function Header({
                     {item.label}
                   </button>
                 ))}
-                <div className={styles.menuDivider} />
-                <button
-                  className={styles.menuItem}
-                  onClick={onSettings}
-                  role="menuitem"
-                  type="button"
-                >
-                  {t.settings}
-                </button>
               </div>
             )}
           </div>

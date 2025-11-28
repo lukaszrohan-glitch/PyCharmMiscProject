@@ -149,6 +149,49 @@ export default function Dashboard({ lang, setCurrentView }) {
     }
   ];
 
+  const navTiles = [
+    {
+      key: 'orders',
+      icon: <IconOrders />,
+      title: lang === 'pl' ? 'Zamówienia' : 'Orders'
+    },
+    {
+      key: 'products',
+      icon: <IconWarehouse />,
+      title: lang === 'pl' ? 'Produkty' : 'Products'
+    },
+    {
+      key: 'planning',
+      icon: <IconReports />,
+      title: lang === 'pl' ? 'Planowanie produkcji' : 'Production Planning'
+    },
+    {
+      key: 'clients',
+      icon: <IconClients />,
+      title: lang === 'pl' ? 'Klienci' : 'Clients'
+    },
+    {
+      key: 'inventory',
+      icon: <IconWarehouse />,
+      title: lang === 'pl' ? 'Magazyn' : 'Warehouse'
+    },
+    {
+      key: 'timesheets',
+      icon: <IconTimesheets />,
+      title: lang === 'pl' ? 'Czas pracy' : 'Timesheets'
+    },
+    {
+      key: 'reports',
+      icon: <IconReports />,
+      title: lang === 'pl' ? 'Raporty' : 'Reports'
+    },
+    {
+      key: 'financials',
+      icon: <IconFinance />,
+      title: lang === 'pl' ? 'Finanse' : 'Finance'
+    }
+  ];
+
   return (
     <>
       {/* Statistics Row */}
@@ -168,35 +211,22 @@ export default function Dashboard({ lang, setCurrentView }) {
         </div>
       )}
 
-      {/* Recent Activity */}
-      {!loading && recentOrders.length > 0 && (
-        <div className={styles.recentActivity}>
-          <h3 className={styles.sectionTitle}>
-            {lang === 'pl' ? 'Ostatnie zamówienia' : 'Recent Orders'}
-          </h3>
-          <div className={styles.activityList}>
-            {recentOrders.map(order => (
-              <button
-                key={order.order_id}
-                type="button"
-                className={styles.activityItem}
-                onClick={() => setCurrentView('orders')}
-              >
-                <div className={styles.activityInfo}>
-                  <span className={styles.activityTitle}>{order.order_id}</span>
-                  <span className={styles.activityMeta}>
-                    {order.customer_id} • {order.status}
-                  </span>
-                </div>
-                <span className={styles.activityDate}>
-                  {order.due_date || order.created_at}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
+      {/* Navigation Tiles */}
+      <div className={styles.navTiles}>
+        {navTiles.map(tile => (
+          <button
+            key={tile.key}
+            type="button"
+            className={styles.navTile}
+            onClick={() => setCurrentView(tile.key)}
+          >
+            <div className={styles.navTileIcon}>
+              {tile.icon}
+            </div>
+            <h3 className={styles.navTileTitle}>{tile.title}</h3>
+          </button>
+        ))}
+      </div>
     </>
   );
 }
