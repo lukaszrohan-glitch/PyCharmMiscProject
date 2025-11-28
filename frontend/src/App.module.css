@@ -119,14 +119,74 @@
   font-weight: 500;
 }
 
-/* Recent Activity */
-.recentActivity {
+/* Navigation Tiles */
+.navTiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.navTile {
   background: white;
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
+  border-radius: 16px;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  min-height: 180px;
+}
+
+.navTile:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  border-color: var(--brand-primary);
+}
+
+.navTile:active {
+  transform: translateY(-2px) scale(1.01);
+}
+
+.navTileIcon {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--brand-primary);
+  transition: all 0.3s ease;
+}
+
+.navTile:hover .navTileIcon {
+  transform: scale(1.1) rotate(5deg);
+  color: var(--brand-accent);
+}
+
+.navTileTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.navTileSubtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.4;
+  max-width: 220px;
+}
+
+/* Recent Activity - REMOVED, keeping styles for backward compat */
+.recentActivity {
+  display: none;
 }
 
 .sectionTitle {
