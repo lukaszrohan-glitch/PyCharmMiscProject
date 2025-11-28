@@ -191,19 +191,34 @@ CREATE TABLE IF NOT EXISTS subscription_plans (
 
 
 def _make_token(user: Dict) -> Dict[str, str]:
+    import uuid
+
     # Access token
     exp = datetime.now(timezone.utc) + timedelta(minutes=JWT_EXP_MINUTES)
+    iat = datetime.now(timezone.utc)
     access_payload = {
         "sub": user["user_id"],
         "email": user["email"],
         "is_admin": user["is_admin"],
+        "iss": settings.JWT_ISSUER,  # Issuer claim
+        "aud": settings.JWT_AUDIENCE,  # Audience claim
         "exp": exp,
+        "iat": iat,  # Issued at
+        "jti": str(uuid.uuid4()),  # Token ID for revocation
         "type": "access",
     }
 
     # Refresh token
     refresh_exp = datetime.now(timezone.utc) + timedelta(days=JWT_REFRESH_DAYS)
-    refresh_payload = {"sub": user["user_id"], "exp": refresh_exp, "type": "refresh"}
+    refresh_payload = {
+        "sub": user["user_id"],
+        "iss": settings.JWT_ISSUER,
+        "aud": settings.JWT_AUDIENCE,
+        "exp": refresh_exp,
+        "iat": iat,
+        "jti": str(uuid.uuid4()),
+        "type": "refresh"
+    }
 
     return {
         "access_token": jwt.encode(access_payload, JWT_SECRET, algorithm=JWT_ALG),

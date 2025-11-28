@@ -27,8 +27,11 @@ class Settings(BaseSettings):
     API_KEYS: str = ""
     ADMIN_KEY: Optional[str] = None
 
-    # Auth / JWT
-    JWT_SECRET: str = Field(default_factory=lambda: secrets.token_hex(32))
+    # Auth / JWT - CRITICAL: Set JWT_SECRET in Railway environment!
+    JWT_SECRET: str = Field(..., min_length=64)  # Required, no default - prevents token invalidation on restart
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ISSUER: str = "synterra-api"
+    JWT_AUDIENCE: str = "synterra-web"
     JWT_EXP_MINUTES: int = 120
     JWT_REFRESH_DAYS: int = 7
 

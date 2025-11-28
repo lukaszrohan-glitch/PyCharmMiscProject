@@ -122,6 +122,68 @@ def _get_pool() -> Any:
 
 
 @contextmanager
+def transaction():
+    """
+    Context manager for explicit transaction control.
+    Use this for multi-step operations that must be atomic.
+
+    Example:
+        with transaction() as conn:
+            conn.execute("INSERT ...")
+            conn.execute("UPDATE ...")
+            # Both succeed or both rollback
+    """
+    pool = _get_pool()
+    if pool is None:
+        # SQLite
+        conn = sqlite3.connect(SQLITE_DB_PATH)
+        conn.row_factory = sqlite3.Row
+        try:
+            yield conn
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+    else:
+        # Postgres
+        if (
+            PSYCOPG3_AVAILABLE
+            and isinstance(pool, dict)
+            and pool.get("driver") == "psycopg3"
+        ):
+            conn = psycopg.connect(pool.get("dsn"))  # type: ignore
+            try:
+                yield conn
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                raise
+            finally:
+                conn.close()
+        elif PSYCOPG3_AVAILABLE and hasattr(pool, "connection"):
+            with pool.connection() as conn:
+                try:
+                    yield conn
+                    conn.commit()
+                except Exception:
+                    conn.rollback()
+                    raise
+        else:
+            # psycopg2
+            conn = pool.getconn()
+            try:
+                yield conn
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                raise
+            finally:
+                pool.putconn(conn)
+
+
+@contextmanager
 def get_conn() -> Iterator[Any]:
     """Yield a DB connection. For Postgres returns a psycopg/psycopg2 connection from pool.
     For sqlite fallback returns a sqlite3.Connection object.
