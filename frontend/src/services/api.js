@@ -148,10 +148,36 @@ export async function getProfile() {
   }
 }
 export const changePassword = (old_password, new_password) => postAuth('/api/auth/change-password', { old_password, new_password })
-export const adminCreateUser = (payload) => postAdmin('/api/admin/users', payload)
-export const adminListUsers = () => reqAdmin('/api/admin/users')
-export const adminCreatePlan = (payload) => postAdmin('/api/admin/subscription-plans', payload)
-export const adminListPlans = () => reqAdmin('/api/admin/subscription-plans')
+export const adminCreateUser = (payload) => {
+  // Use JWT if available (for logged-in admins), otherwise use admin key
+  const tok = getToken()
+  if (tok) {
+    return postAuth('/api/admin/users', payload)
+  }
+  return postAdmin('/api/admin/users', payload)
+}
+export const adminListUsers = () => {
+  // Use JWT if available (for logged-in admins), otherwise use admin key
+  const tok = getToken()
+  if (tok) {
+    return reqAuth('/api/admin/users')
+  }
+  return reqAdmin('/api/admin/users')
+}
+export const adminCreatePlan = (payload) => {
+  const tok = getToken()
+  if (tok) {
+    return postAuth('/api/admin/subscription-plans', payload)
+  }
+  return postAdmin('/api/admin/subscription-plans', payload)
+}
+export const adminListPlans = () => {
+  const tok = getToken()
+  if (tok) {
+    return reqAuth('/api/admin/subscription-plans')
+  }
+  return reqAdmin('/api/admin/subscription-plans')
+}
 // Admin audit (JWT)
 export const adminListAdminAudit = (limit = 100) => reqAuth(`/api/admin/audit?limit=${encodeURIComponent(limit)}`)
 export const getOrders = ()=> req('/api/orders')
