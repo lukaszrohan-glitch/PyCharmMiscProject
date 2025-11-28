@@ -89,7 +89,9 @@ export default function Financials({ orderId, lang }){
          <ModalOverlay ariaLabel={t.close} onClose={closeModal}>
            <div className="modal" role="dialog" aria-modal="true">
              <div className="modal-header">
-               <h3>{t.details}
+               <h3>
+                 {t.details}
+                 {' '}
                  <span className="finance-pill">
                    {formatCurrency(selected.total, lang)}
                  </span>
@@ -97,12 +99,30 @@ export default function Financials({ orderId, lang }){
                <button className="close-btn" type="button" onClick={closeModal} aria-label={t.close || 'Close'}>×</button>
              </div>
              <div className="finance-cards">
-               <div className="card"><div className="label">{t.order}</div><div className="val">{selected.order_id}</div></div>
-               <div className="card"><div className="label">{t.revenue}</div><div className="val">{fmt(finance?.revenue)}</div></div>
-               <div className="card"><div className="label">{t.material}</div><div className="val">{fmt(finance?.material_cost)}</div></div>
-               <div className="card"><div className="label">{t.labor}</div><div className="val">{fmt(finance?.labor_cost)}</div></div>
-               <div className="card"><div className="label">{t.margin}</div><div className="val">{fmt(finance?.gross_margin)}</div></div>
-               <div className="card"><div className="label">{t.marginPct}</div><div className="val">{fmtPct()}</div></div>
+               <div className="card">
+                 <div className="label">{t.order}</div>
+                 <div className="val">{selected.order_id}</div>
+               </div>
+               <div className="card">
+                 <div className="label">{t.revenue}</div>
+                 <div className="val">{fmt(finance?.revenue)}</div>
+               </div>
+               <div className="card">
+                 <div className="label">{t.material}</div>
+                 <div className="val">{fmt(finance?.material_cost)}</div>
+               </div>
+               <div className="card">
+                 <div className="label">{t.labor}</div>
+                 <div className="val">{fmt(finance?.labor_cost)}</div>
+               </div>
+               <div className="card">
+                 <div className="label">{t.margin}</div>
+                 <div className="val">{fmt(finance?.gross_margin)}</div>
+               </div>
+               <div className="card">
+                 <div className="label">{t.marginPct}</div>
+                 <div className="val">{fmtPct()}</div>
+               </div>
              </div>
            </div>
          </ModalOverlay>
