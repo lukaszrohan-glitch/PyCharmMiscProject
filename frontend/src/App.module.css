@@ -210,35 +210,90 @@
 .card {
   background: white;
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 2rem;
-  transition: all 0.3s;
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 1.25rem;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  min-height: 180px;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(8, 145, 178, 0.03) 0%, rgba(163, 230, 53, 0.03) 100%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.card:hover::before {
+  opacity: 1;
 }
 
 .card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 32px rgba(8, 145, 178, 0.15);
+  border-color: #0891b2;
+}
+
+.card:active {
   transform: translateY(-4px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-  border-color: #0891b2; /* Synterra teal */
 }
 
 .cardIcon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
+  position: relative;
+  z-index: 1;
+  color: #0891b2;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.card:hover .cardIcon {
+  transform: scale(1.1);
+  color: #06B6D4;
 }
 
 .cardTitle {
-  font-size: 1.25rem;
+  position: relative;
+  z-index: 1;
+  font-size: 1.375rem;
   font-weight: 600;
   color: #111827;
-  margin: 0 0 0.5rem 0;
+  margin: 0;
+  letter-spacing: -0.025em;
+  transition: color 0.3s;
+}
+
+.card:hover .cardTitle {
+  color: #0891b2;
 }
 
 .cardText {
-  font-size: 0.9375rem;
-  color: #6b7280;
-  margin: 0;
-  line-height: 1.6;
+  display: none; /* Hide descriptions */
 }
 
 .status {
