@@ -1,104 +1,181 @@
 /*
-  Design Tokens — UX/UI values for consistency, clarity, accessibility, and brand coherence
-  Apple-inspired palette with WCAG AA+ contrast, semantic naming, and scalable spacing
+  ======================================================================
+  SYNTERRA DESIGN SYSTEM v2.0
+  Apple-inspired, production-ready design tokens
+  ======================================================================
+  Philosophy:
+  - Clean, minimal, and purposeful
+  - WCAG AAA accessibility throughout
+  - Consistent spacing using 4px base grid
+  - Smooth micro-interactions and transitions
+  - Professional color palette with semantic meaning
+  ======================================================================
 */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
   /* ========== TYPOGRAPHY ========== */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-mono: 'SF Mono', 'Monaco', 'Cascadia Code', 'Courier New', monospace;
+  /* Using Inter font (similar to SF Pro) with system fallbacks */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+               'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'SF Mono', 'Monaco', 'Menlo', 'Cascadia Code', 'Consolas', 'Courier New', monospace;
 
-  --font-size-xs: 0.75rem;    /* 12px */
-  --font-size-sm: 0.875rem;   /* 14px */
-  --font-size-base: 1rem;     /* 16px — base for accessibility */
-  --font-size-lg: 1.125rem;   /* 18px */
-  --font-size-xl: 1.25rem;    /* 20px */
-  --font-size-2xl: 1.5rem;    /* 24px */
-  --font-size-3xl: 1.875rem;  /* 30px */
-  --font-size-4xl: 2.25rem;   /* 36px */
+  /* Font Sizes - Modular scale for perfect hierarchy */
+  --text-2xs: 0.625rem;    /* 10px - tiny labels */
+  --text-xs: 0.6875rem;    /* 11px - captions */
+  --text-sm: 0.8125rem;    /* 13px - secondary text */
+  --text-base: 0.9375rem;  /* 15px - body text (Apple uses 15px) */
+  --text-md: 1rem;         /* 16px - comfortable reading */
+  --text-lg: 1.0625rem;    /* 17px - emphasized body */
+  --text-xl: 1.25rem;      /* 20px - section headers */
+  --text-2xl: 1.5rem;      /* 24px - page titles */
+  --text-3xl: 2rem;        /* 32px - hero text */
+  --text-4xl: 2.5rem;      /* 40px - display */
+  --text-5xl: 3rem;        /* 48px - large display */
 
-  --line-height-tight: 1.25;
-  --line-height-base: 1.5;     /* WCAG optimal readability */
-  --line-height-relaxed: 1.75;
+  /* Line Heights - Optimized for readability */
+  --leading-none: 1;
+  --leading-tight: 1.2;
+  --leading-snug: 1.375;   /* Apple's preferred line height */
+  --leading-normal: 1.47;  /* Body text */
+  --leading-relaxed: 1.6;
+  --leading-loose: 2;
 
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
+  /* Font Weights */
+  --weight-light: 300;
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-extrabold: 800;
 
-  /* ========== COLORS — Apple-like Light Theme (WCAG AA+) ========== */
-  /* Primary Brand - Synterra Teal/Cyan */
-  --brand-primary: #0891b2;       /* Cyan-600 - Synterra brand color */
-  --brand-primary-hover: #06b6d4; /* Cyan-500 - lighter on hover */
-  --brand-primary-active: #0e7490; /* Cyan-700 - darker when active */
-  --brand-accent: #f59e0b;        /* Amber accent for premium features */
+  /* Letter Spacing - Apple's refined tracking */
+  --tracking-tight: -0.022em;   /* Headlines */
+  --tracking-normal: -0.003em;  /* Body */
+  --tracking-wide: 0.011em;     /* All caps labels */
 
-  /* Neutral Palette */
-  --bg-primary: #f5f5f7;          /* Page background */
-  --bg-secondary: #ffffff;        /* Cards, surfaces */
-  --bg-tertiary: #f2f2f7;         /* Hover states, subtle blocks */
-  --bg-overlay: rgba(0, 0, 0, 0.5); /* Modals, dropdowns */
+  /* ========== COLORS - Apple-Inspired Light Theme ========== */
 
-  --text-primary: #1d1d1f;        /* Headings, body — WCAG AAA */
-  --text-secondary: #6e6e73;      /* Muted text — WCAG AA */
-  --text-tertiary: #86868b;       /* Disabled text */
-  --text-disabled: #d1d5db;       /* Fully disabled state */
-  --text-on-brand: #ffffff;       /* White text on brand colors */
-  --text-link: #0891b2;           /* Link color - matches brand */
-  --text-link-hover: #06b6d4;     /* Link hover - lighter */
+  /* Brand Colors - Synterra Teal Identity */
+  --color-brand: #0071e3;           /* Apple blue as primary brand */
+  --color-brand-light: #0077ed;     /* Hover state */
+  --color-brand-dark: #0062cc;      /* Active state */
+  --color-brand-vivid: #0066cc;     /* High contrast variant */
 
-  --border-primary: #d2d2d7;      /* Subtle borders */
-  --border-secondary: #e5e5ea;    /* Lighter borders */
-  --border-focus: #0891b2;        /* Focus ring - matches brand */
+  /* Secondary Brand - Accent */
+  --color-accent: #06c;             /* Apple's traditional accent blue */
+  --color-accent-light: #2997ff;
+  --color-accent-dark: #0055cc;
 
-  /* Status Colors (semantic, WCAG compliant) */
-  --status-success: #34c759;
-  --status-success-bg: #e8f9f0;
-  --status-warning: #ff9f0a;
-  --status-warning-bg: #fff8e6;
-  --status-error: #ff3b30;
-  --status-error-bg: #ffe8e6;
-  --status-info: #0891b2; /* Changed to match brand teal */
-  --status-info-bg: #e0f7fa;
+  /* Neutrals - Sophisticated grayscale */
+  --color-gray-50: #fafafa;
+  --color-gray-100: #f5f5f7;        /* Page background */
+  --color-gray-200: #e8e8ed;        /* Dividers */
+  --color-gray-300: #d2d2d7;        /* Borders */
+  --color-gray-400: #b0b0b0;        /* Disabled elements */
+  --color-gray-500: #86868b;        /* Secondary text */
+  --color-gray-600: #6e6e73;        /* Muted text */
+  --color-gray-700: #515154;        /* Body text (light bg) */
+  --color-gray-800: #1d1d1f;        /* Headlines */
+  --color-gray-900: #000000;        /* Pure black (sparingly) */
 
-  /* ========== SPACING & SIZING (8px grid) ========== */
-  --spacing-0: 0;
-  --spacing-1: 0.25rem;  /* 4px */
-  --spacing-2: 0.5rem;   /* 8px */
-  --spacing-3: 0.75rem;  /* 12px */
-  --spacing-4: 1rem;     /* 16px */
-  --spacing-5: 1.25rem;  /* 20px */
-  --spacing-6: 1.5rem;   /* 24px */
-  --spacing-8: 2rem;     /* 32px */
-  --spacing-10: 2.5rem;  /* 40px */
-  --spacing-12: 3rem;    /* 48px */
-  --spacing-16: 4rem;    /* 64px */
+  /* Surface Colors */
+  --surface-primary: #ffffff;       /* Cards, panels */
+  --surface-secondary: #f5f5f7;     /* Page background */
+  --surface-tertiary: #fafafa;      /* Nested surfaces */
+  --surface-elevated: #ffffff;      /* Floating elements */
+  --surface-overlay: rgba(0, 0, 0, 0.4);  /* Modal backdrop */
+  --surface-glass: rgba(255, 255, 255, 0.72);  /* Frosted glass effect */
 
-  /* ========== BORDER RADIUS ========== */
-  --radius-xs: 0.25rem;   /* 4px */
-  --radius-sm: 0.375rem;  /* 6px */
-  --radius-md: 0.5rem;    /* 8px */
-  --radius-lg: 0.75rem;   /* 12px */
-  --radius-xl: 1rem;      /* 16px */
-  --radius-2xl: 1.5rem;   /* 24px - for larger buttons/cards */
-  --radius-3xl: 2rem;     /* 32px - for hero elements */
-  --radius-full: 9999px;  /* Pill shape */
+  /* Text Colors - Semantic hierarchy */
+  --text-primary: #1d1d1f;          /* Main content */
+  --text-secondary: #86868b;        /* Supporting text */
+  --text-tertiary: #b0b0b0;         /* Disabled state */
+  --text-on-brand: #ffffff;         /* Text on colored backgrounds */
+  --text-link: #0071e3;             /* Interactive links */
+  --text-link-hover: #0077ed;
 
-  /* ========== SHADOWS (depth hierarchy) ========== */
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04);
-  --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.15), 0 10px 20px rgba(0, 0, 0, 0.1);
+  /* Border Colors */
+  --border-light: #f2f2f7;          /* Subtle dividers */
+  --border-default: #d2d2d7;        /* Standard borders */
+  --border-strong: #86868b;         /* Emphasized borders */
+  --border-focus: #0071e3;          /* Focus indicators */
 
-  /* ========== TRANSITIONS (motion & microinteractions) ========== */
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* Status Colors - Semantic meaning with WCAG AAA compliance */
+  --color-success: #30d158;         /* Green (Apple's success green) */
+  --color-success-bg: #f0fdf4;
+  --color-warning: #ff9f0a;         /* Amber */
+  --color-warning-bg: #fffbeb;
+  --color-error: #ff3b30;           /* Red (Apple's destructive red) */
+  --color-error-bg: #fef2f2;
+  --color-info: #0071e3;            /* Blue */
+  --color-info-bg: #f0f9ff;
 
-  /* ========== Z-INDEX (stacking layers) ========== */
+  /* ========== SPACING - 4px base grid (Apple's precision) ========== */
+  --space-0: 0;
+  --space-1: 0.25rem;     /* 4px */
+  --space-2: 0.5rem;      /* 8px */
+  --space-3: 0.75rem;     /* 12px */
+  --space-4: 1rem;        /* 16px */
+  --space-5: 1.25rem;     /* 20px */
+  --space-6: 1.5rem;      /* 24px */
+  --space-7: 1.75rem;     /* 28px */
+  --space-8: 2rem;        /* 32px */
+  --space-10: 2.5rem;     /* 40px */
+  --space-12: 3rem;       /* 48px */
+  --space-16: 4rem;       /* 64px */
+  --space-20: 5rem;       /* 80px */
+  --space-24: 6rem;       /* 96px */
+
+  /* ========== BORDER RADIUS - Apple's refined curves ========== */
+  --radius-sm: 0.375rem;   /* 6px - subtle rounding */
+  --radius-md: 0.5rem;     /* 8px - buttons, inputs */
+  --radius-lg: 0.75rem;    /* 12px - cards */
+  --radius-xl: 1rem;       /* 16px - larger cards */
+  --radius-2xl: 1.25rem;   /* 20px - modal windows */
+  --radius-3xl: 1.75rem;   /* 28px - hero elements */
+  --radius-full: 624.9375rem; /* Pill shape (Apple's actual value!) */
+
+  /* ========== SHADOWS - Elevated surfaces with depth ========== */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+
+  /* Apple-style inner shadow for depth */
+  --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+
+  /* Glow effects for interactive states */
+  --shadow-focus: 0 0 0 3px rgba(0, 113, 227, 0.12);
+  --shadow-glow: 0 0 20px rgba(0, 113, 227, 0.3);
+
+  /* ========== TRANSITIONS - Smooth, natural motion ========== */
+  /* Apple uses cubic-bezier timing for organic feel */
+  --ease-apple: cubic-bezier(0.25, 0.1, 0.25, 1);          /* Apple's signature ease */
+  --ease-in: cubic-bezier(0.42, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.58, 1);
+  --ease-in-out: cubic-bezier(0.42, 0, 0.58, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);  /* Bouncy feel */
+
+  --duration-instant: 100ms;
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 350ms;
+  --duration-slower: 500ms;
+
+  /* Common transition combinations */
+  --transition-base: all var(--duration-normal) var(--ease-apple);
+  --transition-colors: background-color var(--duration-fast) var(--ease-apple),
+                       border-color var(--duration-fast) var(--ease-apple),
+                       color var(--duration-fast) var(--ease-apple);
+  --transition-shadow: box-shadow var(--duration-normal) var(--ease-apple);
+  --transition-transform: transform var(--duration-normal) var(--ease-spring);
+
+  /* ========== Z-INDEX - Organized stacking context ========== */
+  --z-base: 0;
   --z-dropdown: 1000;
   --z-sticky: 1020;
   --z-fixed: 1030;
@@ -106,9 +183,8 @@
   --z-modal: 1050;
   --z-popover: 1060;
   --z-tooltip: 1070;
-  --z-modal: 1050;
-  --z-popover: 1060;
-  --z-tooltip: 1070;
+  --z-notification: 1080;
+  --z-max: 9999;
 
   /* ========== LAYOUT ========== */
   --max-width-xs: 20rem;   /* 320px */
@@ -117,11 +193,324 @@
   --max-width-lg: 32rem;   /* 512px */
   --max-width-xl: 36rem;   /* 576px */
   --max-width-2xl: 42rem;  /* 672px */
+  --max-width-3xl: 48rem;  /* 768px */
   --max-width-4xl: 56rem;  /* 896px */
+  --max-width-5xl: 64rem;  /* 1024px */
   --max-width-6xl: 72rem;  /* 1152px */
+  --max-width-7xl: 80rem;  /* 1280px */
   --max-width-full: 100%;
 
-  --header-height: 64px;
+  --header-height: 52px;   /* Apple's typical header height */
+  --sidebar-width: 240px;
+}
+
+/* ======================================================================
+   GLOBAL RESET & BASE STYLES (Apple-inspired)
+   ====================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  /* Enable smooth scrolling with reduced motion support */
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: var(--weight-normal);
+  line-height: var(--leading-normal);
+  letter-spacing: var(--tracking-normal);
+  color: var(--text-primary);
+  background: var(--surface-secondary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Typography defaults */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+h1 { font-size: var(--text-4xl); }
+h2 { font-size: var(--text-3xl); }
+h3 { font-size: var(--text-2xl); }
+h4 { font-size: var(--text-xl); }
+h5 { font-size: var(--text-lg); }
+h6 { font-size: var(--text-base); }
+
+p {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+a {
+  color: var(--text-link);
+  text-decoration: none;
+  transition: var(--transition-colors);
+}
+
+a:hover {
+  color: var(--text-link-hover);
+}
+
+a:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Button reset */
+button {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: var(--transition-colors);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Input reset */
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  transition: var(--transition-colors);
+  width: 100%;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-focus);
+}
+
+/* List reset */
+ul, ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Image defaults */
+img, picture, video, canvas, svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Table defaults */
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+/* ======================================================================
+   UTILITY CLASSES (Apple-inspired patterns)
+   ====================================================================== */
+
+/* Skip to content link for accessibility */
+.skip-to-main {
+  position: absolute;
+  left: -9999px;
+  z-index: var(--z-max);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-brand);
+  color: var(--text-on-brand);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  font-weight: var(--weight-medium);
+}
+
+.skip-to-main:focus {
+  left: var(--space-4);
+  top: var(--space-4);
+}
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Container patterns */
+.container {
+  width: 100%;
+  max-width: var(--max-width-7xl);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
+}
+
+@media (min-width: 640px) {
+  .container {
+    padding-left: var(--space-6);
+    padding-right: var(--space-6);
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding-left: var(--space-8);
+    padding-right: var(--space-8);
+  }
+}
+
+/* Card pattern - Apple's elevated surface */
+.card {
+  background: var(--surface-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-shadow);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* Button patterns */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-tight);
+  border-radius: var(--radius-full);
+  transition: var(--transition-colors);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.btn-primary {
+  background: var(--color-brand);
+  color: var(--text-on-brand);
+  border: none;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-brand-light);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-primary:active:not(:disabled) {
+  background: var(--color-brand-dark);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--color-brand);
+  border: 1px solid var(--border-default);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--surface-tertiary);
+  border-color: var(--color-brand);
+}
+
+.btn-sm {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+}
+
+.btn-lg {
+  padding: var(--space-4) var(--space-8);
+  font-size: var(--text-lg);
+}
+
+/* Text utilities */
+.text-muted {
+  color: var(--text-secondary);
+}
+
+.text-subtle {
+  color: var(--text-tertiary);
+}
+
+/* Status badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.badge-success {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.badge-warning {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.badge-error {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+}
+
+.badge-info {
+  background: var(--color-info-bg);
+  color: var(--color-info);
 }
 
 /* ========== LEGACY ALIASES (backward compatibility) ========== */

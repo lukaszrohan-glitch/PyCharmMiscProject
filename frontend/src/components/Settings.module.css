@@ -3,17 +3,23 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999; /* Explicit high z-index to ensure visibility */
-  padding: var(--spacing-4);
-  animation: fadeIn var(--transition-base);
-  cursor: pointer;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: var(--surface-overlay);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: var(--z-modal-backdrop);
+  padding: 0;
+  margin: 0;
+  animation: fadeIn 0.2s var(--ease-apple);
+  cursor: default;
   border: none;
   outline: none;
+  display: block;
+  width: 100vw;
+  height: 100vh;
 }
 
 @keyframes fadeIn {
@@ -22,18 +28,32 @@
 }
 
 .modal {
-  position: relative;
-  background: var(--bg-secondary);
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--surface-primary);
   border-radius: var(--radius-2xl);
-  width: 100%;
+  width: calc(100% - var(--space-8));
   max-width: 640px;
-  max-height: calc(100vh - var(--spacing-8));
+  max-height: calc(100vh - var(--space-16));
   overflow-y: auto;
   box-shadow: var(--shadow-2xl);
-  border: 1px solid var(--border-primary);
-  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  cursor: default; /* Prevent closing when clicking inside modal */
-  z-index: 10000; /* Higher than overlay */
+  border: 1px solid var(--border-default);
+  animation: scaleIn 0.3s var(--ease-spring);
+  cursor: default;
+  z-index: var(--z-modal);
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
 
 @keyframes slideUp {
@@ -51,40 +71,45 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-6) var(--spacing-6) var(--spacing-4);
-  border-bottom: 1px solid var(--border-secondary);
+  padding: var(--space-6);
+  border-bottom: 1px solid var(--border-light);
   position: sticky;
   top: 0;
-  background: var(--bg-secondary);
+  background: var(--surface-primary);
   z-index: 1;
+  backdrop-filter: blur(8px);
 }
 
 .title {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
   color: var(--text-primary);
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
 }
 
 .closeBtn {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-primary);
-  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--surface-tertiary);
   color: var(--text-secondary);
-  font-size: 24px;
+  font-size: 20px;
   line-height: 1;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: var(--transition-colors);
 }
 
 .closeBtn:hover {
-  background: var(--bg-tertiary);
+  background: var(--color-gray-200);
   color: var(--text-primary);
-  transform: scale(1.05);
+}
+
+.closeBtn:active {
+  transform: scale(0.96);
 }
 
 .closeBtn:focus-visible {
@@ -93,11 +118,15 @@
 }
 
 .content {
-  padding: var(--spacing-6);
+  padding: var(--space-6);
 }
 
 .section {
-  margin-bottom: var(--spacing-8);
+  margin-bottom: var(--space-8);
+}
+
+.section:last-child {
+  margin-bottom: 0;
 }
 
 .section:last-child {

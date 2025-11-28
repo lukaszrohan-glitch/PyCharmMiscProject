@@ -37,6 +37,7 @@ export default function Header({
       { id: 'inventory', label: tt('inventory') || (lang === 'pl' ? 'Magazyn' : 'Inventory') },
       { id: 'timesheets', label: tt('timesheets') || (lang === 'pl' ? 'Czas pracy' : 'Timesheets') },
       { id: 'reports', label: tt('reports') || (lang === 'pl' ? 'Raporty' : 'Reports') },
+      { id: 'financials', label: tt('financials') || (lang === 'pl' ? 'Finanse' : 'Financials') },
       { id: 'help', label: tt('help') || (lang === 'pl' ? 'Pomoc' : 'Help') },
     ],
     [lang, tt],
