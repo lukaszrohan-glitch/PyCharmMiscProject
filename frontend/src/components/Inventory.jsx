@@ -426,15 +426,15 @@ export default function Inventory({ lang }) {
             <tbody>
               {filteredInventory.map(item => (
                 <tr key={item.txn_id}>
-                  <td>{item.txn_id}</td>
-                  <td>{item.product_id}</td>
-                  <td className={item.qty_change > 0 ? 'qty-positive' : 'qty-negative'}>
+                  <td data-label={t.txnId}>{item.txn_id}</td>
+                  <td data-label={t.product}>{item.product_id}</td>
+                  <td data-label={t.qtyChange} className={item.qty_change > 0 ? 'qty-positive' : 'qty-negative'}>
                     {item.qty_change > 0 ? '+' : ''}{item.qty_change}
                   </td>
-                  <td>{reasonLabel(item.reason)}</td>
-                  <td>{item.lot || '—'}</td>
-                  <td>{item.location || '—'}</td>
-                  <td>
+                  <td data-label={t.reason}>{reasonLabel(item.reason)}</td>
+                  <td data-label={t.lot}>{item.lot || '—'}</td>
+                  <td data-label={t.location}>{item.location || '—'}</td>
+                  <td data-label={t.actions}>
                     <button className="btn-sm btn-edit" onClick={() => handleEditClick(item)}>{t.edit}</button>
                     <button className="btn-sm btn-danger" onClick={() => handleDeleteClick(item.txn_id)}>{t.delete}</button>
                   </td>

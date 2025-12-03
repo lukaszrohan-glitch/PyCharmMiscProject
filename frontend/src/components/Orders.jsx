@@ -502,14 +502,14 @@ export default function Orders({ lang }) {
               <tbody>
                 {filtered.map(order => (
                   <tr key={order.order_id}>
-                    <td>{order.order_id}</td>
-                    <td>{(() => { const c = customers.find(x => String(x.customer_id)===String(order.customer_id)); return c ? c.name : order.customer_id })()}</td>
-                    <td><span className={`status-badge ${order.status.toLowerCase()}`}>
+                    <td data-label={t.orderId}>{order.order_id}</td>
+                    <td data-label={t.customer}>{(() => { const c = customers.find(x => String(x.customer_id)===String(order.customer_id)); return c ? c.name : order.customer_id })()}</td>
+                    <td data-label={t.status}><span className={`status-badge ${order.status.toLowerCase()}`}>
                       {lang==='pl' ? (order.status==='Planned'?'Planowane': order.status==='InProd'?'W produkcji': order.status==='Done'?'Zakończone': order.status) : (order.status==='InProd'?'In Production': order.status==='Done'?'Completed' : order.status)}
                     </span></td>
-                    <td>{order.due_date || '-'}</td>
-                    <td>{order.contact_person || '-'}</td>
-                    <td>
+                    <td data-label={t.dueDate}>{order.due_date || '-'}</td>
+                    <td data-label={t.contact}>{order.contact_person || '-'}</td>
+                    <td data-label={t.actions}>
                       <button type="button" className="btn-sm btn-edit" onClick={() => handleEditClick(order)}>{t.edit}</button>
                       <button type="button" className="btn-sm btn-danger" onClick={() => handleDeleteClick(order.order_id)}>{t.delete}</button>
                     </td>

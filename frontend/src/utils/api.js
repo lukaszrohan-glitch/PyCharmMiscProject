@@ -24,7 +24,7 @@ export function useApi() {
         let errorData;
         try {
           errorData = await response.json();
-        } catch (e) {
+        } catch {
           errorData = { message: response.statusText };
         }
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
@@ -57,8 +57,8 @@ export const api = {
       credentials: 'include',
     }).then(async (response) => {
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ message: response.statusText }));
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        const errorData = await response.json().catch(() => ({ message: response.statusText }));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
       return response.json();
     });
@@ -77,8 +77,8 @@ export const api = {
       body: JSON.stringify(data),
     }).then(async (response) => {
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ message: response.statusText }));
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        const errorData = await response.json().catch(() => ({ message: response.statusText }));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
       return response.json();
     });
@@ -86,3 +86,15 @@ export const api = {
 
   // Similar implementations for put, delete, etc.
 };
+
+export async function fetchWithRetry(url, options = {}, retries = 3, backoff = 300) {
+  try {
+    const res = await fetch(url, options)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    return res.json()
+  } catch (err) {
+    if (retries <= 0) throw err
+    await new Promise(r => setTimeout(r, backoff))
+    return fetchWithRetry(url, options, retries - 1, backoff * 2)
+  }
+}

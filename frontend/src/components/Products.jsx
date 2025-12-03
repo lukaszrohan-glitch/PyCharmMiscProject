@@ -108,6 +108,7 @@ export default function Products() {
       const data = await api.getProducts()
       setProducts(data)
     } catch (err) {
+      console.error('Failed to load products:', err)
       addToast(l.errorLoading, 'error')
     } finally {
       setLoading(false)
@@ -179,6 +180,7 @@ export default function Products() {
       await loadProducts()
       setShowAddModal(false)
     } catch (err) {
+      console.error('Failed to save product:', err)
       addToast(l.errorSaving, 'error')
     }
   }
@@ -190,6 +192,7 @@ export default function Products() {
       addToast(l.productDeleted, 'success')
       await loadProducts()
     } catch (err) {
+      console.error('Failed to delete product:', err)
       addToast(l.errorSaving, 'error')
     }
   }
@@ -419,4 +422,3 @@ export default function Products() {
     </div>
   )
 }
-

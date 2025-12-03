@@ -82,7 +82,7 @@ export default function Timesheets({ lang }) {
       try {
         const p = await api.getProfile();
         if (p && (p.is_admin === true || p.is_admin === 1)) setIsAdmin(true);
-      } catch (_) {
+      } catch {
         // not logged in or not admin; leave as false
       }
     })();

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Header from './components/Header';
+import MobileNav from './components/MobileNav';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Settings from './components/Settings';
@@ -190,6 +191,12 @@ export default function App() {
           {renderView()}
         </div>
       </main>
+      <MobileNav
+        lang={lang}
+        currentView={currentView}
+        onNavigate={handleViewChange}
+        onSettings={() => setSettingsOpen(true)}
+      />
       {isSettingsOpen && (
         <Settings
           profile={profile}

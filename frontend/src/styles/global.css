@@ -679,33 +679,70 @@ table {
   min-width: 150px;
 }
 
-.filter-select:hover {
-  border-color: var(--brand-primary);
-}
-
-.filter-select:focus {
-  outline: none;
-  border-color: var(--brand-primary);
-  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
-}
-
-@media (max-width: 768px) {
-  .filter-bar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .search-box {
-    min-width: 100%;
-  }
-
-  .filter-controls {
+/* Table responsive cards */
+@media (max-width: 640px) {
+  .table-container table,
+  .orders-container table,
+  .inventory-container table {
+    display: block;
     width: 100%;
   }
 
-  .filter-select {
-    flex: 1;
-    min-width: 0;
+  .table-container thead,
+  .orders-container thead,
+  .inventory-container thead {
+    display: none;
+  }
+
+  .table-container tbody,
+  .orders-container tbody,
+  .inventory-container tbody {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+  }
+
+  .table-container tr,
+  .orders-container tr,
+  .inventory-container tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-2);
+    padding: var(--spacing-4);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    background: var(--bg-secondary);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .table-container td,
+  .orders-container td,
+  .inventory-container td {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    text-align: left;
+    font-size: var(--font-size-sm);
+  }
+
+  .table-container td::before,
+  .orders-container td::before,
+  .inventory-container td::before {
+    content: attr(data-label);
+    font-size: 0.75rem;
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .table-container td:last-child,
+  .orders-container td:last-child,
+  .inventory-container td:last-child {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: var(--spacing-2);
   }
 }
 
@@ -840,4 +877,3 @@ table {
     grid-template-columns: 1fr;
   }
 }
-

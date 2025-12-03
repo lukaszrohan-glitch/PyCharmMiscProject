@@ -115,7 +115,7 @@ export default function Production() {
       ])
       setOrders(ordersData.filter(o => o.status !== 'Invoiced'))
       setProducts(productsData)
-    } catch (err) {
+    } catch {
       addToast(l.errorLoading, 'error')
     } finally {
       setLoading(false)
@@ -407,4 +407,3 @@ export default function Production() {
     </div>
   )
 }
-

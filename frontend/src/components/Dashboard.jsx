@@ -79,47 +79,51 @@ const IconFinance = () => (
 
 export default function Dashboard({ lang, setCurrentView }) {
   const { t } = useI18n();
+  const fallback = (key, defaultValue) => {
+    const translated = t(key);
+    return translated !== key ? translated : defaultValue;
+  };
 
   const navTiles = [
     {
       key: 'orders',
       icon: <IconOrders />,
-      title: lang === 'pl' ? 'Zamówienia' : 'Orders'
+      title: fallback('dashboard.orders', lang === 'pl' ? 'Zamówienia' : 'Orders')
     },
     {
       key: 'products',
       icon: <IconWarehouse />,
-      title: lang === 'pl' ? 'Produkty' : 'Products'
+      title: fallback('dashboard.products', lang === 'pl' ? 'Produkty' : 'Products')
     },
     {
       key: 'planning',
       icon: <IconReports />,
-      title: lang === 'pl' ? 'Planowanie produkcji' : 'Production Planning'
+      title: fallback('dashboard.planning', lang === 'pl' ? 'Planowanie produkcji' : 'Production Planning')
     },
     {
       key: 'clients',
       icon: <IconClients />,
-      title: lang === 'pl' ? 'Klienci' : 'Clients'
+      title: fallback('dashboard.clients', lang === 'pl' ? 'Klienci' : 'Clients')
     },
     {
       key: 'inventory',
       icon: <IconWarehouse />,
-      title: lang === 'pl' ? 'Magazyn' : 'Warehouse'
+      title: fallback('dashboard.inventory', lang === 'pl' ? 'Magazyn' : 'Warehouse')
     },
     {
       key: 'timesheets',
       icon: <IconTimesheets />,
-      title: lang === 'pl' ? 'Czas pracy' : 'Timesheets'
+      title: fallback('dashboard.timesheets', lang === 'pl' ? 'Czas pracy' : 'Timesheets')
     },
     {
       key: 'reports',
       icon: <IconReports />,
-      title: lang === 'pl' ? 'Raporty' : 'Reports'
+      title: fallback('dashboard.reports', lang === 'pl' ? 'Raporty' : 'Reports')
     },
     {
       key: 'financials',
       icon: <IconFinance />,
-      title: lang === 'pl' ? 'Finanse' : 'Finance'
+      title: fallback('dashboard.financials', lang === 'pl' ? 'Finanse' : 'Finance')
     }
   ];
 

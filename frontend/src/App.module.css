@@ -9,12 +9,18 @@
 
 .mainContent {
   flex: 1;
-  padding: 2rem 1rem;
+  padding: 2rem 1rem 5rem; /* leave space for mobile nav */
+}
+
+@media (min-width: 768px) {
+  .mainContent {
+    padding-bottom: 2rem;
+  }
 }
 
 .container {
   max-width: 1200px;
-  margin: 0 auto;
+  margin: 0 auto 4rem; /* keep breathing room */
   position: relative;
   transition: opacity 0.3s ease;
 }
@@ -474,4 +480,3 @@
     padding: 1.5rem;
   }
 }
-

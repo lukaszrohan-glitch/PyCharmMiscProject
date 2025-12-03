@@ -68,20 +68,20 @@ export default function Approvals({ lang }) {
   const [approvedRows, setApprovedRows] = useState([])
 
   const load = useCallback(async () => {
-    try{
-      setLoading(true)
-      const data = await api.getPendingTimesheets({ fromDate: fromDate || undefined, toDate: toDate || undefined, empId: filterEmpId || undefined })
-      setRows(data || [])
-      setSelected({})
-    }catch(e){ setError(String(e)) }
-    finally{ setLoading(false) }
-  }, [filterEmpId, fromDate, toDate])
+     try{
+       setLoading(true)
+       const data = await api.getPendingTimesheets({ fromDate: fromDate || undefined, toDate: toDate || undefined, empId: filterEmpId || undefined })
+       setRows(data || [])
+       setSelected({})
+     }catch{ setError(t.error) }
+     finally{ setLoading(false) }
+  }, [filterEmpId, fromDate, toDate, t])
 
   const loadEmployees = useCallback(async () => {
     try{
       const data = await api.getEmployees()
       setEmployees(data || [])
-    }catch(e){ /* ignore */ }
+    }catch{ /* ignore */ }
   }, [])
 
   useEffect(()=>{ load(); loadEmployees() }, [load, loadEmployees])
@@ -94,7 +94,7 @@ export default function Approvals({ lang }) {
         setLoading(true)
         const data = await api.getTimesheetsFiltered({ fromDate: fromDate || undefined, toDate: toDate || undefined, empId: filterEmpId || undefined, approved: true })
         if (!cancelled) setApprovedRows(data || [])
-      }catch(e){ /* ignore */ }
+      }catch{ /* ignore */ }
       finally{ if(!cancelled) setLoading(false) }
     })()
     return () => { cancelled = true }
@@ -124,7 +124,7 @@ export default function Approvals({ lang }) {
        await load()
        toast.show(t.approveSuccess)
      }catch(e){
-       toast.show(`${t.approveFailed}: ${e.message}`, 'error')
+       toast.show(`${t.approveFailed}: ${e?.message || ''}`.trim(), 'error')
      }finally{ setLoading(false) }
   }, [load, selected, t.approveFailed, t.approveSuccess, toast])
 
@@ -136,7 +136,7 @@ export default function Approvals({ lang }) {
        await load()
        toast.show(t.approveSuccess)
      }catch(e){
-       toast.show(`${t.approveFailed}: ${e.message}`, 'error')
+       toast.show(`${t.approveFailed}: ${e?.message || ''}`.trim(), 'error')
      }finally{ setLoading(false) }
   }, [load, t.approveFailed, t.approveSuccess, toast])
 
@@ -153,9 +153,9 @@ export default function Approvals({ lang }) {
        a.remove()
        URL.revokeObjectURL(url)
      }catch(e){
-       toast.show(`${t.exportFailed}: ${e.message}`, 'error')
+       toast.show(`${t.exportFailed}: ${e?.message || ''}`.trim(), 'error')
      }
-  }, [filterEmpId, fromDate, t.exportFailed, toast, toDate])
+   }, [filterEmpId, fromDate, t.exportFailed, toast, toDate])
 
   return (
     <div style={{ padding: 8, border: '1px solid #e1e4e8', borderRadius: 6, background: '#fff' }}>

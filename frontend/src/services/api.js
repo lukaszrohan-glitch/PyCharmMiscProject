@@ -139,10 +139,12 @@ export async function login(email, password){
 export async function getProfile() {
   try {
     return await request('/api/users/me', { method: 'GET' })
-  } catch (_) {
+  } catch (err) {
+    console.warn('Primary profile endpoint failed', err)
     try {
       return await request('/api/user/profile', { method: 'GET' })
-    } catch {
+    } catch (fallbackErr) {
+      console.warn('Fallback profile endpoint failed', fallbackErr)
       return null
     }
   }

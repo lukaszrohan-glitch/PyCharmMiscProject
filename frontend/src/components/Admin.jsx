@@ -9,7 +9,7 @@ export default function Admin({ lang }) {
   const setLastAdminErrorSafe = (message) => {
     try {
       window.lastAdminError = message;
-    } catch (err) {
+    } catch {
       // ignore if window unavailable
     }
   };

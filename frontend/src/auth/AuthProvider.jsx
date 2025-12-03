@@ -20,7 +20,7 @@ export function AuthProvider({ children }) {
         setProfile(me || null)
       } catch (e) {
         // Keep token; backend may be unreachable temporarily
-        console.warn('Auth bootstrap: profile unavailable, keeping token')
+        console.warn('Auth bootstrap: profile unavailable, keeping token', e)
       } finally {
         setChecking(false)
       }
