@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useAppContext } from './AppContext';
 import Header from './components/Header';
 import MobileNav from './components/MobileNav';
 import Login from './components/Login';
@@ -10,6 +12,7 @@ import Timesheets from './components/Timesheets';
 import Reports from './components/Reports';
 import Financials from './components/Financials';
 import Clients from './components/Clients';
+import DemandPlanner from './components/DemandPlanner';
 import Admin from './components/Admin';
 import UserGuide from './components/UserGuide';
 import Products from './components/Products';
@@ -18,73 +21,29 @@ import { useAuth } from './auth/useAuth';
 import styles from './App.module.css';
 
 export default function App() {
-  const [lang, setLang] = useState(
-    typeof window !== 'undefined'
-      ? localStorage.getItem('lang') || 'pl'
-      : 'pl'
-  );
-  const [currentView, setCurrentView] = useState('dashboard');
-  const [isSettingsOpen, setSettingsOpen] = useState(false);
-  const [initialFinanceOrderId, setInitialFinanceOrderId] = useState(null);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const { lang, isSettingsOpen, setSettingsOpen } = useAppContext();
   const { profile, checkingAuth, logout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const currentView = location.pathname.substring(1) || 'dashboard';
 
-  // zapisujemy język przy zmianie
   useEffect(() => {
-    try {
-      localStorage.setItem('lang', lang);
-    } catch {
-      // ignorujemy błędy localStorage (np. private mode)
-    }
+    localStorage.setItem('lang', lang);
   }, [lang]);
-
-  // sprawdzamy token + profil przy starcie
-  useEffect(() => {
-    // Auth bootstrap handled by AuthProvider; no-op
-    return;
-
-    /* (async () => {
-      try {
-        // uwaga: dynamiczny import OK jeśli chcesz code-splitting,
-        // ale nie jest konieczny, skoro i tak importujesz getToken/setToken
-        const api = await import('./services/api');
-        const profileData = await api.getProfile();
-        setProfile(profileData);
-      } catch (e) {
-        console.error(e);
-        setToken(null); // warto mieć implementację, która czyści token
-        setProfile(null);
-      } finally {
-        setCheckingAuth(false);
-      }
-    })(); */
-  }, []);
 
   const handleLogout = () => {
     logout?.();
-    setCurrentView('dashboard');
+    navigate('/dashboard');
   };
 
-  const handleSettings = () => {
-    setSettingsOpen(true);
-  };
+  const handleSettings = () => setSettingsOpen(true);
 
-  // Jump to finance view with specific order
-  const jumpToFinance = (orderId) => {
-    setInitialFinanceOrderId(orderId);
-    handleViewChange('financials');
-  };
-
-  // Smooth view transitions
   const handleViewChange = (newView) => {
-    if (newView === currentView) return;
-    setIsTransitioning(true);
-    setCurrentView(newView);
-    // Reset after animation duration
-    setTimeout(() => setIsTransitioning(false), 300);
+    if (newView !== currentView) {
+      navigate(`/${newView}`);
+    }
   };
 
-  // Update document title when view changes
   useEffect(() => {
     const viewTitle = {
       dashboard: lang === 'pl' ? 'Panel główny' : 'Dashboard',
@@ -96,106 +55,56 @@ export default function App() {
       financials: lang === 'pl' ? 'Finanse' : 'Financials',
       admin: lang === 'pl' ? 'Administracja' : 'Admin',
     }[currentView] || 'Synterra';
-
     document.title = `${viewTitle} - Synterra`;
   }, [currentView, lang]);
 
-  const renderView = () => {
-
-    let content;
-    switch (currentView) {
-      case 'orders':
-        content = <Orders lang={lang} jumpToFinance={jumpToFinance} />;
-        break;
-      case 'products':
-        content = <Products lang={lang} />;
-        break;
-      case 'production':
-        content = <Production lang={lang} />;
-        break;
-      case 'inventory':
-        content = <Inventory lang={lang} />;
-        break;
-      case 'clients':
-        content = <Clients lang={lang} />;
-        break;
-      case 'timesheets':
-        content = <Timesheets lang={lang} />;
-        break;
-      case 'reports':
-        content = <Reports lang={lang} />;
-        break;
-      case 'financials':
-        content = <Financials lang={lang} initialOrderId={initialFinanceOrderId} />;
-        break;
-      case 'help':
-        content = <UserGuide lang={lang} />;
-        break;
-      case 'admin':
-        // prosty guard po stronie frontu – backend i tak musi sprawdzać
-        if (profile?.is_admin) {
-          content = <Admin lang={lang} />;
-        } else {
-          content = <Dashboard lang={lang} setCurrentView={setCurrentView} />;
-        }
-        break;
-      case 'dashboard':
-      default:
-        content = <Dashboard lang={lang} setCurrentView={setCurrentView} />;
-    }
-
-    return (
-      <div className={styles.viewWrapper} key={currentView}>
-        {content}
-      </div>
-    );
-  };
-
-  // podczas sprawdzania autoryzacji – prosty ekran ładowania
   if (checkingAuth) {
     return (
       <div className={styles.app}>
         <main id="main-content" className={styles.mainContent}>
-          <div className={styles.container}>
-            <p>Loading...</p>
-          </div>
+          <div className={styles.container}><p>Loading...</p></div>
         </main>
       </div>
     );
   }
 
   if (!profile) {
-    // Login może mieć przełącznik języka, więc przekazanie setLang ma sens
-    return <Login lang={lang} setLang={setLang} />;
+    return <Login />;
   }
 
   return (
     <div className={styles.app}>
       <Header
-        lang={lang}
-        setLang={setLang}
         currentView={currentView}
         setCurrentView={handleViewChange}
         profile={profile}
         onSettings={handleSettings}
         onLogout={handleLogout}
-        onSearchSelect={jumpToFinance}
       />
       <main id="main-content" className={styles.mainContent}>
-        <div className={`${styles.container} ${isTransitioning ? styles.transitioning : ''}`}>
-          {isTransitioning && (
-            <div className={styles.loadingOverlay}>
-              <div className={styles.spinner} />
-            </div>
-          )}
-          {renderView()}
+        <div className={styles.container}>
+          <Routes>
+            <Route path="/dashboard" element={<Dashboard setCurrentView={handleViewChange} />} />
+            <Route path="/orders" element={<Orders jumpToFinance={(orderId) => navigate(`/financials?orderId=${orderId}`)} />} />
+            <Route path="/products" element={<Products />} />
+            <Route path="/production" element={<Production />} />
+            <Route path="/planning" element={<Navigate to="/production" replace />} />
+            <Route path="/inventory" element={<Inventory />} />
+            <Route path="/clients" element={<Clients />} />
+            <Route path="/timesheets" element={<Timesheets />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/demand" element={<DemandPlanner />} />
+            <Route path="/financials" element={<Financials />} />
+            <Route path="/help" element={<UserGuide />} />
+            <Route path="/admin" element={profile?.is_admin ? <Admin /> : <Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
         </div>
       </main>
       <MobileNav
-        lang={lang}
         currentView={currentView}
         onNavigate={handleViewChange}
-        onSettings={() => setSettingsOpen(true)}
+        onSettings={handleSettings}
       />
       {isSettingsOpen && (
         <Settings
@@ -205,7 +114,6 @@ export default function App() {
             setSettingsOpen(false);
             handleViewChange('admin');
           }}
-          lang={lang}
         />
       )}
     </div>

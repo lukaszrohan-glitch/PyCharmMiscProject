@@ -1,11 +1,24 @@
 from __future__ import annotations
 
 from typing import Optional, List
+import uuid
+from decimal import Decimal
 
-from fastapi import APIRouter, HTTPException, Depends, Query, Header
+from fastapi import APIRouter, HTTPException, Depends, Query, Header, Response, status
 
-from db import fetch_all, fetch_one
-from schemas import Finance, RevenueByMonth, TopCustomer, TopOrder, AnalyticsSummary
+from db import fetch_all, fetch_one, execute
+from schemas import (
+    Finance,
+    RevenueByMonth,
+    TopCustomer,
+    TopOrder,
+    AnalyticsSummary,
+    DemandScenario,
+    DemandScenarioCreate,
+    DemandScenarioUpdate,
+    DemandForecastRequest,
+    DemandForecastResult,
+)
 from queries import (
     SQL_FINANCE_ONE,
     SQL_SHORTAGES,
@@ -14,8 +27,9 @@ from queries import (
     SQL_TOP_CUSTOMERS,
     SQL_TOP_ORDERS,
     SQL_ANALYTICS_SUMMARY,
+    SQL_CREATE_DEMAND_SCENARIOS,
 )
-from security import check_api_key
+from security import check_api_key, require_auth
 
 router = APIRouter(tags=["Finance", "Analytics"])
 
@@ -29,6 +43,20 @@ def _readonly_ok(
         api_key=api_key,
         allow_readonly=True,
     )
+
+
+def _init_scenarios_table():
+    try:
+        execute(SQL_CREATE_DEMAND_SCENARIOS)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to init table: {exc}")
+
+
+def _as_decimal(value, default=0):
+    try:
+        return Decimal(str(value or default))
+    except Exception:
+        return Decimal(default)
 
 
 @router.get(
@@ -147,3 +175,83 @@ def analytics_summary(
         return summary
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.get("/api/analytics/demand/scenarios", response_model=List[DemandScenario])
+def list_demand_scenarios(_user=Depends(require_auth)):
+    _init_scenarios_table()
+    rows = fetch_all("SELECT * FROM demand_scenarios ORDER BY created_at DESC", None) or []
+    return rows
+
+
+@router.post("/api/analytics/demand/scenarios", response_model=DemandScenario, status_code=status.HTTP_201_CREATED)
+def create_demand_scenario(payload: DemandScenarioCreate, user=Depends(require_auth)):
+    _init_scenarios_table()
+    scenario_id = payload.scenario_id or str(uuid.uuid4())
+    execute(
+        """
+        INSERT INTO demand_scenarios (scenario_id, name, multiplier, backlog_weeks, created_by)
+        VALUES (%s, %s, %s, %s, %s)
+        """,
+        (scenario_id, payload.name, float(payload.multiplier), float(payload.backlog_weeks), user.user_id),
+    )
+    row = fetch_one("SELECT * FROM demand_scenarios WHERE scenario_id = %s", (scenario_id,))
+    return row
+
+
+@router.put("/api/analytics/demand/scenarios/{scenario_id}", response_model=DemandScenario)
+def update_demand_scenario(scenario_id: str, payload: DemandScenarioUpdate, _user=Depends(require_auth)):
+    _init_scenarios_table()
+    existing = fetch_one("SELECT * FROM demand_scenarios WHERE scenario_id = %s", (scenario_id,))
+    if not existing:
+        raise HTTPException(status_code=404, detail="Scenario not found")
+    updates = []
+    params = []
+    for field in ("name", "multiplier", "backlog_weeks"):
+        value = getattr(payload, field)
+        if value is not None:
+            updates.append(f"{field} = %s")
+            params.append(float(value))
+    if updates:
+        params.append(scenario_id)
+        execute(f"UPDATE demand_scenarios SET {', '.join(updates)} WHERE scenario_id = %s", tuple(params))
+    row = fetch_one("SELECT * FROM demand_scenarios WHERE scenario_id = %s", (scenario_id,))
+    return row
+
+
+@router.delete("/api/analytics/demand/scenarios/{scenario_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_demand_scenario(scenario_id: str, _user=Depends(require_auth)):
+    _init_scenarios_table()
+    execute("DELETE FROM demand_scenarios WHERE scenario_id = %s", (scenario_id,))
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/api/analytics/demand", response_model=DemandForecastResult)
+def run_demand_forecast(payload: DemandForecastRequest, _user=Depends(require_auth)):
+    _init_scenarios_table()
+    scenario = None
+    if payload.scenario_id:
+        scenario = fetch_one("SELECT * FROM demand_scenarios WHERE scenario_id = %s", (payload.scenario_id,))
+        if not scenario:
+            raise HTTPException(status_code=404, detail="Scenario not found")
+    multiplier = payload.multiplier or (scenario.get("multiplier") if scenario else Decimal("1.0"))
+    backlog = payload.backlog_weeks or (scenario.get("backlog_weeks") if scenario else Decimal("4"))
+    if scenario is None:
+        scenario = {
+            "scenario_id": payload.scenario_id or "ad-hoc",
+            "name": "Ad-hoc",
+            "multiplier": float(multiplier),
+            "backlog_weeks": float(backlog),
+            "created_by": None,
+            "created_at": None,
+        }
+    base_revenue = _as_decimal(fetch_one("SELECT COALESCE(SUM(revenue),0) AS rev FROM v_order_finance", ()).get("rev"))
+    revenue = float(base_revenue * Decimal(multiplier))
+    capacity_usage = min(100.0, float(Decimal(multiplier) * Decimal("65")))
+    metrics = [round(revenue / max(float(backlog), 1.0), 2), float(backlog) * 40, float(backlog) * 35]
+    return DemandForecastResult(
+        scenario=DemandScenario(**scenario),
+        revenue=revenue,
+        capacity_usage=capacity_usage,
+        metrics=metrics,
+    )

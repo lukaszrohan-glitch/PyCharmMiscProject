@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { request as coreRequest } from '../services/api';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
@@ -11,27 +12,10 @@ export function useApi() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_BASE}${endpoint}`, {
-        ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
+      return await coreRequest(endpoint, {
         credentials: 'include',
+        ...options,
       });
-
-      if (!response.ok) {
-        let errorData;
-        try {
-          errorData = await response.json();
-        } catch {
-          errorData = { message: response.statusText };
-        }
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
     } catch (err) {
       console.error('API Error:', err);
       setError(err.message);
@@ -46,52 +30,34 @@ export function useApi() {
 
 // API methods
 export const api = {
-  get: (endpoint, options = {}) => {
-    return fetch(`${API_BASE}${endpoint}`, {
-      ...options,
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        ...options.headers,
-      },
-      credentials: 'include',
-    }).then(async (response) => {
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: response.statusText }));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-      }
-      return response.json();
-    });
-  },
+  get: (endpoint, options = {}) => coreRequest(endpoint, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      ...options.headers,
+    },
+    ...options,
+  }),
 
-  post: (endpoint, data, options = {}) => {
-    return fetch(`${API_BASE}${endpoint}`, {
-      ...options,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...options.headers,
-      },
-      credentials: 'include',
-      body: JSON.stringify(data),
-    }).then(async (response) => {
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: response.statusText }));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-      }
-      return response.json();
-    });
-  },
+  post: (endpoint, data, options = {}) => coreRequest(endpoint, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      ...options.headers,
+    },
+    body: JSON.stringify(data),
+    ...options,
+  }),
 
   // Similar implementations for put, delete, etc.
 };
 
 export async function fetchWithRetry(url, options = {}, retries = 3, backoff = 300) {
   try {
-    const res = await fetch(url, options)
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    return res.json()
+    return await coreRequest(url.replace(API_BASE, ''), options)
   } catch (err) {
     if (retries <= 0) throw err
     await new Promise(r => setTimeout(r, backoff))

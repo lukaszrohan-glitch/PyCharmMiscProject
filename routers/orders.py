@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import List, Optional
+from datetime import date
 
 from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File, Header
 from fastapi.responses import StreamingResponse
@@ -84,11 +85,22 @@ def _normalize_status(value: Optional[str]) -> Optional[str]:
 def orders_list(
     limit: Optional[int] = Query(None, ge=1, le=1000),
     offset: Optional[int] = Query(None, ge=0),
+    from_date: Optional[date] = Query(None, alias="from"),
+    to_date: Optional[date] = Query(None, alias="to"),
     _ok: bool = Depends(_readonly_dep),
 ):
     try:
         sql = SQL_ORDERS
         params: List = []
+        where = []
+        if from_date is not None:
+            where.append("order_date >= %s")
+            params.append(from_date)
+        if to_date is not None:
+            where.append("order_date <= %s")
+            params.append(to_date)
+        if where:
+            sql += " WHERE " + " AND ".join(where)
         if limit is not None:
             sql += " LIMIT %s"
             params.append(limit)
@@ -301,6 +313,45 @@ def validate_order(
             "available": True,
             "suggested_next": suggested,
         }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.patch(
+    "/api/orders/{order_id}/schedule",
+    response_model=Order,
+    summary="Update order schedule (start/due dates)",
+)
+def update_order_schedule(
+    order_id: str,
+    payload: dict,
+    _ok: bool = Depends(check_api_key)
+):
+    try:
+        start = payload.get("start_date")
+        due = payload.get("due_date")
+        if start is None and due is None:
+            raise HTTPException(status_code=400, detail="No schedule fields provided")
+        updates = []
+        params = []
+        if start is not None:
+            updates.append("order_date = %s")
+            params.append(start)
+        if due is not None:
+            updates.append("due_date = %s")
+            params.append(due)
+        params.append(order_id)
+        sql = (
+            f"UPDATE orders SET {', '.join(updates)} "
+            "WHERE order_id = %s "
+            "RETURNING order_id, customer_id, status, order_date, due_date, contact_person"
+        )
+        rows = execute(sql, params, returning=True)
+        if not rows:
+            raise HTTPException(status_code=404, detail="Order not found")
+        return rows[0]
     except HTTPException:
         raise
     except Exception as exc:

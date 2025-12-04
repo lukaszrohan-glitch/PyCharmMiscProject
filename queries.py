@@ -197,3 +197,14 @@ WITH max_suffix AS (
 )
 SELECT 'CUST-' || LPAD((max_seq + 1)::text, 4, '0') AS next_id FROM max_suffix;
 """
+
+SQL_CREATE_DEMAND_SCENARIOS = """
+CREATE TABLE IF NOT EXISTS demand_scenarios (
+    scenario_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    multiplier REAL NOT NULL,
+    backlog_weeks REAL NOT NULL,
+    created_by TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+"""

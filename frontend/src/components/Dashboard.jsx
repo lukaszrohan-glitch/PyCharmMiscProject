@@ -1,5 +1,7 @@
-import styles from '../App.module.css';
 import { useI18n } from '../i18n';
+import ProductionHealth from './ProductionHealth';
+import RecentActivity from './RecentActivity';
+import styles from '../App.module.css';
 
 const IconOrders = () => (
   <svg viewBox="0 0 24 24" width="48" height="48" aria-hidden="true">
@@ -13,7 +15,7 @@ const IconOrders = () => (
       <path d="M15.5 11.5l1.2 1.6 2.3-3.2" stroke="var(--brand-accent)" strokeWidth="2" />
     </g>
   </svg>
-)
+);
 
 const IconClients = () => (
   <svg viewBox="0 0 24 24" width="48" height="48" aria-hidden="true">
@@ -28,7 +30,7 @@ const IconClients = () => (
       <path d="M7.3 18h3.4M13.3 18h3.4" strokeWidth="1.5" />
     </g>
   </svg>
-)
+);
 
 const IconWarehouse = () => (
   <svg viewBox="0 0 24 24" width="48" height="48" aria-hidden="true">
@@ -40,7 +42,7 @@ const IconWarehouse = () => (
       <rect x="10" y="16" width="4" height="3" rx="0.8" fill="var(--brand-accent)" stroke="currentColor" strokeWidth="1" />
     </g>
   </svg>
-)
+);
 
 const IconTimesheets = () => (
   <svg viewBox="0 0 24 24" width="48" height="48" aria-hidden="true">
@@ -53,7 +55,7 @@ const IconTimesheets = () => (
       <path d="M17.5 13.7v1.9l1.4 0.9" stroke="currentColor" strokeWidth="1.2" />
     </g>
   </svg>
-)
+);
 
 const IconReports = () => (
   <svg viewBox="0 0 24 24" width="48" height="48" aria-hidden="true">
@@ -64,7 +66,7 @@ const IconReports = () => (
       <path d="M4 20h16" strokeWidth="2" />
     </g>
   </svg>
-)
+);
 
 const IconFinance = () => (
   <svg viewBox="0 0 24 24" width="48" height="48" aria-hidden="true">
@@ -75,7 +77,7 @@ const IconFinance = () => (
       <path d="M13 13h4" strokeWidth="1.5" />
     </g>
   </svg>
-)
+);
 
 export default function Dashboard({ lang, setCurrentView }) {
   const { t } = useI18n();
@@ -99,6 +101,11 @@ export default function Dashboard({ lang, setCurrentView }) {
       key: 'planning',
       icon: <IconReports />,
       title: fallback('dashboard.planning', lang === 'pl' ? 'Planowanie produkcji' : 'Production Planning')
+    },
+    {
+      key: 'demand',
+      icon: <IconFinance />,
+      title: fallback('dashboard.demand', lang === 'pl' ? 'Popyt' : 'Demand Planner')
     },
     {
       key: 'clients',
@@ -142,6 +149,10 @@ export default function Dashboard({ lang, setCurrentView }) {
           <h3 className={styles.navTileTitle}>{tile.title}</h3>
         </button>
       ))}
+      <div className={styles.analyticsSection}>
+        <ProductionHealth />
+        <RecentActivity />
+      </div>
     </div>
   );
 }

@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { adminListUsers, adminCreateUser } from './services/api';
 
 const AdminUsersPage = () => {
   const [users, setUsers] = useState([]);
@@ -12,32 +13,19 @@ const AdminUsersPage = () => {
     password: '',
   });
 
-  const authToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-  const commonHeaders = useMemo(() => ({
-    'Content-Type': 'application/json',
-    ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-  }), [authToken]);
-
   const loadUsers = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/admin/users', {
-        method: 'GET',
-        headers: commonHeaders,
-      });
-      if (!res.ok) {
-        throw new Error(`Error ${res.status}: ${await res.text()}`);
-      }
-      const data = await res.json();
+      const data = await adminListUsers();
       setUsers(data || []);
     } catch (e) {
       console.error(e);
-      setError(e.message ?? 'Failed to load users');
+      setError(e?.message ?? 'Failed to load users');
     } finally {
       setLoading(false);
     }
-  }, [commonHeaders]);
+  }, []);
 
   useEffect(() => {
     loadUsers();
@@ -62,14 +50,7 @@ const AdminUsersPage = () => {
         subscription_plan: form.subscription_plan || 'free',
         password: form.password || null,
       };
-      const res = await fetch('/api/admin/users', {
-        method: 'POST',
-        headers: commonHeaders,
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        throw new Error(`Error ${res.status}: ${await res.text()}`);
-      }
+      await adminCreateUser(body);
       await loadUsers();
       setForm({
         email: '',

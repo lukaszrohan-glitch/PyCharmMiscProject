@@ -32,3 +32,29 @@ The app runs by default at http://localhost:5173 and expects the backend at http
 In WebStorm: File -> New -> Project from Existing Sources -> select this folder. Or open the `frontend` folder as a project.
 
 API base is configurable in `.env` (VITE_API_BASE).
+
+## E2E testing with Playwright
+
+1. Install browsers once:
+
+   ```powershell
+   cd frontend
+   npx playwright install
+   ```
+
+2. Run UI in preview mode (Vite build):
+
+   ```powershell
+   cd frontend
+   npm run build
+   npm run preview
+   ```
+
+3. Run the tests (mocks auto-attach using Playwright routing):
+
+   ```powershell
+   cd frontend
+   npm run test:e2e
+   ```
+
+MSW-style mocks live in `frontend/tests/support/mocks.js`. They intercept `/api/analytics/demand*` and `/api/orders*` endpoints to provide deterministic data for Demand Planner and Production timeline suites. Adjust payloads there if backend contracts change.

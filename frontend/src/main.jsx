@@ -8,6 +8,8 @@ import './style-fixes.css';
 import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider } from './auth/AuthProvider';
 import ToastProvider from './components/ToastProvider';
+import { BrowserRouter } from 'react-router-dom';
+import { AppProvider } from './AppContext';
 
 // Ensure the root element exists
 // ... existing code
@@ -33,12 +35,16 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <StrictMode>
-    <AuthProvider>
-      <ToastProvider>
-        <ErrorBoundary>
-          <App />
-        </ErrorBoundary>
-      </ToastProvider>
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <AppProvider>
+          <ToastProvider>
+            <ErrorBoundary>
+              <App />
+            </ErrorBoundary>
+          </ToastProvider>
+        </AppProvider>
+      </AuthProvider>
+    </BrowserRouter>
   </StrictMode>
 );

@@ -1,0 +1,156 @@
+.planner {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-2xl);
+  padding: var(--spacing-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+header select {
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-secondary);
+  padding: var(--spacing-2);
+}
+
+header button {
+  border-radius: var(--radius-full);
+  background: var(--brand-primary);
+  border: none;
+  color: var(--text-on-brand);
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--spacing-4);
+}
+
+.controls label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  background: var(--bg-primary);
+  padding: var(--spacing-4);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-secondary);
+}
+
+.notice {
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.error {
+  color: var(--status-error);
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-3);
+}
+
+.metrics div {
+  background: linear-gradient(135deg, rgba(14,165,233,0.15), rgba(59,130,246,0.15));
+  padding: var(--spacing-4);
+  border-radius: var(--radius-xl);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-3);
+}
+
+.cards article {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-4);
+}
+
+.form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--border-secondary);
+}
+
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.form input {
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-secondary);
+  padding: var(--spacing-2);
+}
+
+.formActions {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: flex-end;
+}
+
+.formActions button {
+  flex: 1;
+  border: none;
+  border-radius: var(--radius-full);
+  padding: var(--spacing-2);
+  background: var(--brand-primary);
+  color: var(--text-on-brand);
+  cursor: pointer;
+}
+
+.deleteBtn {
+  background: var(--status-danger);
+}
+
+.history {
+  margin-top: var(--spacing-6);
+}
+
+.historyGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--spacing-3);
+}
+
+.historyGrid article {
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-3);
+  background: var(--bg-primary);
+  box-shadow: var(--shadow-xs);
+}
+
+.historyGrid header {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}

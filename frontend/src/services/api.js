@@ -20,6 +20,29 @@ function resolveApiBase() {
 
 const API_BASE = resolveApiBase()
 
+function handleAuthFailure(status) {
+  if (status !== 401 && status !== 403) return
+  try {
+    setToken(null)
+  } catch {
+    /* no-op */
+  }
+  try {
+    sessionStorage.removeItem('authToken');
+    sessionStorage.removeItem('token');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('token');
+  } catch {
+    /* ignore */
+  }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('auth:expired', { detail: { status } }))
+    if (!window.location.pathname.includes('login')) {
+      window.location.href = '/'
+    }
+  }
+}
+
 let API_KEY = import.meta.env.VITE_API_KEY || null
 let ADMIN_KEY = import.meta.env.VITE_ADMIN_KEY || null
 let TOKEN = null
@@ -84,13 +107,26 @@ async function request(endpoint, options = {}) {
   const config = { ...options, method, headers }
 
   const response = await fetch(url, config)
+  const contentType = response.headers.get('content-type') || ''
+  const isJson = contentType.includes('application/json')
   if (!response.ok) {
-    const errorData = await response.json().catch(async () => ({ message: await response.text().catch(()=>'An unknown error occurred') }))
-    throw new Error(errorData.detail || errorData.message || `HTTP error! status: ${response.status}`)
+    handleAuthFailure(response.status)
+    if (isJson) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.detail || errorData.message || `HTTP error! status: ${response.status}`)
+    }
+    const bodyText = await response.text().catch(() => '')
+    const snippet = bodyText.slice(0, 140).replace(/\s+/g, ' ').trim()
+    throw new Error(`API ${method} ${endpoint} failed (${response.status}). Unexpected response type${snippet ? `: ${snippet}` : ''}`)
   }
   if (response.status === 204) return null
   if (parse === 'blob') return response.blob()
   if (parse === 'text') return response.text()
+  if (!isJson && parse === 'json') {
+    const bodyText = await response.text().catch(() => '')
+    const snippet = bodyText.slice(0, 140).replace(/\s+/g, ' ').trim()
+    throw new Error(`API ${method} ${endpoint} responded with non-JSON payload${snippet ? `: ${snippet}` : ''}`)
+  }
   return response.json()
 }
 
@@ -182,7 +218,13 @@ export const adminListPlans = () => {
 }
 // Admin audit (JWT)
 export const adminListAdminAudit = (limit = 100) => reqAuth(`/api/admin/audit?limit=${encodeURIComponent(limit)}`)
-export const getOrders = ()=> req('/api/orders')
+export const getOrders = (params = {}) => {
+  const query = []
+  if (params.fromDate) query.push(`from=${encodeURIComponent(params.fromDate)}`)
+  if (params.toDate) query.push(`to=${encodeURIComponent(params.toDate)}`)
+  const qs = query.length ? `?${query.join('&')}` : ''
+  return req(`/api/orders${qs}`)
+}
 export const getFinance = (orderId)=> req(`/api/finance/${encodeURIComponent(orderId)}`)
 export const getShortages = ()=> req('/api/shortages')
 export const getPlannedTime = (orderId)=> req(`/api/planned-time/${encodeURIComponent(orderId)}`)
@@ -218,6 +260,11 @@ export const updateOrder = (orderId, payload) => {
     body: JSON.stringify(payload)
   })
 }
+export const updateOrderSchedule = (orderId, payload) => request(`/api/orders/${encodeURIComponent(orderId)}/schedule`, {
+  method: 'PATCH',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(payload)
+})
 export const deleteOrder = (orderId) => {
   const headers = {}
   if(API_KEY) headers['x-api-key'] = API_KEY
@@ -426,4 +473,65 @@ export const validateOrderId = (orderId, customerId) => {
 
 export const suggestOrderId = async () => {
   return request('/api/orders/next-id')
+}
+// Demand scenarios & forecast
+export const getDemandScenarios = async () => {
+  try {
+    return await req('/api/analytics/demand/scenarios')
+  } catch (err) {
+    console.warn('Demand scenarios API unavailable, falling back to local', err)
+    return []
+  }
+}
+
+export const createDemandScenario = (payload) => postAuth('/api/analytics/demand/scenarios', payload)
+
+export const updateDemandScenario = (id, payload) => request(`/api/analytics/demand/scenarios/${encodeURIComponent(id)}`, {
+  method: 'PUT',
+  body: JSON.stringify(payload),
+  headers: { 'Content-Type': 'application/json' }
+})
+
+export const deleteDemandScenario = (id) => request(`/api/analytics/demand/scenarios/${encodeURIComponent(id)}`, { method: 'DELETE' })
+
+export const runDemandForecast = async (payload) => {
+  try {
+    return await postAuth('/api/analytics/demand', payload)
+  } catch (err) {
+    console.warn('Demand forecast API failed, synthesizing local result', err)
+    const multiplier = payload.multiplier || 1
+    const backlog = payload.backlogWeeks || 4
+    return {
+      scenario: { name: 'Offline', multiplier, backlogWeeks: backlog },
+      revenue: 0,
+      capacity_usage: multiplier * 50,
+      metrics: [0, 0, 0]
+    }
+  }
+}
+
+export const adminDeleteUser = (userId) => {
+  const headers = {}
+  const tok = getToken()
+  if (tok) {
+    headers['Authorization'] = `Bearer ${tok}`
+  } else if (ADMIN_KEY) {
+    headers['x-admin-key'] = ADMIN_KEY
+  }
+  return request(`/api/admin/users/${encodeURIComponent(userId)}`, { method: 'DELETE', headers })
+}
+
+export const adminUpdateUser = (userId, payload) => {
+  const headers = { 'Content-Type': 'application/json' }
+  const tok = getToken()
+  if (tok) {
+    headers['Authorization'] = `Bearer ${tok}`
+  } else if (ADMIN_KEY) {
+    headers['x-admin-key'] = ADMIN_KEY
+  }
+  return request(`/api/admin/users/${encodeURIComponent(userId)}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(payload)
+  })
 }

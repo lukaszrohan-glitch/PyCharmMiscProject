@@ -3,8 +3,7 @@ from __future__ import annotations
 import logging
 import os
 from typing import Optional
-
-from fastapi import Header, HTTPException
+from fastapi import Depends, Header, HTTPException
 
 from config import settings
 import auth
@@ -86,3 +85,20 @@ def check_admin_key(x_admin_key: Optional[str] = Header(None)):
     if x_admin_key != admin_key:
         raise HTTPException(status_code=401, detail="Invalid admin key")
     return True
+
+
+def require_auth(authorization: Optional[str] = Header(None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authentication required")
+    token = authorization.split(" ", 1)[1]
+    from user_mgmt import decode_token
+
+    payload = decode_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    class AuthUser:
+        def __init__(self, data):
+            self.user_id = data.get("sub") or data.get("user_id")
+            self.email = data.get("email")
+            self.is_admin = data.get("is_admin", False)
+    return AuthUser(payload)

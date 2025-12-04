@@ -35,6 +35,7 @@ export default function Header({
       { id: 'inventory', label: lang === 'pl' ? 'Magazyn' : 'Inventory' },
       { id: 'timesheets', label: lang === 'pl' ? 'Czas pracy' : 'Timesheets' },
       { id: 'reports', label: lang === 'pl' ? 'Raporty' : 'Reports' },
+      { id: 'demand', label: lang === 'pl' ? 'Scenariusze' : 'Demand' },
       { id: 'financials', label: lang === 'pl' ? 'Finanse' : 'Financials' },
       { id: 'help', label: lang === 'pl' ? 'Pomoc' : 'Help' },
     ],
@@ -55,6 +56,7 @@ export default function Header({
     search: lang === 'pl' ? 'Szukaj…' : 'Search…',
     help: lang === 'pl' ? 'Pomoc' : 'Help',
     docs: lang === 'pl' ? 'Dokumentacja' : 'Documentation',
+    demand: lang === 'pl' ? 'Scenariusze popytu' : 'Demand Planner',
   }
 
   const navItems = laptopNav
@@ -161,7 +163,6 @@ export default function Header({
             <SynterraLogo className={styles.logoSvg} aria-hidden="true" />
             <div className={styles.logoTextBlock}>
               <span className={styles.logoText}>{t.appName}</span>
-              <span className={styles.logoTagline}>{t.tagline}</span>
             </div>
           </button>
         </div>

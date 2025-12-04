@@ -455,3 +455,39 @@ class AnalyticsSummary(BaseModel):
     margin_pct: Optional[Decimal] = None
     revenue_yoy_change_pct: Optional[Decimal] = None
     top_customer: Optional[TopCustomer] = None
+
+
+class DemandScenarioBase(BaseModel):
+    name: str = Field(..., min_length=2, max_length=100)
+    multiplier: condecimal(max_digits=6, decimal_places=2) = Field(..., ge=0.1, le=5)
+    backlog_weeks: condecimal(max_digits=4, decimal_places=1) = Field(..., ge=1, le=52)
+
+
+class DemandScenario(DemandScenarioBase):
+    scenario_id: str
+    created_by: Optional[str] = None
+    created_at: Optional[str] = None
+
+
+class DemandScenarioCreate(DemandScenarioBase):
+    scenario_id: Optional[str] = Field(None, max_length=36)
+
+
+class DemandScenarioUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=2, max_length=100)
+    multiplier: Optional[condecimal(max_digits=6, decimal_places=2)] = Field(None, ge=0.1, le=5)
+    backlog_weeks: Optional[condecimal(max_digits=4, decimal_places=1)] = Field(None, ge=1, le=52)
+
+
+class DemandForecastRequest(BaseModel):
+    scenario_id: Optional[str] = None
+    multiplier: Optional[condecimal(max_digits=6, decimal_places=2)] = Field(None, ge=0.1, le=5)
+    backlog_weeks: Optional[condecimal(max_digits=4, decimal_places=1)] = Field(None, ge=1, le=52)
+
+
+class DemandForecastResult(BaseModel):
+    scenario: DemandScenario
+    revenue: float
+    capacity_usage: float
+    metrics: List[float]
+
