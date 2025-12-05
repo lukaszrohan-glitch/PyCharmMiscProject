@@ -3,6 +3,9 @@ from __future__ import annotations
 from typing import Optional, List
 import uuid
 from decimal import Decimal
+from collections import defaultdict
+from datetime import date, datetime, timedelta
+import sqlite3
 
 from fastapi import APIRouter, HTTPException, Depends, Query, Header, Response, status
 
@@ -31,6 +34,8 @@ from queries import (
 )
 from security import check_api_key, require_auth
 from logging_utils import logger as app_logger
+
+SQLITE_ERRORS = (sqlite3.OperationalError,) if sqlite3 else ()
 
 router = APIRouter(tags=["Finance", "Analytics"])
 
@@ -63,6 +68,86 @@ def _as_decimal(value, default=0):
         return Decimal(str(value or default))
     except Exception:
         return Decimal(default)
+
+
+def _is_sqlite_error(exc: Exception) -> bool:
+    return isinstance(exc, SQLITE_ERRORS) or "syntax error" in str(exc).lower()
+
+
+def _parse_date(value: Optional[str], default: date) -> date:
+    if not value:
+        return default
+    try:
+        return datetime.fromisoformat(value).date()
+    except (ValueError, TypeError):
+        return default
+
+
+def _sqlite_summary_fallback(date_from: Optional[str], date_to: Optional[str]):
+    today = date.today()
+    to_date = _parse_date(date_to, today)
+    from_date = _parse_date(date_from, to_date - timedelta(days=90))
+    period_delta = to_date - from_date if to_date >= from_date else timedelta(days=90)
+    prev_to = from_date - timedelta(days=1)
+    prev_from = prev_to - period_delta
+
+    rows = fetch_all(
+        """
+        SELECT f.order_id, f.customer_id, c.name AS customer_name, f.order_date, f.revenue, f.gross_margin
+        FROM v_order_finance f
+        LEFT JOIN customers c ON c.customer_id = f.customer_id
+        """,
+        (),
+    ) or []
+
+    def _within(window_from: date, window_to: date, row_date: date) -> bool:
+        return window_from <= row_date <= window_to
+
+    current_rev = current_margin = 0.0
+    prev_rev = 0.0
+    customer_stats = defaultdict(lambda: {"revenue": 0.0, "margin": 0.0, "orders_count": 0, "name": None})
+
+    for row in rows:
+        try:
+            order_date = datetime.fromisoformat(str(row.get("order_date"))).date()
+        except (TypeError, ValueError):
+            continue
+        revenue = float(row.get("revenue") or 0)
+        margin = float(row.get("gross_margin") or 0)
+        if _within(from_date, to_date, order_date):
+            current_rev += revenue
+            current_margin += margin
+            cid = row.get("customer_id")
+            stats = customer_stats[cid]
+            stats["revenue"] += revenue
+            stats["margin"] += margin
+            stats["orders_count"] += 1
+            stats["name"] = row.get("customer_name")
+        elif _within(prev_from, prev_to, order_date):
+            prev_rev += revenue
+
+    margin_pct = (current_margin / current_rev) if current_rev else None
+    yoy_change = ((current_rev - prev_rev) / prev_rev) if prev_rev else None
+
+    top_customer = None
+    if customer_stats:
+        top_id = max(customer_stats, key=lambda cid: customer_stats[cid]["revenue"])
+        stats = customer_stats[top_id]
+        top_customer = {
+            "customer_id": top_id,
+            "name": stats["name"],
+            "revenue": stats["revenue"],
+            "margin": stats["margin"],
+            "orders_count": stats["orders_count"],
+        }
+
+    return {
+        "total_revenue": current_rev,
+        "total_margin": current_margin,
+        "margin_pct": margin_pct,
+        "revenue_yoy_change_pct": yoy_change,
+        "top_customer": top_customer,
+    }
 
 
 @router.get(
@@ -180,6 +265,10 @@ def analytics_summary(
             }
         return summary
     except Exception as exc:
+        app_logger.error(f"Analytics summary SQL error: {exc}", exc_info=True)
+        if _is_sqlite_error(exc):
+            app_logger.warning("analytics summary falling back to python aggregation", exc_info=True)
+            return _sqlite_summary_fallback(date_from, date_to)
         raise HTTPException(status_code=500, detail=str(exc))
 
 

@@ -9,7 +9,8 @@ export function useAppContext() {
 export function AppProvider({ children }) {
   const [lang, setLangState] = useState(() => {
     try {
-      return localStorage.getItem('lang') || 'pl';
+      const stored = localStorage.getItem('lang');
+      return stored === 'en' ? 'pl' : (stored || 'pl');
     } catch {
       return 'pl';
     }
@@ -18,11 +19,12 @@ export function AppProvider({ children }) {
 
   const setLang = (newLang) => {
     try {
-      localStorage.setItem('lang', newLang);
+      // Wymuszamy tylko 'pl' jako dozwolony język
+      localStorage.setItem('lang', newLang === 'en' ? 'pl' : newLang);
     } catch (e) {
       console.warn('Failed to save language to localStorage', e);
     }
-    setLangState(newLang);
+    setLangState(newLang === 'en' ? 'pl' : newLang);
   };
 
   const value = {

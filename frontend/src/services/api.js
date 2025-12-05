@@ -24,21 +24,25 @@ const API_BASE = resolveApiBase()
 // This prevents unwanted logouts from transient API errors
 function handleAuthFailure(status, endpoint) {
   // Only dispatch for 401 (Unauthorized), not 403 (Forbidden)
-  if (status !== 401) return
+  if (status !== 401) return;
 
   // Don't dispatch for profile/auth endpoints - these are checked at startup
-  const isAuthEndpoint = endpoint?.includes('/api/user') || endpoint?.includes('/api/auth')
-  if (isAuthEndpoint) return
+  const isAuthEndpoint = endpoint?.includes('/api/user') || endpoint?.includes('/api/auth');
+  if (isAuthEndpoint) return;
 
   // Don't dispatch for admin endpoints - they use admin key, not JWT
-  const isAdminEndpoint = endpoint?.includes('/api/admin')
-  if (isAdminEndpoint) return
+  const isAdminEndpoint = endpoint?.includes('/api/admin');
+  if (isAdminEndpoint) return;
+
+  // Don't dispatch for settings endpoints
+  const isSettingsEndpoint = endpoint?.includes('/api/settings');
+  if (isSettingsEndpoint) return;
 
   // Dispatch event for AuthProvider to handle
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('auth:expired', {
       detail: { status, endpoint, timestamp: Date.now() }
-    }))
+    }));
   }
 }
 
