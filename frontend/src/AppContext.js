@@ -7,7 +7,7 @@ export function useAppContext() {
 }
 
 export function AppProvider({ children }) {
-  const [lang, setLang] = useState(() => {
+  const [lang, setLangState] = useState(() => {
     try {
       return localStorage.getItem('lang') || 'pl';
     } catch {
@@ -15,6 +15,15 @@ export function AppProvider({ children }) {
     }
   });
   const [isSettingsOpen, setSettingsOpen] = useState(false);
+
+  const setLang = (newLang) => {
+    try {
+      localStorage.setItem('lang', newLang);
+    } catch (e) {
+      console.warn('Failed to save language to localStorage', e);
+    }
+    setLangState(newLang);
+  };
 
   const value = {
     lang,
