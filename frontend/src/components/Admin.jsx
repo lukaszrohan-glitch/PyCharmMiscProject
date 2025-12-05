@@ -33,6 +33,7 @@ export default function Admin({ lang }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showLegacyPage, setShowLegacyPage] = useState(false);
   const [sortBy, setSortBy] = useState({ field: 'created_at', direction: 'desc' });
+  const [deleteConfirm, setDeleteConfirm] = useState({ show: false, user: null });
 
   const translations = useMemo(() => ({
       admin_panel: { pl: 'Panel Administratora', en: 'Admin Panel' },
@@ -423,7 +424,7 @@ export default function Admin({ lang }) {
                         <button
                           type="button"
                           className={styles.tableAction}
-                          onClick={() => deleteUser(user.id)}
+                          onClick={() => setDeleteConfirm({ show: true, user })}
                         >
                           <span aria-hidden="true">🗑️</span> {t('delete')}
                         </button>
@@ -800,6 +801,36 @@ export default function Admin({ lang }) {
 
             {adminLayout}
             {drawer}
+
+            {/* Delete Confirmation Dialog */}
+            {deleteConfirm.show && (
+              <div className={styles.deleteConfirm} role="dialog" aria-modal="true">
+                <div className={styles.deleteConfirmContent}>
+                  <h3>{t('confirm_delete')}</h3>
+                  <p>
+                    {lang === 'pl'
+                      ? 'Czy na pewno chcesz usunąć tego użytkownika?'
+                      : 'Are you sure you want to delete this user?'}
+                  </p>
+                  <div className={styles.deleteConfirmActions}>
+                    <button
+                      type="button"
+                      className={styles.btnDanger}
+                      onClick={() => deleteUser(deleteConfirm.user.id)}
+                    >
+                      🗑️ {t('delete')}
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.btnSecondary}
+                      onClick={() => setDeleteConfirm({ show: false, user: null })}
+                    >
+                      {lang === 'pl' ? 'Anuluj' : 'Cancel'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
            </div>
          </div>
        </div>

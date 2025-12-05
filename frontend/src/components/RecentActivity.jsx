@@ -25,24 +25,23 @@ export default function RecentActivity({ lang = 'pl' }) {
   }, [])
 
   return (
-    <section className={styles.activityCard}>
-      <header>
-        <h2>{labels.title}</h2>
-      </header>
+    <section className={styles.recentActivitySection}>
+      <h2>{labels.title}</h2>
       {error && <p className={styles.errorText}>{error}</p>}
       {orders.length === 0 && !error && (
-        <p className={styles.muted}>{labels.empty}</p>
+        <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>{labels.empty}</p>
       )}
-      <ul>
+      <ul className={styles.activityList}>
         {orders.map((order) => (
-          <li key={order.order_id}>
-            <strong>{labels.order} #{order.order_id}</strong>
-            <span>{order.product_name || '—'}</span>
-            <span>{order.status}</span>
+          <li key={order.order_id} className={styles.activityItem}>
+            <div className={styles.activityInfo}>
+              <div className={styles.activityTitle}>{labels.order} #{order.order_id}</div>
+              <div className={styles.activityMeta}>{order.product_name || '—'}</div>
+            </div>
+            <div className={styles.activityDate}>{order.status}</div>
           </li>
         ))}
       </ul>
     </section>
   )
 }
-
