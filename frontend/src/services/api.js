@@ -20,8 +20,17 @@ function resolveApiBase() {
 
 const API_BASE = resolveApiBase()
 
+// Track if we're already handling auth failure to prevent loops
+let isHandlingAuthFailure = false
+
 function handleAuthFailure(status) {
-  if (status !== 401 && status !== 403) return
+  // Only handle 401 (Unauthorized) - 403 means logged in but no permission
+  if (status !== 401) return
+
+  // Prevent multiple simultaneous auth failure handlers
+  if (isHandlingAuthFailure) return
+  isHandlingAuthFailure = true
+
   try {
     setToken(null)
   } catch {
@@ -37,9 +46,18 @@ function handleAuthFailure(status) {
   }
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('auth:expired', { detail: { status } }))
-    if (!window.location.pathname.includes('login')) {
-      window.location.href = '/'
+    // Only redirect if not already on login page
+    if (!window.location.pathname.includes('login') && window.location.pathname !== '/') {
+      // Small delay to allow any pending operations to complete
+      setTimeout(() => {
+        isHandlingAuthFailure = false
+        window.location.href = '/'
+      }, 100)
+    } else {
+      isHandlingAuthFailure = false
     }
+  } else {
+    isHandlingAuthFailure = false
   }
 }
 
@@ -91,10 +109,12 @@ export function getToken(){
 }
 
 // Unified request helper: adds Authorization; sets Content-Type for JSON bodies; supports parse: 'json'|'text'|'blob'
+// options.skipAuthFailure: if true, don't call handleAuthFailure on 401 (useful for profile checks)
 async function request(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`
   const method = String(options.method || 'GET').toUpperCase()
   const parse = options.parse || 'json'
+  const skipAuthFailure = options.skipAuthFailure || false
 
   const headers = { ...(options.headers || {}) }
   const body = options.body
@@ -110,7 +130,10 @@ async function request(endpoint, options = {}) {
   const contentType = response.headers.get('content-type') || ''
   const isJson = contentType.includes('application/json')
   if (!response.ok) {
-    handleAuthFailure(response.status)
+    // Only handle auth failure if not skipped
+    if (!skipAuthFailure) {
+      handleAuthFailure(response.status)
+    }
     if (isJson) {
       const errorData = await response.json().catch(() => ({}))
       const message = errorData.detail?.detail || errorData.detail || errorData.message || `HTTP error ${response.status}`
@@ -186,17 +209,38 @@ export async function login(email, password){
   }
 }
 export async function getProfile() {
-  try {
-    return await request('/api/users/me', { method: 'GET' })
-  } catch (err) {
-    console.warn('Primary profile endpoint failed', err)
+  // Try primary endpoint first, then fallback
+  // Skip auth failure handling - we handle it gracefully here
+  const endpoints = ['/api/user/profile', '/api/users/me']
+
+  for (let i = 0; i < endpoints.length; i++) {
     try {
-      return await request('/api/user/profile', { method: 'GET' })
-    } catch (fallbackErr) {
-      console.warn('Fallback profile endpoint failed', fallbackErr)
-      return null
+      return await request(endpoints[i], { method: 'GET', skipAuthFailure: true })
+    } catch (err) {
+      const isLastEndpoint = i === endpoints.length - 1
+      const is404 = err?.status === 404
+      const is401 = err?.status === 401
+
+      // If 404 or 401, try next endpoint silently
+      if ((is404 || is401) && !isLastEndpoint) {
+        continue
+      }
+
+      // If last endpoint failed with 401, token is invalid - clear it
+      if (isLastEndpoint && is401) {
+        console.warn('Profile fetch failed with 401 - token may be expired')
+        // Don't call handleAuthFailure here - let AuthProvider handle logout gracefully
+        return null
+      }
+
+      // If last endpoint or other error, log and return null
+      if (isLastEndpoint) {
+        console.warn('All profile endpoints failed', err)
+        return null
+      }
     }
   }
+  return null
 }
 export const changePassword = (old_password, new_password) => postAuth('/api/auth/change-password', { old_password, new_password })
 export const adminCreateUser = async (payload) => {
