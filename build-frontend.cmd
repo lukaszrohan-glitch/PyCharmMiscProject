@@ -4,5 +4,4 @@ echo === Building frontend ===
 call npm run build
 echo.
 echo === Build complete ===
-pause
 

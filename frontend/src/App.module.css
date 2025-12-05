@@ -412,7 +412,7 @@
 
 .card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 12px 32px rgba(8, 145, 178, 0.15);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.05);
   border-color: #0891b2;
 }
 
@@ -592,4 +592,437 @@
 
 [data-theme="dark"] .statValueRow strong {
   color: var(--text-color, #f1f5f9);
+}
+
+/* ========================================
+   ANALYTICS SECTION (Production Health, Recent Activity)
+   ======================================== */
+
+.analyticsSection {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 900px) {
+  .analyticsSection {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ========================================
+   COMPREHENSIVE DARK MODE FIX
+   ======================================== */
+
+/* Base container backgrounds */
+[data-theme="dark"] .app,
+[data-theme="dark"] .mainContent,
+[data-theme="dark"] .container {
+  background: var(--bg-primary, #0f172a);
+  color: var(--text-primary, #f1f5f9);
+}
+
+/* Dashboard grid background */
+[data-theme="dark"] .dashboardGrid {
+  background: transparent;
+}
+
+/* Stat cards in dark mode - improved visibility */
+[data-theme="dark"] .statCard,
+[data-theme="dark"] .statCardMini {
+  background: var(--bg-secondary, #1e293b);
+  border-color: var(--border-primary, #334155);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .statLabel {
+  color: var(--text-secondary, #94a3b8);
+  font-weight: 500;
+}
+
+[data-theme="dark"] .statValueRow strong {
+  color: var(--text-primary, #f1f5f9);
+}
+
+[data-theme="dark"] .statTrend {
+  color: #4ade80;
+}
+
+/* Navigation tiles in dark mode */
+[data-theme="dark"] .navTile {
+  background: var(--bg-secondary, #1e293b);
+  border-color: var(--border-primary, #334155);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .navTile:hover {
+  background: var(--bg-tertiary, #334155);
+  border-color: var(--brand-primary, #22d3ee);
+  box-shadow: 0 12px 32px rgba(34, 211, 238, 0.15);
+}
+
+[data-theme="dark"] .navTileIcon {
+  color: var(--brand-primary, #22d3ee);
+}
+
+[data-theme="dark"] .navTile:hover .navTileIcon {
+  color: var(--brand-accent, #f59e0b);
+}
+
+[data-theme="dark"] .navTileTitle {
+  color: var(--text-primary, #f1f5f9);
+}
+
+[data-theme="dark"] .navTile:hover .navTileTitle {
+  color: var(--brand-primary, #22d3ee);
+}
+
+[data-theme="dark"] .navTileSubtitle {
+  color: var(--text-secondary, #94a3b8);
+}
+
+/* Cards in dark mode */
+[data-theme="dark"] .card {
+  background: var(--bg-secondary, #1e293b);
+  border-color: var(--border-primary, #334155);
+}
+
+[data-theme="dark"] .card:hover {
+  border-color: var(--brand-primary, #22d3ee);
+  box-shadow: 0 12px 32px rgba(34, 211, 238, 0.15);
+}
+
+[data-theme="dark"] .card::before {
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.05), rgba(245, 158, 11, 0.05));
+}
+
+[data-theme="dark"] .cardIcon {
+  color: var(--brand-primary, #22d3ee);
+}
+
+[data-theme="dark"] .card:hover .cardIcon {
+  color: var(--brand-accent, #f59e0b);
+}
+
+[data-theme="dark"] .cardTitle {
+  color: var(--text-primary, #f1f5f9);
+}
+
+[data-theme="dark"] .card:hover .cardTitle {
+  color: var(--brand-primary, #22d3ee);
+}
+
+/* Text colors in dark mode */
+[data-theme="dark"] .heroTitle,
+[data-theme="dark"] .sectionTitle {
+  color: var(--text-primary, #f1f5f9);
+}
+
+[data-theme="dark"] .heroSubtitle {
+  color: var(--text-secondary, #94a3b8);
+}
+
+/* Activity items in dark mode */
+[data-theme="dark"] .activityItem {
+  background: var(--bg-secondary, #1e293b);
+  border-color: var(--border-primary, #334155);
+}
+
+[data-theme="dark"] .activityItem:hover {
+  background: var(--bg-tertiary, #334155);
+  border-color: var(--brand-primary, #22d3ee);
+}
+
+[data-theme="dark"] .activityTitle {
+  color: var(--text-primary, #f1f5f9);
+}
+
+[data-theme="dark"] .activityMeta,
+[data-theme="dark"] .activityDate {
+  color: var(--text-secondary, #94a3b8);
+}
+
+/* Status badge in dark mode */
+[data-theme="dark"] .statusBadge {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #4ade80;
+}
+
+/* Form elements in dark mode */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background: var(--bg-secondary, #1e293b);
+  color: var(--text-primary, #f1f5f9);
+  border-color: var(--border-primary, #334155);
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: var(--text-tertiary, #64748b);
+}
+
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus {
+  border-color: var(--brand-primary, #22d3ee);
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15);
+}
+
+/* Button styles in dark mode */
+[data-theme="dark"] button {
+  background: var(--bg-tertiary, #334155);
+  color: var(--text-primary, #f1f5f9);
+  border-color: var(--border-primary, #475569);
+}
+
+[data-theme="dark"] button:hover {
+  background: var(--brand-primary, #22d3ee);
+  color: var(--bg-primary, #0f172a);
+  border-color: var(--brand-primary, #22d3ee);
+}
+
+[data-theme="dark"] button[type="submit"],
+[data-theme="dark"] .btnPrimary {
+  background: var(--brand-primary, #22d3ee);
+  color: var(--bg-primary, #0f172a);
+  border-color: var(--brand-primary, #22d3ee);
+}
+
+[data-theme="dark"] button[type="submit"]:hover,
+[data-theme="dark"] .btnPrimary:hover {
+  background: #06b6d4;
+  border-color: #06b6d4;
+}
+
+/* Table styles in dark mode */
+[data-theme="dark"] table {
+  background: var(--bg-secondary, #1e293b);
+  border-color: var(--border-primary, #334155);
+}
+
+[data-theme="dark"] th {
+  background: var(--bg-tertiary, #334155);
+  color: var(--text-primary, #f1f5f9);
+  border-color: var(--border-primary, #475569);
+}
+
+[data-theme="dark"] td {
+  color: var(--text-primary, #f1f5f9);
+  border-color: var(--border-primary, #334155);
+}
+
+[data-theme="dark"] tr:hover {
+  background: var(--bg-tertiary, #334155);
+}
+
+/* Modal styles in dark mode */
+[data-theme="dark"] .modal,
+[data-theme="dark"] .modalContent {
+  background: var(--bg-secondary, #1e293b);
+  border-color: var(--border-primary, #334155);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .modalHeader {
+  border-color: var(--border-primary, #334155);
+}
+
+[data-theme="dark"] .modalOverlay {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+/* Header labels in settings */
+[data-theme="dark"] label {
+  color: var(--text-secondary, #94a3b8);
+}
+
+/* Fix SVG icons visibility in dark mode */
+[data-theme="dark"] svg {
+  stroke: currentColor;
+}
+
+[data-theme="dark"] .navTileIcon svg,
+[data-theme="dark"] .cardIcon svg {
+  stroke: currentColor;
+}
+
+/* ========================================
+   PRODUCTION HEALTH CARD
+   ======================================== */
+
+.healthCard {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.healthCard header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.healthCard h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.healthCard button {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  background: var(--brand-primary, #0891b2);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.healthCard button:hover {
+  background: var(--brand-primary-hover, #06b6d4);
+}
+
+.healthCard button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.healthGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.healthLabel {
+  display: block;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.healthValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.errorText {
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin: 0.5rem 0;
+  padding: 0.75rem;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 8px;
+}
+
+/* Dark mode for health card */
+[data-theme="dark"] .healthCard {
+  background: var(--bg-secondary, #1e293b);
+  border-color: var(--border-primary, #334155);
+}
+
+[data-theme="dark"] .healthCard header {
+  border-color: var(--border-primary, #334155);
+}
+
+[data-theme="dark"] .healthCard h2 {
+  color: var(--text-primary, #f1f5f9);
+}
+
+[data-theme="dark"] .healthLabel {
+  color: var(--text-secondary, #94a3b8);
+}
+
+[data-theme="dark"] .healthValue {
+  color: var(--text-primary, #f1f5f9);
+}
+
+[data-theme="dark"] .errorText {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+/* ========================================
+   RECENT ACTIVITY SECTION
+   ======================================== */
+
+.recentActivitySection {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.recentActivitySection h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+[data-theme="dark"] .recentActivitySection {
+  background: var(--bg-secondary, #1e293b);
+  border-color: var(--border-primary, #334155);
+}
+
+[data-theme="dark"] .recentActivitySection h2 {
+  color: var(--text-primary, #f1f5f9);
+  border-color: var(--border-primary, #334155);
+}
+
+/* ========================================
+   SETTINGS MODAL DARK MODE FIX
+   ======================================== */
+
+[data-theme="dark"] .settingsModal,
+[data-theme="dark"] [class*="settings"] {
+  background: var(--bg-secondary, #1e293b);
+  color: var(--text-primary, #f1f5f9);
+}
+
+[data-theme="dark"] .profileCard,
+[data-theme="dark"] [class*="profile"] {
+  background: var(--bg-tertiary, #334155);
+  border-color: var(--border-primary, #475569);
+  color: var(--text-primary, #f1f5f9);
+}
+
+[data-theme="dark"] .profileLabel,
+[data-theme="dark"] [class*="label"] {
+  color: var(--text-secondary, #94a3b8);
+}
+
+[data-theme="dark"] .profileValue,
+[data-theme="dark"] [class*="value"] {
+  color: var(--text-primary, #f1f5f9);
+}
+
+/* Password requirements box */
+[data-theme="dark"] [class*="requirements"],
+[data-theme="dark"] [class*="password-hint"] {
+  background: var(--bg-tertiary, #334155);
+  border-color: var(--border-primary, #475569);
+  color: var(--text-secondary, #94a3b8);
+}
+
+[data-theme="dark"] [class*="requirement-item"] {
+  color: var(--text-secondary, #94a3b8);
+}
+
+[data-theme="dark"] [class*="requirement-met"] {
+  color: #4ade80;
 }

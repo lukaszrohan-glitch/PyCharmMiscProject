@@ -160,7 +160,7 @@ def top_orders(
 def analytics_summary(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
-    _ok: bool = Depends(check_api_key),
+    _ok: bool = Depends(_readonly_ok),
 ):
     try:
         row = fetch_one(SQL_ANALYTICS_SUMMARY, (date_from, date_to)) or {}
