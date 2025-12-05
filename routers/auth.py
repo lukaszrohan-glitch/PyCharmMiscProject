@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
+from logging_utils import logger as app_logger
 
 from schemas import UserLogin, PasswordChange, PasswordResetRequest, PasswordReset
 from user_mgmt import (
@@ -24,7 +25,13 @@ def auth_login(payload: UserLogin):
 
     Note: Rate limiting is handled by slowapi middleware at the app level.
     """
-    return login_user(payload.email, payload.password)
+    try:
+        return login_user(payload.email, payload.password)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        app_logger.error("Login failed", exc_info=True)
+        raise HTTPException(status_code=500, detail={"detail": "Login failed", "code": "auth_internal_error"}) from exc
 
 
 @router.get("/api/user/profile", summary="Get current user profile")

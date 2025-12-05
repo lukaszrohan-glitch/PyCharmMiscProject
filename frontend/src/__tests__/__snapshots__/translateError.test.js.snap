@@ -1,0 +1,41 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`translateError snapshots > matches English translations snapshot 1`] = `
+{
+  "admin_create_user_failed": "Failed to create user",
+  "api_key_create_failed": "Failed to create API key",
+  "api_key_not_found": "API key not found",
+  "api_key_rotate_failed": "Failed to rotate API key",
+  "api_keys_list_failed": "Failed to fetch API keys",
+  "auth_internal_error": "Login temporarily unavailable",
+  "demand_forecast_failed": "Demand forecast failed",
+  "demand_scenario_create_failed": "Unable to save demand scenario",
+  "demand_scenario_delete_failed": "Failed to delete scenario",
+  "demand_scenario_init_failed": "Scenario storage unavailable",
+  "demand_scenario_not_found": "Scenario not found",
+  "demand_scenario_update_failed": "Demand scenario update failed",
+  "import_failed": "Import failed",
+  "invalid_credentials": "Invalid email or password",
+  "plan_create_failed": "Failed to create plan",
+}
+`;
+
+exports[`translateError snapshots > matches Polish translations snapshot 1`] = `
+{
+  "admin_create_user_failed": "Nie udało się utworzyć użytkownika",
+  "api_key_create_failed": "Nie udało się utworzyć klucza API",
+  "api_key_not_found": "Klucz API nie istnieje",
+  "api_key_rotate_failed": "Nie udało się odświeżyć klucza API",
+  "api_keys_list_failed": "Nie udało się pobrać kluczy API",
+  "auth_internal_error": "Logowanie chwilowo niedostępne",
+  "demand_forecast_failed": "Prognoza popytu niedostępna",
+  "demand_scenario_create_failed": "Nie można zapisać scenariusza popytu",
+  "demand_scenario_delete_failed": "Nie udało się usunąć scenariusza",
+  "demand_scenario_init_failed": "Baza scenariuszy nie jest gotowa",
+  "demand_scenario_not_found": "Wybrany scenariusz nie istnieje",
+  "demand_scenario_update_failed": "Aktualizacja scenariusza popytu nie powiodła się",
+  "import_failed": "Import danych nie powiódł się",
+  "invalid_credentials": "Błędny email lub hasło",
+  "plan_create_failed": "Nie udało się stworzyć planu",
+}
+`;

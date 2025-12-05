@@ -68,16 +68,24 @@
   --badge-error-text: var(--status-error);
 }
 
-/* Dark mode token overrides (apply on <html class="dark"> or a wrapper with .dark) */
-:root.dark, .dark {
-  --bg-primary: #111827;
-  --bg-secondary: #1f2937;
-  --bg-tertiary: #374151;
+/* Dark mode token overrides */
+[data-theme="dark"],
+:root.dark,
+.dark {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
 
-  --text-primary: #f3f4f6;
-  --text-secondary: #9ca3af;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-on-brand: #0f172a;
 
-  --border-primary: #374151;
+  --border-primary: #334155;
+  --border-focus: #22d3ee;
+
+  --brand-primary: #22d3ee;
+  --brand-primary-hover: #06b6d4;
+  --brand-primary-active: #0891b2;
 }
 
 /* Color scheme inspired by modern scheduling interface (legacy variables removed) */
@@ -739,3 +747,210 @@ table td,
 .cal-date { font-weight: 600; font-size: 12px; opacity: 0.9; }
 .cal-total { margin-top: 6px; font-size: 12px; padding: 2px 6px; border-radius: 999px; background: var(--bg-tertiary); color: var(--text-primary); }
 .cal-week-total { align-self: flex-end; font-size: 11px; color: var(--text-secondary); }
+
+/* ========================================
+   DARK MODE GLOBAL STYLES
+   ======================================== */
+
+[data-theme="dark"] body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .data-table,
+[data-theme="dark"] table {
+  background: var(--bg-secondary);
+  border-color: var(--border-primary);
+}
+
+[data-theme="dark"] .data-table th,
+[data-theme="dark"] table th {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-color: var(--border-primary);
+}
+
+[data-theme="dark"] .data-table td,
+[data-theme="dark"] table td {
+  color: var(--text-primary);
+  border-color: var(--border-primary);
+}
+
+[data-theme="dark"] .data-table tr:hover,
+[data-theme="dark"] table tr:hover {
+  background: var(--bg-tertiary);
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-primary);
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus {
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15);
+}
+
+[data-theme="dark"] .col,
+[data-theme="dark"] .container {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3 {
+  color: var(--brand-primary);
+}
+
+[data-theme="dark"] .btn-primary,
+[data-theme="dark"] button[type="submit"] {
+  background: var(--brand-primary);
+  border-color: var(--brand-primary);
+  color: var(--text-on-brand);
+}
+
+[data-theme="dark"] .btn-secondary,
+[data-theme="dark"] .btn-sm {
+  background: var(--bg-tertiary);
+  border-color: var(--border-primary);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .btn-danger {
+  background: var(--status-error);
+  border-color: var(--status-error);
+}
+
+[data-theme="dark"] .modal-overlay {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+[data-theme="dark"] .modal-content,
+[data-theme="dark"] .modal {
+  background: var(--bg-secondary);
+  border-color: var(--border-primary);
+}
+
+[data-theme="dark"] .empty-message {
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .cal-cell {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-primary) !important;
+}
+
+[data-theme="dark"] .cal-cell:hover {
+  background: var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .badge,
+[data-theme="dark"] .status-badge {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Scrollbar styling for dark mode */
+[data-theme="dark"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Selection colors in dark mode */
+[data-theme="dark"] ::selection {
+  background: rgba(34, 211, 238, 0.3);
+  color: var(--text-primary);
+}
+
+/* ========================================
+   VIEW TOGGLE STYLES
+   ======================================== */
+
+.view-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border-primary, #e5e7eb);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-secondary, #fff);
+}
+
+.view-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  background: transparent;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary, #6b7280);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.view-toggle-btn:not(:last-child) {
+  border-right: 1px solid var(--border-primary, #e5e7eb);
+}
+
+.view-toggle-btn:hover {
+  background: var(--bg-tertiary, #f3f4f6);
+  color: var(--text-primary, #1a202c);
+}
+
+.view-toggle-btn.active {
+  background: var(--brand-primary, #0891b2);
+  color: white;
+}
+
+.view-toggle-btn:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+[data-theme="dark"] .view-toggle {
+  background: var(--bg-tertiary, #334155);
+  border-color: var(--border-primary, #475569);
+}
+
+[data-theme="dark"] .view-toggle-btn {
+  color: var(--text-secondary, #94a3b8);
+}
+
+[data-theme="dark"] .view-toggle-btn:not(:last-child) {
+  border-right-color: var(--border-primary, #475569);
+}
+
+[data-theme="dark"] .view-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary, #f1f5f9);
+}
+
+[data-theme="dark"] .view-toggle-btn.active {
+  background: var(--brand-primary, #22d3ee);
+  color: var(--bg-primary, #0f172a);
+}

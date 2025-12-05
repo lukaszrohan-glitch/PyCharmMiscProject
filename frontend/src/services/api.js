@@ -113,7 +113,12 @@ async function request(endpoint, options = {}) {
     handleAuthFailure(response.status)
     if (isJson) {
       const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.detail || errorData.message || `HTTP error! status: ${response.status}`)
+      const message = errorData.detail?.detail || errorData.detail || errorData.message || `HTTP error ${response.status}`
+      const err = new Error(message)
+      err.status = response.status
+      err.code = errorData.code || errorData.detail?.code
+      err.detail = errorData
+      throw err
     }
     const bodyText = await response.text().catch(() => '')
     const snippet = bodyText.slice(0, 140).replace(/\s+/g, ' ').trim()
@@ -167,10 +172,18 @@ async function delAdmin(path){
 }
 
 export async function login(email, password){
-  return request('/api/auth/login', {
-    method: 'POST',
-    body: JSON.stringify({ email, password })
-  })
+  try {
+    return await request('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    })
+  } catch (err) {
+    const msg = String(err?.message || '')
+    if (msg.includes('404')) {
+      throw new Error('API endpoint /api/auth/login jest niedostępny (404). Upewnij się, że backend działa na właściwym host/port.')
+    }
+    throw err
+  }
 }
 export async function getProfile() {
   try {
@@ -186,14 +199,16 @@ export async function getProfile() {
   }
 }
 export const changePassword = (old_password, new_password) => postAuth('/api/auth/change-password', { old_password, new_password })
-export const adminCreateUser = (payload) => {
-  // Use JWT if available (for logged-in admins), otherwise use admin key
-  const tok = getToken()
-  if (tok) {
-    return postAuth('/api/admin/users', payload)
-  }
-  return postAdmin('/api/admin/users', payload)
-}
+export const adminCreateUser = async (payload) => {
+   // Use JWT if available (for logged-in admins), otherwise use admin key
+   const tok = getToken()
+   const exec = tok ? postAuth : postAdmin
+   const response = await exec('/api/admin/users', payload)
+   return {
+     ...response,
+     message: payload.lang === 'pl' ? 'Użytkownik utworzony pomyślnie' : 'User created successfully'
+   }
+ }
 export const adminListUsers = () => {
   // Use JWT if available (for logged-in admins), otherwise use admin key
   const tok = getToken()
@@ -535,3 +550,75 @@ export const adminUpdateUser = (userId, payload) => {
     body: JSON.stringify(payload)
   })
 }
+
+function translateError(err, lang = 'pl') {
+  const msg = String(err?.message || '')
+  const code = err?.code || err?.detail?.code
+  const translations = {
+    invalid_credentials: {
+      pl: 'Błędny email lub hasło',
+      en: 'Invalid email or password'
+    },
+    auth_internal_error: {
+      pl: 'Logowanie chwilowo niedostępne',
+      en: 'Login temporarily unavailable'
+    },
+    admin_create_user_failed: {
+      pl: 'Nie udało się utworzyć użytkownika',
+      en: 'Failed to create user'
+    },
+    plan_create_failed: {
+      pl: 'Nie udało się stworzyć planu',
+      en: 'Failed to create plan'
+    },
+    api_key_create_failed: {
+      pl: 'Nie udało się utworzyć klucza API',
+      en: 'Failed to create API key'
+    },
+    api_key_not_found: {
+      pl: 'Klucz API nie istnieje',
+      en: 'API key not found'
+    },
+    api_key_rotate_failed: {
+      pl: 'Nie udało się odświeżyć klucza API',
+      en: 'Failed to rotate API key'
+    },
+    api_keys_list_failed: {
+      pl: 'Nie udało się pobrać kluczy API',
+      en: 'Failed to fetch API keys'
+    },
+    import_failed: {
+      pl: 'Import danych nie powiódł się',
+      en: 'Import failed'
+    },
+    demand_scenario_create_failed: {
+      pl: 'Nie można zapisać scenariusza popytu',
+      en: 'Unable to save demand scenario'
+    },
+    demand_scenario_update_failed: {
+      pl: 'Aktualizacja scenariusza popytu nie powiodła się',
+      en: 'Demand scenario update failed'
+    },
+    demand_scenario_delete_failed: {
+      pl: 'Nie udało się usunąć scenariusza',
+      en: 'Failed to delete scenario'
+    },
+    demand_scenario_not_found: {
+      pl: 'Wybrany scenariusz nie istnieje',
+      en: 'Scenario not found'
+    },
+    demand_forecast_failed: {
+      pl: 'Prognoza popytu niedostępna',
+      en: 'Demand forecast failed'
+    },
+    demand_scenario_init_failed: {
+      pl: 'Baza scenariuszy nie jest gotowa',
+      en: 'Scenario storage unavailable'
+    }
+  }
+  const selected = translations[code]
+  if (selected) return selected[lang] || selected.pl
+  return msg
+}
+
+export { translateError }

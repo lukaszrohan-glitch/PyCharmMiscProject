@@ -5,7 +5,9 @@ import styles from './MobileNav.module.css'
 const NAV_LINKS = [
   { id: 'dashboard', icon: '🏠', key: 'home' },
   { id: 'orders', icon: '📦', key: 'orders' },
+  { id: 'production', icon: '⚙️', key: 'production' },
   { id: 'inventory', icon: '🎯', key: 'inventory' },
+  { id: 'demand', icon: '📈', key: 'demand' },
   { id: 'financials', icon: '💰', key: 'financials' },
 ]
 
@@ -13,14 +15,18 @@ const TEXT = {
   pl: {
     home: 'Panel',
     orders: 'Zamówienia',
+    production: 'Produkcja',
     inventory: 'Magazyn',
+    demand: 'Popyt',
     financials: 'Finanse',
     settings: 'Ustawienia',
   },
   en: {
     home: 'Home',
     orders: 'Orders',
+    production: 'Production',
     inventory: 'Inventory',
+    demand: 'Demand',
     financials: 'Finance',
     settings: 'Settings',
   },

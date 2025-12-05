@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import AdminUsersPage from '../AdminUsersPage';
 import styles from './Admin.module.css';
 import classNames from 'classnames';
+import { translateError } from '../services/api';
 
 export default function Admin({ lang }) {
   const { profile } = useAuth();
@@ -187,7 +188,7 @@ export default function Admin({ lang }) {
     } catch (err) {
       console.error(err);
       setLastAdminErrorSafe(err?.message || String(err));
-      setError('❌ ' + t('error_generic'));
+      setError(translateError(err, lang) || err?.message || 'Failed to create user');
     } finally {
       setLoading(false);
     }

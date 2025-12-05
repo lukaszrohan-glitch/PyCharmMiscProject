@@ -30,6 +30,7 @@ from queries import (
     SQL_CREATE_DEMAND_SCENARIOS,
 )
 from security import check_api_key, require_auth
+from logging_utils import logger as app_logger
 
 router = APIRouter(tags=["Finance", "Analytics"])
 
@@ -45,11 +46,16 @@ def _readonly_ok(
     )
 
 
+def _raise(code: str, detail: str, status_code: int = 400):
+    raise HTTPException(status_code=status_code, detail={"detail": detail, "code": code})
+
+
 def _init_scenarios_table():
     try:
         execute(SQL_CREATE_DEMAND_SCENARIOS)
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Failed to init table: {exc}")
+        app_logger.error("demand scenario table init failed", exc_info=True)
+        _raise("demand_scenario_init_failed", "Failed to init demand_scenarios table", 500)
 
 
 def _as_decimal(value, default=0):
@@ -188,15 +194,19 @@ def list_demand_scenarios(_user=Depends(require_auth)):
 def create_demand_scenario(payload: DemandScenarioCreate, user=Depends(require_auth)):
     _init_scenarios_table()
     scenario_id = payload.scenario_id or str(uuid.uuid4())
-    execute(
-        """
-        INSERT INTO demand_scenarios (scenario_id, name, multiplier, backlog_weeks, created_by)
-        VALUES (%s, %s, %s, %s, %s)
-        """,
-        (scenario_id, payload.name, float(payload.multiplier), float(payload.backlog_weeks), user.user_id),
-    )
-    row = fetch_one("SELECT * FROM demand_scenarios WHERE scenario_id = %s", (scenario_id,))
-    return row
+    try:
+        execute(
+            """
+            INSERT INTO demand_scenarios (scenario_id, name, multiplier, backlog_weeks, created_by)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (scenario_id, payload.name, float(payload.multiplier), float(payload.backlog_weeks), user.user_id),
+        )
+        row = fetch_one("SELECT * FROM demand_scenarios WHERE scenario_id = %s", (scenario_id,))
+        return row
+    except Exception as exc:
+        app_logger.error("create_demand_scenario failed", exc_info=True)
+        _raise("demand_scenario_create_failed", str(exc), 500)
 
 
 @router.put("/api/analytics/demand/scenarios/{scenario_id}", response_model=DemandScenario)
@@ -204,26 +214,37 @@ def update_demand_scenario(scenario_id: str, payload: DemandScenarioUpdate, _use
     _init_scenarios_table()
     existing = fetch_one("SELECT * FROM demand_scenarios WHERE scenario_id = %s", (scenario_id,))
     if not existing:
-        raise HTTPException(status_code=404, detail="Scenario not found")
-    updates = []
-    params = []
-    for field in ("name", "multiplier", "backlog_weeks"):
-        value = getattr(payload, field)
-        if value is not None:
-            updates.append(f"{field} = %s")
-            params.append(float(value))
-    if updates:
-        params.append(scenario_id)
-        execute(f"UPDATE demand_scenarios SET {', '.join(updates)} WHERE scenario_id = %s", tuple(params))
-    row = fetch_one("SELECT * FROM demand_scenarios WHERE scenario_id = %s", (scenario_id,))
-    return row
+        _raise("demand_scenario_not_found", "Scenario not found", 404)
+    try:
+        updates = []
+        params = []
+        for field in ("name", "multiplier", "backlog_weeks"):
+            value = getattr(payload, field)
+            if value is not None:
+                updates.append(f"{field} = %s")
+                params.append(float(value))
+        if updates:
+            params.append(scenario_id)
+            execute(f"UPDATE demand_scenarios SET {', '.join(updates)} WHERE scenario_id = %s", tuple(params))
+        row = fetch_one("SELECT * FROM demand_scenarios WHERE scenario_id = %s", (scenario_id,))
+        return row
+    except Exception as exc:
+        app_logger.error("update_demand_scenario failed", exc_info=True)
+        _raise("demand_scenario_update_failed", str(exc), 500)
 
 
 @router.delete("/api/analytics/demand/scenarios/{scenario_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_demand_scenario(scenario_id: str, _user=Depends(require_auth)):
     _init_scenarios_table()
-    execute("DELETE FROM demand_scenarios WHERE scenario_id = %s", (scenario_id,))
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    existing = fetch_one("SELECT * FROM demand_scenarios WHERE scenario_id = %s", (scenario_id,))
+    if not existing:
+        _raise("demand_scenario_not_found", "Scenario not found", 404)
+    try:
+        execute("DELETE FROM demand_scenarios WHERE scenario_id = %s", (scenario_id,))
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except Exception as exc:
+        app_logger.error("delete_demand_scenario failed", exc_info=True)
+        _raise("demand_scenario_delete_failed", str(exc), 500)
 
 
 @router.post("/api/analytics/demand", response_model=DemandForecastResult)
@@ -233,25 +254,31 @@ def run_demand_forecast(payload: DemandForecastRequest, _user=Depends(require_au
     if payload.scenario_id:
         scenario = fetch_one("SELECT * FROM demand_scenarios WHERE scenario_id = %s", (payload.scenario_id,))
         if not scenario:
-            raise HTTPException(status_code=404, detail="Scenario not found")
-    multiplier = payload.multiplier or (scenario.get("multiplier") if scenario else Decimal("1.0"))
-    backlog = payload.backlog_weeks or (scenario.get("backlog_weeks") if scenario else Decimal("4"))
-    if scenario is None:
-        scenario = {
-            "scenario_id": payload.scenario_id or "ad-hoc",
-            "name": "Ad-hoc",
-            "multiplier": float(multiplier),
-            "backlog_weeks": float(backlog),
-            "created_by": None,
-            "created_at": None,
-        }
-    base_revenue = _as_decimal(fetch_one("SELECT COALESCE(SUM(revenue),0) AS rev FROM v_order_finance", ()).get("rev"))
-    revenue = float(base_revenue * Decimal(multiplier))
-    capacity_usage = min(100.0, float(Decimal(multiplier) * Decimal("65")))
-    metrics = [round(revenue / max(float(backlog), 1.0), 2), float(backlog) * 40, float(backlog) * 35]
-    return DemandForecastResult(
-        scenario=DemandScenario(**scenario),
-        revenue=revenue,
-        capacity_usage=capacity_usage,
-        metrics=metrics,
-    )
+            _raise("demand_scenario_not_found", "Scenario not found", 404)
+    try:
+        multiplier = payload.multiplier or (scenario.get("multiplier") if scenario else Decimal("1.0"))
+        backlog = payload.backlog_weeks or (scenario.get("backlog_weeks") if scenario else Decimal("4"))
+        if scenario is None:
+            scenario = {
+                "scenario_id": payload.scenario_id or "ad-hoc",
+                "name": "Ad-hoc",
+                "multiplier": float(multiplier),
+                "backlog_weeks": float(backlog),
+                "created_by": None,
+                "created_at": None,
+            }
+        base_revenue = _as_decimal(fetch_one("SELECT COALESCE(SUM(revenue),0) AS rev FROM v_order_finance", ()).get("rev"))
+        revenue = float(base_revenue * Decimal(multiplier))
+        capacity_usage = min(100.0, float(Decimal(multiplier) * Decimal("65")))
+        metrics = [round(revenue / max(float(backlog), 1.0), 2), float(backlog) * 40, float(backlog) * 35]
+        return DemandForecastResult(
+            scenario=DemandScenario(**scenario),
+            revenue=revenue,
+            capacity_usage=capacity_usage,
+            metrics=metrics,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        app_logger.error("run_demand_forecast failed", exc_info=True)
+        _raise("demand_forecast_failed", str(exc), 500)

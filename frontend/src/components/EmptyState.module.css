@@ -1,0 +1,151 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 1.5rem;
+  min-height: 300px;
+}
+
+.compact {
+  padding: 2rem 1rem;
+  min-height: 200px;
+}
+
+.visual {
+  margin-bottom: 1.5rem;
+}
+
+.icon {
+  font-size: 4rem;
+  line-height: 1;
+  display: block;
+}
+
+.svg {
+  width: 120px;
+  height: 100px;
+}
+
+.title {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-color, #1a202c);
+}
+
+.description {
+  margin: 0 0 1.5rem;
+  font-size: 0.9375rem;
+  color: var(--text-secondary, #6b7280);
+  max-width: 360px;
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.primaryAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--primary-color, #0891b2);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.primaryAction:hover {
+  background: var(--primary-hover, #0e7490);
+  transform: translateY(-1px);
+}
+
+.primaryAction:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.secondaryAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: transparent;
+  color: var(--text-secondary, #6b7280);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.secondaryAction:hover {
+  background: var(--background-secondary, #f9fafb);
+  color: var(--text-color, #1a202c);
+}
+
+.secondaryAction:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .title {
+  color: var(--text-color);
+}
+
+[data-theme="dark"] .description {
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .secondaryAction:hover {
+  background: var(--background-tertiary);
+}
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+  .container {
+    padding: 2rem 1rem;
+    min-height: 250px;
+  }
+
+  .icon {
+    font-size: 3rem;
+  }
+
+  .svg {
+    width: 100px;
+    height: 80px;
+  }
+
+  .title {
+    font-size: 1.125rem;
+  }
+
+  .description {
+    font-size: 0.875rem;
+  }
+
+  .actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .primaryAction,
+  .secondaryAction {
+    width: 100%;
+    justify-content: center;
+  }
+}
+

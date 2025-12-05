@@ -2,6 +2,7 @@ import {useState, useEffect} from 'react';
 import * as api from '../services/api';
 import { useToast } from '../lib/toastContext';
 import ModalOverlay from './ModalOverlay';
+import EmptyState from './EmptyState';
 
 export default function Inventory({ lang }) {
   const toast = useToast();
@@ -404,12 +405,11 @@ export default function Inventory({ lang }) {
 
       <div className="table-container">
         {filteredInventory.length === 0 ? (
-          <p className="empty-message">
-            {searchQuery || filterReason !== 'all'
-              ? (lang === 'pl' ? 'Brak wyników dla wybranych filtrów' : 'No results for selected filters')
-              : t.noItems
-            }
-          </p>
+          searchQuery || filterReason !== 'all' ? (
+            <EmptyState.Search lang={lang} query={searchQuery || filterReason} />
+          ) : (
+            <EmptyState.Inventory lang={lang} onAdd={() => setShowForm(true)} />
+          )
         ) : (
           <table className="data-table">
             <thead>

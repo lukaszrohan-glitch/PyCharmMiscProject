@@ -1,8 +1,50 @@
 :root {
-  --primary-color: #0891b2; /* Synterra teal */
+  /* Light theme (default) */
+  --primary-color: #0891b2;
+  --primary-hover: #0e7490;
   --background-color: #ffffff;
+  --background-secondary: #f9fafb;
+  --background-tertiary: #f3f4f6;
   --text-color: #1a202c;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
   --border-color: #e2e8f0;
+  --border-secondary: #d1d5db;
+  --card-background: #ffffff;
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --input-background: #ffffff;
+  --input-border: #d1d5db;
+  --success-color: #10b981;
+  --success-bg: rgba(16, 185, 129, 0.1);
+  --warning-color: #f59e0b;
+  --warning-bg: rgba(245, 158, 11, 0.1);
+  --error-color: #ef4444;
+  --error-bg: rgba(239, 68, 68, 0.1);
+  --overlay-bg: rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] {
+  --primary-color: #22d3ee;
+  --primary-hover: #06b6d4;
+  --background-color: #0f172a;
+  --background-secondary: #1e293b;
+  --background-tertiary: #334155;
+  --text-color: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-tertiary: #64748b;
+  --border-color: #334155;
+  --border-secondary: #475569;
+  --card-background: #1e293b;
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --input-background: #1e293b;
+  --input-border: #475569;
+  --success-color: #34d399;
+  --success-bg: rgba(52, 211, 153, 0.15);
+  --warning-color: #fbbf24;
+  --warning-bg: rgba(251, 191, 36, 0.15);
+  --error-color: #f87171;
+  --error-bg: rgba(248, 113, 113, 0.15);
+  --overlay-bg: rgba(0, 0, 0, 0.7);
 }
 
 body {

@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { v4 as uuid } from 'uuid'
 import * as api from '../services/api'
+import { translateError } from '../services/api'
 import styles from './DemandPlanner.module.css'
 
 const defaultScenario = {
@@ -77,11 +78,11 @@ export default function DemandPlanner({ lang = 'pl' }) {
       } catch (err) {
         const fallback = JSON.parse(localStorage.getItem('localScenarios') || '[]')
         setScenarios([defaultScenario, ...fallback])
-        setError(err?.message || 'Nie udało się pobrać scenariuszy')
+        setError(translateError(err, lang) || err?.message || 'Nie udało się pobrać scenariuszy')
       }
     }
     load()
-  }, [])
+  }, [lang])
 
   const handleScenarioChange = (scenarioId) => {
     const scenario = scenarios.find((s) => s.id === scenarioId) || defaultScenario
@@ -119,7 +120,7 @@ export default function DemandPlanner({ lang = 'pl' }) {
         return next
       })
     } catch (err) {
-      setError(err?.message || 'Nie udało się przeliczyć prognozy')
+      setError(translateError(err, lang) || err?.message || 'Nie udało się przeliczyć prognozy')
     } finally {
       setLoading(false)
     }
@@ -151,7 +152,7 @@ export default function DemandPlanner({ lang = 'pl' }) {
       persistLocal(data)
       setForm({ id: null, name: '', multiplier: 1, backlogWeeks: 4 })
     } catch (err) {
-      setError(err?.message || 'Nie udało się zapisać scenariusza')
+      setError(translateError(err, lang) || err?.message || 'Nie udało się zapisać scenariusza')
     }
   }
 
@@ -165,7 +166,7 @@ export default function DemandPlanner({ lang = 'pl' }) {
       setForm({ id: null, name: '', multiplier: 1, backlogWeeks: 4 })
       setSelected(defaultScenario)
     } catch (err) {
-      setError(err?.message || 'Nie udało się usunąć')
+      setError(translateError(err, lang) || err?.message || 'Nie udało się usunąć')
     }
   }
 

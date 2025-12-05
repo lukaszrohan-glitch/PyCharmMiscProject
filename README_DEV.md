@@ -11,6 +11,8 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 python -m pip install --upgrade pip setuptools wheel
 ```
 
+If you prefer gotowe skrypty start/stop oraz instrukcje w języku polskim, zobacz `LOCAL_DEV.md`.
+
 2) Install dev requirements (sqlite fallback)
 
 ```powershell
@@ -34,6 +36,19 @@ npm install
 npm run dev
 # open http://localhost:5173
 ```
+
+### PowerShell automation variant
+
+Jeśli chcesz wystartować oba serwisy jednym poleceniem, użyj skryptu `start-local.ps1` (opis w `LOCAL_DEV.md`).
+
+```powershell
+# z katalogu projektu
+./start-local.ps1         # uruchamia backend (uvicorn) + frontend preview na porcie 4174
+# po pracy (opcjonalnie)
+./stop-local.ps1          # zatrzymuje job backendu i proces preview
+```
+
+Skrypt automatycznie ładuje zmienne z `.env`, aktywuje `.venv` i otwiera przeglądarkę z podglądem.
 
 Sharing / production options
 

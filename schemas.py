@@ -188,6 +188,7 @@ class UserCreateAdmin(BaseModel):
     is_admin: bool = False
     subscription_plan: Optional[str] = "free"
     password: Optional[str] = None  # optional initial password supplied by admin
+    lang: Optional[str] = Field(None, pattern="^(pl|en)$")
 
     @field_validator("email", "company_id", "password", mode="before")
     def _normalize_admin_inputs(cls, value: Optional[str]):
@@ -490,4 +491,9 @@ class DemandForecastResult(BaseModel):
     revenue: float
     capacity_usage: float
     metrics: List[float]
+
+
+class ErrorResponse(BaseModel):
+    detail: str
+    code: Optional[str] = None
 

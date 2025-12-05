@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAppContext } from './AppContext';
 import Header from './components/Header';
@@ -17,15 +17,61 @@ import Admin from './components/Admin';
 import UserGuide from './components/UserGuide';
 import Products from './components/Products';
 import Production from './components/Production';
+import CommandPalette from './components/CommandPalette';
 import { useAuth } from './auth/useAuth';
+import { useTheme } from './hooks/useTheme';
 import styles from './App.module.css';
 
 export default function App() {
-  const { lang, isSettingsOpen, setSettingsOpen } = useAppContext();
+  const { lang, setLang, isSettingsOpen, setSettingsOpen } = useAppContext();
   const { profile, checkingAuth, logout } = useAuth();
+  const { toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const currentView = location.pathname.substring(1) || 'dashboard';
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+
+  // Keyboard shortcut for Command Palette (Cmd/Ctrl + K)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Handle Command Palette actions
+  const handleCommandAction = useCallback((action) => {
+    switch (action) {
+      case 'toggleTheme':
+        toggleTheme();
+        break;
+      case 'langPL':
+        setLang('pl');
+        break;
+      case 'langEN':
+        setLang('en');
+        break;
+      case 'openSettings':
+        setSettingsOpen(true);
+        break;
+      case 'newOrder':
+        navigate('/orders');
+        // Could dispatch an event to open new order form
+        break;
+      case 'newProduct':
+        navigate('/products');
+        break;
+      case 'newClient':
+        navigate('/clients');
+        break;
+      default:
+        break;
+    }
+  }, [toggleTheme, setLang, setSettingsOpen, navigate]);
 
   useEffect(() => {
     localStorage.setItem('lang', lang);
@@ -45,16 +91,22 @@ export default function App() {
   };
 
   useEffect(() => {
-    const viewTitle = {
+    const titles = {
       dashboard: lang === 'pl' ? 'Panel główny' : 'Dashboard',
       orders: lang === 'pl' ? 'Zamówienia' : 'Orders',
+      products: lang === 'pl' ? 'Produkty' : 'Products',
+      production: lang === 'pl' ? 'Produkcja' : 'Production',
+      planning: lang === 'pl' ? 'Planowanie' : 'Planning',
       inventory: lang === 'pl' ? 'Magazyn' : 'Inventory',
       clients: lang === 'pl' ? 'Klienci' : 'Clients',
       timesheets: lang === 'pl' ? 'Czas pracy' : 'Timesheets',
       reports: lang === 'pl' ? 'Raporty' : 'Reports',
+      demand: lang === 'pl' ? 'Popyt' : 'Demand planner',
       financials: lang === 'pl' ? 'Finanse' : 'Financials',
+      help: lang === 'pl' ? 'Pomoc' : 'Help',
       admin: lang === 'pl' ? 'Administracja' : 'Admin',
-    }[currentView] || 'Synterra';
+    }
+    const viewTitle = titles[currentView] || 'Synterra'
     document.title = `${viewTitle} - Synterra`;
   }, [currentView, lang]);
 
@@ -116,6 +168,12 @@ export default function App() {
           }}
         />
       )}
+      <CommandPalette
+        isOpen={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        lang={lang}
+        onAction={handleCommandAction}
+      />
     </div>
   );
 }

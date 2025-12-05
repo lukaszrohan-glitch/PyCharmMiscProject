@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import * as api from '../services/api'
 import { useToast } from '../lib/toastContext'
+import Skeleton from './Skeleton'
+import EmptyState from './EmptyState'
+import CalendarView from './CalendarView'
+import { useOrdersAsEvents } from '../hooks/useFilters'
 
 const ORDER_ID_MAX = 24
 const CUSTOMER_ID_MAX = 24
@@ -14,6 +18,7 @@ export default function Orders({ lang }) {
   const [error, setError] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [editingOrder, setEditingOrder] = useState(null)
+  const [viewMode, setViewMode] = useState('table') // 'table' | 'calendar'
   const [formData, setFormData] = useState({
     order_id: '',
     customer_id: '',
@@ -254,13 +259,48 @@ export default function Orders({ lang }) {
     }
   }
 
-  if (loading) return <div className="loading">{t.loading}</div>
+  // Convert orders to calendar events (must be before any conditional returns)
+  const calendarEvents = useOrdersAsEvents(orders)
+
+  if (loading) return (
+    <div className="orders-container">
+      <div className="orders-header">
+        <Skeleton style={{ width: '150px', height: '2rem' }} />
+        <div className="header-actions stack-mobile">
+          <Skeleton style={{ width: '100px', height: '38px', borderRadius: '8px' }} />
+          <Skeleton style={{ width: '100px', height: '38px', borderRadius: '8px' }} />
+          <Skeleton style={{ width: '120px', height: '38px', borderRadius: '8px' }} />
+        </div>
+      </div>
+      <Skeleton.Table rows={6} cols={5} />
+    </div>
+  )
+
 
   return (
     <div className="orders-container">
       <div className="orders-header">
         <h2>{t.title}</h2>
         <div className="header-actions stack-mobile">
+          {/* View mode toggle */}
+          <div className="view-toggle" role="group" aria-label={lang === 'pl' ? 'Widok' : 'View'}>
+            <button
+              type="button"
+              className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
+              onClick={() => setViewMode('table')}
+              aria-pressed={viewMode === 'table'}
+            >
+              📋 {lang === 'pl' ? 'Lista' : 'List'}
+            </button>
+            <button
+              type="button"
+              className={`view-toggle-btn ${viewMode === 'calendar' ? 'active' : ''}`}
+              onClick={() => setViewMode('calendar')}
+              aria-pressed={viewMode === 'calendar'}
+            >
+              📅 {lang === 'pl' ? 'Kalendarz' : 'Calendar'}
+            </button>
+          </div>
           <button className="btn btn-primary" type="button" onClick={handleExport}>{lang==='pl' ? 'Eksport CSV' : 'Export CSV'}</button>
           <button className="btn" type="button" onClick={() => { setImporting(true); setImportResult(null); setImportFile(null); }}>
             {lang==='pl' ? 'Import CSV' : 'Import CSV'}
@@ -448,6 +488,18 @@ export default function Orders({ lang }) {
         </div>
       </div>
 
+      {viewMode === 'calendar' ? (
+        <CalendarView
+          events={calendarEvents}
+          lang={lang}
+          onEventClick={(event) => {
+            const order = orders.find(o => o.order_id === event.id)
+            if (order) {
+              handleEditClick(order)
+            }
+          }}
+        />
+      ) : (
       <div className="table-container">
         {(() => {
           // Apply filtering
@@ -481,12 +533,11 @@ export default function Orders({ lang }) {
           });
 
           return filtered.length === 0 ? (
-            <p className="empty-message">
-              {searchTerm || statusFilter !== 'all'
-                ? (lang === 'pl' ? 'Brak wyników' : 'No results found')
-                : t.noOrders
-              }
-            </p>
+            searchTerm || statusFilter !== 'all' ? (
+              <EmptyState.Search lang={lang} query={searchTerm || statusFilter} />
+            ) : (
+              <EmptyState.Orders lang={lang} onAdd={handleAddClick} />
+            )
           ) : (
             <table className="data-table">
               <thead>
@@ -520,6 +571,7 @@ export default function Orders({ lang }) {
           );
         })()}
       </div>
+      )}
     </div>
   );
 }

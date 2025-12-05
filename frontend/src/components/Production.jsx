@@ -6,6 +6,8 @@ import ModalOverlay from './ModalOverlay'
 import LoadingSpinner from './LoadingSpinner'
 import styles from './Production.module.css'
 import { detectConflicts } from '../utils/timeline'
+import { translateError } from '../services/api'
+import classNames from 'classnames'
 
 export default function Production() {
   const { t } = useI18n()
@@ -25,6 +27,7 @@ export default function Production() {
   const [savingStatus, setSavingStatus] = useState(false)
   const [timelineTooltip, setTimelineTooltip] = useState(null)
   const [draggingOrderId, setDraggingOrderId] = useState(null)
+  const [timelineBanner, setTimelineBanner] = useState(null)
   const dragState = useRef(null)
 
   const labels = useMemo(() => ({
@@ -173,12 +176,12 @@ export default function Production() {
       ])
       setOrders(ordersData.filter(o => o.status !== 'Invoiced'))
       setProducts(productsData)
-    } catch {
-      addToast(l.errorLoading, 'error')
+    } catch (err) {
+      addToast(translateError(err, t.currentLang) || l.errorLoading, 'error')
     } finally {
       setLoading(false)
     }
-  }, [addToast, l.errorLoading])
+  }, [addToast, l.errorLoading, t.currentLang])
 
   useEffect(() => {
     loadData()
@@ -451,9 +454,18 @@ export default function Production() {
         start_date: updated.start_date,
         due_date: updated.due_date
       })
+      const successMessage = t.currentLang === 'pl'
+        ? `Zlecenie #${order.order_id} przesunięte pomyślnie`
+        : `Order #${order.order_id} rescheduled successfully`
+      addToast(successMessage, 'success')
+      setTimelineBanner({ type: 'success', message: successMessage })
+      // Auto-hide success banner after 3 seconds
+      setTimeout(() => setTimelineBanner(null), 3000)
       await loadTimelineOrders()
     } catch (err) {
-      addToast(err?.message || 'Nie udało się zapisać zmian', 'error')
+      const message = translateError(err, t.currentLang) || err?.message || (t.currentLang === 'pl' ? 'Nie udało się zapisać zmian' : 'Failed to save changes')
+      addToast(message, 'error')
+      setTimelineBanner({ type: 'error', message })
       await loadTimelineOrders()
     }
   }
@@ -706,6 +718,16 @@ export default function Production() {
             </label>
             <button onClick={loadTimelineOrders}>Filtruj</button>
           </div>
+          {timelineBanner && (
+            <div className={classNames(
+              styles.timelineBanner,
+              timelineBanner.type === 'error' && styles.timelineBannerError,
+              timelineBanner.type === 'success' && styles.timelineBannerSuccess,
+              timelineBanner.type === 'info' && styles.timelineBannerInfo
+            )}>
+              {timelineBanner.message}
+            </div>
+          )}
           {!timelineOrders.length && (
             <p className={styles.notice}>{l.noOrders}</p>
           )}

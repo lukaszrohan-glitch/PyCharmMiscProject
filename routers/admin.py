@@ -12,6 +12,7 @@ from db import fetch_all, execute
 from schemas import UserCreateAdmin, SubscriptionPlanCreate
 from security import check_admin_key
 from user_mgmt import create_user, list_users, create_plan, list_plans, require_admin
+from logging_utils import logger as app_logger
 
 
 router = APIRouter(tags=["Admin", "Admin/API Keys"])
@@ -44,9 +45,17 @@ def admin_create_user(payload: UserCreateAdmin, _admin=Depends(require_admin)):
             event_by=_admin.get("email"),
             details={"email": payload.email, "is_admin": payload.is_admin},
         )
-        return row
+        message = (
+            "Użytkownik utworzony pomyślnie"
+            if payload.lang == "pl"
+            else "User created successfully"
+        )
+        return {"user": row, "message": message}
+    except HTTPException:
+        raise
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+        app_logger.error("admin_create_user failed", exc_info=True)
+        raise HTTPException(status_code=500, detail={"detail": "Failed to create user", "code": "admin_create_user_failed"}) from exc
 
 
 @router.get("/api/admin/users", summary="Admin: list users")
@@ -62,21 +71,27 @@ def admin_create_plan(payload: SubscriptionPlanCreate, _admin=Depends(require_ad
     """
     Tworzenie planu subskrypcyjnego (admin only).
     """
-    row = create_plan(
-        payload.plan_id,
-        payload.name,
-        payload.max_orders,
-        payload.max_users,
-        payload.features,
-    )
-    if not row:
-        raise HTTPException(status_code=500, detail="Failed to create plan")
-    log_admin_event(
-        "create_plan",
-        event_by=_admin.get("email"),
-        details={"plan_id": payload.plan_id},
-    )
-    return row
+    try:
+        row = create_plan(
+            payload.plan_id,
+            payload.name,
+            payload.max_orders,
+            payload.max_users,
+            payload.features,
+        )
+        if not row:
+            raise HTTPException(status_code=500, detail={"detail": "Failed to create plan", "code": "plan_create_failed"})
+        log_admin_event(
+            "create_plan",
+            event_by=_admin.get("email"),
+            details={"plan_id": payload.plan_id},
+        )
+        return row
+    except HTTPException:
+        raise
+    except Exception as exc:
+        app_logger.error("admin_create_plan failed", exc_info=True)
+        raise HTTPException(status_code=500, detail={"detail": "Failed to create plan", "code": "plan_create_failed"}) from exc
 
 
 @router.get("/api/admin/subscription-plans", summary="Admin: list subscription plans")
@@ -97,7 +112,8 @@ def admin_list_admin_audit(limit: int = 100, _admin=Depends(require_admin)):
 
         return list_admin_audit(limit=limit)
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+        app_logger.error("admin_list_admin_audit failed", exc_info=True)
+        raise HTTPException(status_code=500, detail={"detail": "Failed to fetch admin audit", "code": "admin_audit_failed"}) from exc
 
 
 # ---- Admin API keys (x-admin-key, osobny sekret z ENV) ----
@@ -112,7 +128,8 @@ def admin_list_keys(_ok: bool = Depends(check_admin_key)):
     try:
         return api_keys.list_api_keys()
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+        app_logger.error("api_keys.list_api_keys failed", exc_info=True)
+        raise HTTPException(status_code=500, detail={"detail": "Failed to list API keys", "code": "api_keys_list_failed"}) from exc
 
 
 @router.post("/api/admin/api-keys", summary="Create API key (x-admin-key)")
@@ -120,7 +137,7 @@ def admin_create_key(payload: Dict[str, str], _ok: bool = Depends(check_admin_ke
     label = payload.get("label") if isinstance(payload, dict) else None
     row = api_keys.create_api_key(label)
     if not row:
-        raise HTTPException(status_code=500, detail="Failed to create API key")
+        raise HTTPException(status_code=500, detail={"detail": "Failed to create API key", "code": "api_key_create_failed"})
     return row
 
 
@@ -128,7 +145,7 @@ def admin_create_key(payload: Dict[str, str], _ok: bool = Depends(check_admin_ke
 def admin_delete_key(key_id: int, _ok: bool = Depends(check_admin_key)):
     row = api_keys.delete_api_key_by_id(key_id)
     if not row:
-        raise HTTPException(status_code=404, detail="Key not found")
+        raise HTTPException(status_code=404, detail={"detail": "Key not found", "code": "api_key_not_found"})
     return {"deleted": row}
 
 
@@ -139,10 +156,11 @@ def admin_rotate_key(key_id: int, _ok: bool = Depends(check_admin_key)):
     try:
         new = api_keys.rotate_api_key(key_id, by="admin")
         if not new:
-            raise HTTPException(status_code=500, detail="Failed to rotate key")
+            raise HTTPException(status_code=500, detail={"detail": "Failed to rotate key", "code": "api_key_rotate_failed"})
         return new
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+        app_logger.error("api_key rotate failed", exc_info=True)
+        raise HTTPException(status_code=500, detail={"detail": "Failed to rotate key", "code": "api_key_rotate_failed"}) from exc
 
 
 @router.get("/api/admin/api-key-audit", summary="List API key audit events")
@@ -156,7 +174,8 @@ def admin_api_key_audit(_ok: bool = Depends(check_admin_key)):
         )
         return rows
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+        app_logger.error("api_key_audit list failed", exc_info=True)
+        raise HTTPException(status_code=500, detail={"detail": "Failed to fetch API key audit", "code": "api_key_audit_failed"}) from exc
 
 
 @router.delete("/api/admin/api-key-audit", summary="Purge old API key audit events")
@@ -186,7 +205,8 @@ def admin_purge_audit(days: int = 30, _ok: bool = Depends(check_admin_key)):
             )
         return {"purged": True}
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+        app_logger.error("api_key_audit purge failed", exc_info=True)
+        raise HTTPException(status_code=500, detail={"detail": "Failed to purge API key audit", "code": "api_key_audit_purge_failed"}) from exc
 
 
 # ---- Legacy ścieżki bez prefiksu /api dla admin-key ----
@@ -287,7 +307,8 @@ async def import_csv(
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+        app_logger.error("import_csv failed", exc_info=True)
+        raise HTTPException(status_code=500, detail={"detail": "Import failed", "code": "import_failed"}) from exc
 
 
 def _do_import(entity_type: str, data_rows: List[Dict]) -> int:

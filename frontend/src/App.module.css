@@ -2,14 +2,20 @@
 
 .app {
   min-height: 100vh;
-  background: #f9fafb;
+  background: var(--background-secondary, #f9fafb);
   display: flex;
   flex-direction: column;
+  transition: background-color 0.3s ease;
+}
+
+/* Dark mode */
+[data-theme="dark"] .app {
+  background: var(--background-color, #0f172a);
 }
 
 .mainContent {
   flex: 1;
-  padding: 2rem 1rem 5rem; /* leave space for mobile nav */
+  padding: 2rem 1rem 6rem; /* leave space for mobile nav */
 }
 
 @media (min-width: 768px) {
@@ -135,6 +141,39 @@
   margin: 0 auto;
 }
 
+.statStrip {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.statCardMini {
+  border-radius: var(--radius-2xl);
+  padding: 1.25rem;
+  border: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.08), rgba(59, 130, 246, 0.08));
+  box-shadow: var(--shadow-sm);
+}
+
+.statValueRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.statValueRow strong {
+  font-size: 1.75rem;
+  color: var(--text-primary);
+}
+
+.statTrend {
+  font-size: 0.9rem;
+  color: var(--status-success);
+  font-weight: 600;
+}
+
 @media (max-width: 1200px) {
   .dashboardGrid {
     grid-template-columns: repeat(3, 1fr);
@@ -153,6 +192,10 @@
   .dashboardGrid {
     grid-template-columns: 1fr;
     gap: 1rem;
+  }
+
+  .statStrip {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -479,4 +522,74 @@
   .card {
     padding: 1.5rem;
   }
+}
+
+/* ========================================
+   DARK MODE STYLES
+   ======================================== */
+
+[data-theme="dark"] .statCard,
+[data-theme="dark"] .statCardMini {
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.08), rgba(59, 130, 246, 0.08));
+  border-color: var(--border-color, #334155);
+}
+
+[data-theme="dark"] .navTile,
+[data-theme="dark"] .card {
+  background: var(--card-background, #1e293b);
+  border-color: var(--border-color, #334155);
+}
+
+[data-theme="dark"] .navTile:hover,
+[data-theme="dark"] .card:hover {
+  border-color: var(--primary-color, #22d3ee);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .navTileTitle,
+[data-theme="dark"] .cardTitle {
+  color: var(--text-color, #f1f5f9);
+}
+
+[data-theme="dark"] .navTileSubtitle,
+[data-theme="dark"] .cardSubtitle {
+  color: var(--text-secondary, #94a3b8);
+}
+
+[data-theme="dark"] .heroTitle {
+  color: var(--text-color, #f1f5f9);
+}
+
+[data-theme="dark"] .heroSubtitle {
+  color: var(--text-secondary, #94a3b8);
+}
+
+[data-theme="dark"] .sectionTitle {
+  color: var(--text-color, #f1f5f9);
+}
+
+[data-theme="dark"] .activityItem {
+  background: var(--background-secondary, #1e293b);
+  border-color: var(--border-color, #334155);
+}
+
+[data-theme="dark"] .activityItem:hover {
+  background: var(--background-tertiary, #334155);
+}
+
+[data-theme="dark"] .activityTitle {
+  color: var(--text-color, #f1f5f9);
+}
+
+[data-theme="dark"] .activityMeta,
+[data-theme="dark"] .activityDate {
+  color: var(--text-secondary, #94a3b8);
+}
+
+[data-theme="dark"] .statLabel {
+  color: var(--text-secondary, #94a3b8);
+}
+
+[data-theme="dark"] .statValueRow strong {
+  color: var(--text-color, #f1f5f9);
 }

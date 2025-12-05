@@ -1,5 +1,6 @@
 import {useState, useEffect, useRef} from 'react';
 import { useAuth } from '../auth/useAuth'
+import { translateError } from '../services/api'
 import ForgotPassword from './ForgotPassword'
 import SynterraLogo from './SynterraLogo'
 import styles from './Login.module.css'
@@ -58,16 +59,21 @@ export default function Login({ lang, setLang }) {
       setPassword('')
     } catch (err) {
       console.error('Login error:', err)
-      const msg = String(err?.message || '')
-      if (msg.toLowerCase().includes('temporarily locked')) {
-        setError(t.locked)
-      } else if (
-        msg.toLowerCase().includes('invalid credentials') ||
-        msg.toLowerCase().includes('unauthorized')
-      ) {
-        setError(t.invalidCredentials)
+      const localized = translateError(err, lang)
+      if (localized) {
+        setError(localized)
       } else {
-        setError(msg || t.error)
+        const msg = String(err?.message || '')
+        if (msg.toLowerCase().includes('temporarily locked')) {
+          setError(t.locked)
+        } else if (
+          msg.toLowerCase().includes('invalid credentials') ||
+          msg.toLowerCase().includes('unauthorized')
+        ) {
+          setError(t.invalidCredentials)
+        } else {
+          setError(msg || t.error)
+        }
       }
       setPassword('')
     } finally {

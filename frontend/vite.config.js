@@ -7,4 +7,18 @@ export default defineConfig({
   plugins: [react()],
   // Use absolute base for backend-served SPA so assets resolve from root
   base: '/',
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'query-vendor': ['@tanstack/react-query'],
+          'motion-vendor': ['framer-motion'],
+        },
+      },
+    },
+    // Increase limit slightly since we're splitting
+    chunkSizeWarningLimit: 300,
+  },
 });

@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import styles from './Header.module.css'
 import * as api from '../services/api'
+import { translateError } from '../services/api'
 import SynterraLogo from './SynterraLogo'
+import { useTheme } from '../hooks/useTheme'
+import { useNotifications } from '../hooks/useNotifications'
+import NotificationCenter from './NotificationCenter'
 
 export default function Header({
   lang,
@@ -13,10 +17,13 @@ export default function Header({
   onLogout,
   onSearchSelect,
 }) {
+  const { theme, toggleTheme } = useTheme()
+  const notifications = useNotifications()
   // useI18n hook available if needed for future translations
   const [menuOpen, setMenuOpen] = useState(false)
   const [orders, setOrders] = useState([])
   const [q, setQ] = useState('')
+  const [searchError, setSearchError] = useState('')
   const inputRef = useRef(null)
   const chromeRef = useRef(null)
   const menuBtnRef = useRef(null)
@@ -99,13 +106,15 @@ export default function Header({
     if (!orders.length) {
       ;(async () => {
         try {
+          setSearchError('')
           setOrders((await api.getOrders()) || [])
         } catch (err) {
-          console.warn('Search preload failed:', err)
+          const message = translateError(err, lang) || err?.message || (lang === 'pl' ? 'Nie udało się pobrać zamówień.' : 'Unable to load orders.')
+          setSearchError(message)
         }
       })()
     }
-  }, [orders.length])
+  }, [orders.length, lang])
 
   const results = useMemo(() => {
     const probe = q.trim().toLowerCase()
@@ -248,6 +257,11 @@ export default function Header({
                 }
               }}
             />
+            {searchError && (
+              <div className={styles.searchError} role="status">
+                {searchError}
+              </div>
+            )}
             {results.length > 0 && (
               <div
                 id="search-results"
@@ -282,8 +296,26 @@ export default function Header({
           </div>
         </nav>
 
-        {/* RIGHT: language, profile */}
+        {/* RIGHT: notifications, theme toggle, language, profile */}
         <div className={styles.rightCluster}>
+          <NotificationCenter
+            notifications={notifications.notifications}
+            unreadCount={notifications.unreadCount}
+            onMarkAsRead={notifications.markAsRead}
+            onMarkAllAsRead={notifications.markAllAsRead}
+            onRemove={notifications.removeNotification}
+            onClearAll={notifications.clearAll}
+            lang={lang}
+          />
+          <button
+            type="button"
+            className={styles.themeToggle}
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? (lang === 'pl' ? 'Włącz tryb jasny' : 'Switch to light mode') : (lang === 'pl' ? 'Włącz tryb ciemny' : 'Switch to dark mode')}
+            title={theme === 'dark' ? (lang === 'pl' ? 'Tryb jasny' : 'Light mode') : (lang === 'pl' ? 'Tryb ciemny' : 'Dark mode')}
+          >
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
           <div className={styles.langSwitch} role="group" aria-label={lang === 'pl' ? 'Wybór języka' : 'Language selection'}>
             <button
               className={lang === 'pl' ? styles.langActive : styles.langBtn}

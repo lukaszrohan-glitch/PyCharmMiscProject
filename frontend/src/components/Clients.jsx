@@ -2,6 +2,7 @@ import {useEffect, useState} from 'react';
 import * as api from '../services/api'
 import { useToast } from '../lib/toastContext'
 import ModalOverlay from './ModalOverlay'
+import EmptyState from './EmptyState'
 
 const CUSTOMER_ID_MAX = 24
 const CONTACT_MAX = 80
@@ -64,7 +65,7 @@ export default function Clients({ lang }) {
       </div>
 
       {items.length===0 ? (
-        <p className="empty-message">{t.noItems}</p>
+        <EmptyState.Clients lang={lang} onAdd={openAdd} />
       ) : (
         <table className="data-table">
           <thead>
