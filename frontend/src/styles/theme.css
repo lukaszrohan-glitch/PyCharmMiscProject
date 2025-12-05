@@ -934,3 +934,45 @@ textarea:focus {
     border: 2px solid currentColor;
   }
 }
+
+/* ========== DARK THEME OVERRIDES ========== */
+[data-theme="dark"] {
+  /* Surface Colors - Dark mode */
+  --surface-primary: #1e1e1e;       /* Cards, panels */
+  --surface-secondary: #0d1117;    /* Page background */
+  --surface-tertiary: #161b22;     /* Nested surfaces */
+  --surface-elevated: #21262d;     /* Floating elements */
+  --surface-overlay: rgba(0, 0, 0, 0.6);  /* Modal backdrop */
+  --surface-glass: rgba(33, 38, 45, 0.8); /* Frosted glass effect */
+
+  /* Text Colors - Dark mode */
+  --text-primary: #f0f6fc;          /* Main content */
+  --text-secondary: #c9d1d9;        /* Supporting text */
+  --text-tertiary: #8b949e;         /* Disabled state */
+  --text-link: #58a6ff;             /* Interactive links */
+  --text-link-hover: #79c0ff;
+
+  /* Border Colors - Dark mode */
+  --border-light: #30363d;         /* Subtle dividers */
+  --border-default: #30363d;       /* Standard borders */
+  --border-strong: #6e7681;        /* Emphasized borders */
+  --border-focus: #58a6ff;         /* Focus indicators */
+
+  /* Status Colors - Dark mode backgrounds */
+  --color-success-bg: rgba(46, 160, 67, 0.15);
+  --color-warning-bg: rgba(187, 128, 9, 0.15);
+  --color-error-bg: rgba(248, 81, 73, 0.15);
+  --color-info-bg: rgba(56, 139, 253, 0.15);
+
+  /* Shadows - Adjusted for dark mode */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.4);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.6);
+
+  --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.2);
+  --shadow-focus: 0 0 0 3px rgba(88, 166, 255, 0.3);
+  --shadow-glow: 0 0 20px rgba(88, 166, 255, 0.4);
+}

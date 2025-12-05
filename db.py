@@ -401,8 +401,7 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
          JOIN employees e ON t.emp_id = e.emp_id
          WHERE t.order_id = o.order_id),
         0
-      ) AS gross_margin,
-      datetime('now') AS last_updated
+      ) AS gross_margin
     FROM orders o
     LEFT JOIN order_lines ol ON o.order_id = ol.order_id
     LEFT JOIN products p ON ol.product_id = p.product_id
