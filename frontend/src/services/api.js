@@ -20,44 +20,21 @@ function resolveApiBase() {
 
 const API_BASE = resolveApiBase()
 
-// Track if we're already handling auth failure to prevent loops
-let isHandlingAuthFailure = false
-
-function handleAuthFailure(status) {
-  // Only handle 401 (Unauthorized) - 403 means logged in but no permission
+// Dispatch auth failure event - let AuthProvider handle logout decision
+// This prevents unwanted logouts from transient API errors
+function handleAuthFailure(status, endpoint) {
+  // Only dispatch for 401 (Unauthorized), not 403 (Forbidden)
   if (status !== 401) return
 
-  // Prevent multiple simultaneous auth failure handlers
-  if (isHandlingAuthFailure) return
-  isHandlingAuthFailure = true
+  // Don't dispatch for profile/auth endpoints - these are checked at startup
+  const isAuthEndpoint = endpoint?.includes('/api/user') || endpoint?.includes('/api/auth')
+  if (isAuthEndpoint) return
 
-  try {
-    setToken(null)
-  } catch {
-    /* no-op */
-  }
-  try {
-    sessionStorage.removeItem('authToken');
-    sessionStorage.removeItem('token');
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('token');
-  } catch {
-    /* ignore */
-  }
+  // Dispatch event for AuthProvider to handle
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('auth:expired', { detail: { status } }))
-    // Only redirect if not already on login page
-    if (!window.location.pathname.includes('login') && window.location.pathname !== '/') {
-      // Small delay to allow any pending operations to complete
-      setTimeout(() => {
-        isHandlingAuthFailure = false
-        window.location.href = '/'
-      }, 100)
-    } else {
-      isHandlingAuthFailure = false
-    }
-  } else {
-    isHandlingAuthFailure = false
+    window.dispatchEvent(new CustomEvent('auth:expired', {
+      detail: { status, endpoint, timestamp: Date.now() }
+    }))
   }
 }
 
@@ -132,7 +109,7 @@ async function request(endpoint, options = {}) {
   if (!response.ok) {
     // Only handle auth failure if not skipped
     if (!skipAuthFailure) {
-      handleAuthFailure(response.status)
+      handleAuthFailure(response.status, endpoint)
     }
     if (isJson) {
       const errorData = await response.json().catch(() => ({}))

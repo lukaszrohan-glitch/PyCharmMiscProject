@@ -1,10 +1,46 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { AuthContext } from './context'
 import * as api from '../services/api'
 
 export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null)
   const [checking, setChecking] = useState(true)
+  const lastAuthExpiredRef = useRef(0)
+
+  const logout = useCallback(() => {
+    api.setToken(null)
+    setProfile(null)
+  }, [])
+
+  // Listen for auth:expired events from API
+  useEffect(() => {
+    const handleAuthExpired = (event) => {
+      const { endpoint, timestamp } = event.detail || {}
+
+      // Debounce: ignore if we just handled one
+      if (timestamp - lastAuthExpiredRef.current < 2000) return
+      lastAuthExpiredRef.current = timestamp
+
+      // Only logout if we actually have a profile (are logged in)
+      // and the token is truly invalid
+      if (profile) {
+        console.warn('Auth expired event received for:', endpoint)
+        // Verify token is really invalid by trying to get profile
+        api.getProfile().then(me => {
+          if (!me) {
+            // Token truly invalid - logout
+            logout()
+          }
+          // If profile still works, ignore the 401 - it was a transient error
+        }).catch(() => {
+          logout()
+        })
+      }
+    }
+
+    window.addEventListener('auth:expired', handleAuthExpired)
+    return () => window.removeEventListener('auth:expired', handleAuthExpired)
+  }, [profile, logout])
 
   // Startup: check token and fetch profile
   useEffect(() => {
@@ -16,8 +52,15 @@ export function AuthProvider({ children }) {
     (async () => {
       try {
         const me = await api.getProfile()
-        // Don't clear token on transient errors; only set profile if available
-        setProfile(me || null)
+        // If profile is null, token may be expired - but don't clear it yet
+        // User might have just refreshed the page during a brief outage
+        if (me) {
+          setProfile(me)
+        } else {
+          // Profile returned null - token might be invalid
+          // But don't auto-logout - let user try to use the app
+          console.warn('Could not fetch profile on startup - token may be expired')
+        }
       } catch (e) {
         // Keep token; backend may be unreachable temporarily
         console.warn('Auth bootstrap: profile unavailable, keeping token', e)
@@ -49,11 +92,6 @@ export function AuthProvider({ children }) {
     return me
   }
 
-  const logout = () => {
-    api.setToken(null)
-    setProfile(null)
-  }
-
   const value = useMemo(() => ({
     profile,
     checkingAuth: checking,
@@ -61,7 +99,7 @@ export function AuthProvider({ children }) {
     setAuth,
     refreshProfile,
     logout,
-  }), [profile, checking])
+  }), [profile, checking, logout])
 
   return (
     <AuthContext.Provider value={value}>
