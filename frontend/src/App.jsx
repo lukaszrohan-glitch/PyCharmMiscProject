@@ -1,26 +1,27 @@
-import { useEffect, useState, useCallback } from 'react';
+import { Suspense, lazy, useEffect, useState, useCallback } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAppContext } from './AppContext';
 import Header from './components/Header';
 import MobileNav from './components/MobileNav';
 import Login from './components/Login';
-import Dashboard from './components/Dashboard';
-import Settings from './components/Settings';
-import Orders from './components/Orders';
-import Inventory from './components/Inventory';
-import Timesheets from './components/Timesheets';
-import Reports from './components/Reports';
-import Financials from './components/Financials';
-import Clients from './components/Clients';
-import DemandPlanner from './components/DemandPlanner';
-import Admin from './components/Admin';
-import UserGuide from './components/UserGuide';
-import Products from './components/Products';
-import Production from './components/Production';
-import CommandPalette from './components/CommandPalette';
+import ErrorBoundary from './components/ErrorBoundary';
 import { useAuth } from './auth/useAuth';
 import { useTheme } from './hooks/useTheme';
 import styles from './App.module.css';
+import CommandPalette from './components/CommandPalette';
+
+const LazyDashboard = lazy(() => import('./components/Dashboard'));
+const LazyOrders = lazy(() => import('./components/Orders'));
+const LazyProducts = lazy(() => import('./components/Products'));
+const LazyProduction = lazy(() => import('./components/Production'));
+const LazyInventory = lazy(() => import('./components/Inventory'));
+const LazyClients = lazy(() => import('./components/Clients'));
+const LazyTimesheets = lazy(() => import('./components/Timesheets'));
+const LazyReports = lazy(() => import('./components/Reports'));
+const LazyDemandPlanner = lazy(() => import('./components/DemandPlanner'));
+const LazyFinancials = lazy(() => import('./components/Financials'));
+const LazyUserGuide = lazy(() => import('./components/UserGuide'));
+const LazyAdmin = lazy(() => import('./components/Admin'));
 
 export default function App() {
   const { lang, setLang, isSettingsOpen, setSettingsOpen } = useAppContext();
@@ -125,55 +126,58 @@ export default function App() {
   }
 
   return (
-    <div className={styles.app}>
-      <Header
-        currentView={currentView}
-        setCurrentView={handleViewChange}
-        profile={profile}
-        onSettings={handleSettings}
-        onLogout={handleLogout}
-      />
-      <main id="main-content" className={styles.mainContent}>
-        <div className={styles.container}>
-          <Routes>
-            <Route path="/dashboard" element={<Dashboard setCurrentView={handleViewChange} />} />
-            <Route path="/orders" element={<Orders jumpToFinance={(orderId) => navigate(`/financials?orderId=${orderId}`)} />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/production" element={<Production />} />
-            <Route path="/planning" element={<Navigate to="/production" replace />} />
-            <Route path="/inventory" element={<Inventory />} />
-            <Route path="/clients" element={<Clients />} />
-            <Route path="/timesheets" element={<Timesheets />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/demand" element={<DemandPlanner />} />
-            <Route path="/financials" element={<Financials />} />
-            <Route path="/help" element={<UserGuide />} />
-            <Route path="/admin" element={profile?.is_admin ? <Admin /> : <Navigate to="/dashboard" replace />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </div>
-      </main>
-      <MobileNav
-        currentView={currentView}
-        onNavigate={handleViewChange}
-        onSettings={handleSettings}
-      />
-      {isSettingsOpen && (
-        <Settings
+    <ErrorBoundary>
+      <div className={styles.app}>
+        <Header
+          currentView={currentView}
+          setCurrentView={handleViewChange}
           profile={profile}
-          onClose={() => setSettingsOpen(false)}
-          onOpenAdmin={() => {
-            setSettingsOpen(false);
-            handleViewChange('admin');
-          }}
+          onSettings={handleSettings}
+          onLogout={handleLogout}
         />
-      )}
-      <CommandPalette
-        isOpen={commandPaletteOpen}
-        onClose={() => setCommandPaletteOpen(false)}
-        lang={lang}
-        onAction={handleCommandAction}
-      />
-    </div>
+        <main id="main-content" className={styles.mainContent}>
+          <div className={styles.container}>
+            <Suspense fallback={<p>Loading...</p>}>
+              <Routes>
+                <Route path="/dashboard" element={<LazyDashboard setCurrentView={handleViewChange} />} />
+                <Route path="/orders" element={<LazyOrders jumpToFinance={(orderId) => navigate(`/financials?orderId=${orderId}`)} />} />
+                <Route path="/products" element={<LazyProducts />} />
+                <Route path="/production" element={<LazyProduction />} />
+                <Route path="/inventory" element={<LazyInventory />} />
+                <Route path="/clients" element={<LazyClients />} />
+                <Route path="/timesheets" element={<LazyTimesheets />} />
+                <Route path="/reports" element={<LazyReports />} />
+                <Route path="/demand" element={<LazyDemandPlanner />} />
+                <Route path="/financials" element={<LazyFinancials />} />
+                <Route path="/help" element={<LazyUserGuide />} />
+                <Route path="/admin" element={profile?.is_admin ? <LazyAdmin /> : <Navigate to="/dashboard" replace />} />
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
+            </Suspense>
+          </div>
+        </main>
+        <MobileNav
+          currentView={currentView}
+          onNavigate={handleViewChange}
+          onSettings={handleSettings}
+        />
+        {isSettingsOpen && (
+          <Settings
+            profile={profile}
+            onClose={() => setSettingsOpen(false)}
+            onOpenAdmin={() => {
+              setSettingsOpen(false);
+              handleViewChange('admin');
+            }}
+          />
+        )}
+        <CommandPalette
+          isOpen={commandPaletteOpen}
+          onClose={() => setCommandPaletteOpen(false)}
+          lang={lang}
+          onAction={handleCommandAction}
+        />
+      </div>
+    </ErrorBoundary>
   );
 }
