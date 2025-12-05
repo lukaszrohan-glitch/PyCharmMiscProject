@@ -30,6 +30,10 @@ function handleAuthFailure(status, endpoint) {
   const isAuthEndpoint = endpoint?.includes('/api/user') || endpoint?.includes('/api/auth')
   if (isAuthEndpoint) return
 
+  // Don't dispatch for admin endpoints - they use admin key, not JWT
+  const isAdminEndpoint = endpoint?.includes('/api/admin')
+  if (isAdminEndpoint) return
+
   // Dispatch event for AuthProvider to handle
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('auth:expired', {

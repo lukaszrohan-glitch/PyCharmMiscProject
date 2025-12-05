@@ -177,6 +177,8 @@ ON CONFLICT DO NOTHING;
 -- --------------------------------------------------------------------
 CREATE OR REPLACE VIEW v_order_finance AS
 SELECT o.order_id,
+       o.customer_id,
+       o.order_date,
        COALESCE(SUM(ol.qty*ol.unit_price*(1 - ol.discount_pct)),0) AS revenue,
        COALESCE(SUM(ol.qty*p.std_cost),0) AS material_cost,
        COALESCE((SELECT SUM(t.hours * e.hourly_rate) FROM timesheets t JOIN employees e ON t.emp_id = e.emp_id WHERE t.order_id = o.order_id),0) AS labor_cost,
@@ -184,7 +186,7 @@ SELECT o.order_id,
 FROM orders o
 LEFT JOIN order_lines ol ON o.order_id = ol.order_id
 LEFT JOIN products p ON ol.product_id = p.product_id
-GROUP BY o.order_id;
+GROUP BY o.order_id, o.customer_id, o.order_date;
 
 CREATE OR REPLACE VIEW v_shortages AS
 SELECT

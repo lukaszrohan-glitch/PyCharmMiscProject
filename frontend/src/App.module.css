@@ -89,12 +89,12 @@
 }
 
 .statCard {
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 2rem 1.5rem;
   text-align: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--card-shadow);
   transition: transform 0.2s, box-shadow 0.2s;
   min-height: 140px;
   display: flex;

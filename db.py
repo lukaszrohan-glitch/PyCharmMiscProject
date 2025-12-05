@@ -382,6 +382,8 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
     CREATE VIEW IF NOT EXISTS v_order_finance AS
     SELECT
       o.order_id,
+      o.customer_id,
+      o.order_date,
       COALESCE(SUM(ol.qty * ol.unit_price * (1 - ol.discount_pct)), 0) AS revenue,
       COALESCE(SUM(ol.qty * p.std_cost), 0) AS material_cost,
       COALESCE(
@@ -404,7 +406,7 @@ def _init_sqlite_schema(conn: sqlite3.Connection):
     FROM orders o
     LEFT JOIN order_lines ol ON o.order_id = ol.order_id
     LEFT JOIN products p ON ol.product_id = p.product_id
-    GROUP BY o.order_id;
+    GROUP BY o.order_id, o.customer_id, o.order_date;
     """
     )
     cur.executescript(
