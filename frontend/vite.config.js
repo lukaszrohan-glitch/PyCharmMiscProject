@@ -2,11 +2,13 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 // Use a relative base so the app works on GitHub Pages project sites
-// (e.g., https://user.github.io/repo) without broken asset paths.
+// (e.g., https://user.github.io/repo) without broken asset paths and still
+// works when served from backend at domain root.
 export default defineConfig({
   plugins: [react()],
-  // Use absolute base for backend-served SPA so assets resolve from root
-  base: '/',
+  // Relative base ensures CSS/JS assets resolve correctly on static hosts
+  // like GitHub Pages (project subpaths) and on root deployments.
+  base: './',
   build: {
     rollupOptions: {
       output: {
