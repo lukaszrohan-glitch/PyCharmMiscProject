@@ -24,6 +24,7 @@ export default function Admin({ lang }) {
   const [success, setSuccess] = useState('');
   const [isAuthed, setIsAuthed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(false);
   const [showErrorDetails, setShowErrorDetails] = useState(false);
   const emailInputRef = useRef(null);
   const [filter, setFilter] = useState({ query: '', role: 'all', plan: 'all' });
@@ -126,7 +127,7 @@ export default function Admin({ lang }) {
 
     setError('');
     setSuccess('');
-    setLoading(true);
+    setLoadingUsers(true);
 
     try {
       setAdminKey(trimmedKey);
@@ -141,15 +142,15 @@ export default function Admin({ lang }) {
       setIsAuthed(false);
       setError('❌ ' + t('error_auth_failed'));
     } finally {
-      setLoading(false);
+      setLoadingUsers(false);
     }
   }, [adminKey, profile?.is_admin, t]);
 
   useEffect(() => {
-    if (profile?.is_admin && !isAuthed && !loading) {
+    if (profile?.is_admin && !isAuthed && !loadingUsers) {
       authenticate();
     }
-  }, [profile?.is_admin, isAuthed, loading, authenticate]);
+  }, [profile?.is_admin, isAuthed, loadingUsers, authenticate]);
 
   // Align front-end validation with backend: minimum 8 characters
   const isStrongPassword = (pwd) => typeof pwd === 'string' && pwd.length >= 8;
