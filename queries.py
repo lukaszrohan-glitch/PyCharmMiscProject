@@ -92,12 +92,13 @@ CREATE INDEX IF NOT EXISTS idx_api_keys_active ON api_keys(active) WHERE active 
 # ANALYTICS QUERIES
 SQL_REVENUE_BY_MONTH = """
 SELECT
-  DATE_TRUNC('month', order_date)::date AS month,
-  SUM(revenue) AS revenue,
-  SUM(gross_margin) AS margin
-FROM v_order_finance
-GROUP BY DATE_TRUNC('month', order_date)
-ORDER BY DATE_TRUNC('month', order_date);
+  DATE_TRUNC('month', o.order_date)::date AS month,
+  SUM(f.revenue) AS revenue,
+  SUM(f.gross_margin) AS margin
+FROM v_order_finance f
+JOIN orders o ON o.order_id = f.order_id
+GROUP BY DATE_TRUNC('month', o.order_date)
+ORDER BY DATE_TRUNC('month', o.order_date);
 """
 
 SQL_TOP_CUSTOMERS = """
@@ -109,8 +110,9 @@ SELECT
   COUNT(DISTINCT f.order_id) AS orders_count
 FROM v_order_finance f
 JOIN customers c ON c.customer_id = f.customer_id
-WHERE (%s IS NULL OR f.order_date >= %s)
-  AND (%s IS NULL OR f.order_date <= %s)
+JOIN orders o ON o.order_id = f.order_id
+WHERE (%s IS NULL OR o.order_date >= %s)
+  AND (%s IS NULL OR o.order_date <= %s)
 GROUP BY c.customer_id, c.name
 ORDER BY revenue DESC
 LIMIT %s;
@@ -125,8 +127,9 @@ SELECT
   f.gross_margin AS margin
 FROM v_order_finance f
 LEFT JOIN customers c ON c.customer_id = f.customer_id
-WHERE (%s IS NULL OR f.order_date >= %s)
-  AND (%s IS NULL OR f.order_date <= %s)
+JOIN orders o ON o.order_id = f.order_id
+WHERE (%s IS NULL OR o.order_date >= %s)
+  AND (%s IS NULL OR o.order_date <= %s)
 ORDER BY f.revenue DESC
 LIMIT %s;
 """
@@ -141,14 +144,18 @@ current_period AS (
   SELECT
     SUM(revenue) AS revenue,
     SUM(gross_margin) AS margin
-  FROM v_order_finance f, period p
-  WHERE f.order_date BETWEEN p.date_from AND p.date_to
+  FROM v_order_finance f
+  JOIN orders o ON o.order_id = f.order_id,
+       period p
+  WHERE o.order_date BETWEEN p.date_from AND p.date_to
 ),
 prev_period AS (
   SELECT
     SUM(revenue) AS revenue
-  FROM v_order_finance f, period p
-  WHERE f.order_date BETWEEN (p.date_from - (p.date_to - p.date_from)) AND (p.date_from - INTERVAL '1 day')
+  FROM v_order_finance f
+  JOIN orders o ON o.order_id = f.order_id,
+       period p
+  WHERE o.order_date BETWEEN (p.date_from - (p.date_to - p.date_from)) AND (p.date_from - INTERVAL '1 day')
 ),
  top_customer AS (
   SELECT
@@ -158,8 +165,10 @@ prev_period AS (
     SUM(f.gross_margin) AS margin,
     COUNT(DISTINCT f.order_id) AS orders_count
   FROM v_order_finance f
-  JOIN customers c ON c.customer_id = f.customer_id, period p
-  WHERE f.order_date BETWEEN p.date_from AND p.date_to
+  JOIN customers c ON c.customer_id = f.customer_id
+  JOIN orders o ON o.order_id = f.order_id,
+       period p
+  WHERE o.order_date BETWEEN p.date_from AND p.date_to
   GROUP BY c.customer_id, c.name
   ORDER BY revenue DESC
   LIMIT 1
