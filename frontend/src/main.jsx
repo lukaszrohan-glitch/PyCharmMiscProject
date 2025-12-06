@@ -13,23 +13,6 @@ import { AppProvider } from './AppContext';
 import { queryClient, QueryClientProvider } from './lib/queryClient';
 
 // Ensure the root element exists
-// ... existing code
-
-// Initialize theme from localStorage or system preference
-(function initTheme() {
-  try {
-    const saved = localStorage.getItem('theme');
-    if (saved) {
-      document.documentElement.setAttribute('data-theme', saved);
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    }
-  } catch (err) {
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('Unable to initialize theme:', err)
-    }
-  }
-})();
 
 // Bootstrap React app
 const rootElement = document.getElementById('root');

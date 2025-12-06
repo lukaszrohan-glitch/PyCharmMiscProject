@@ -6,6 +6,7 @@ import MobileNav from './components/MobileNav'
 import Settings from './components/Settings'
 import CommandPalette from './components/CommandPalette'
 import ErrorBoundary from './components/ErrorBoundary'
+import Login from './components/Login'
 import { useAppContext } from './AppContext'
 import { useAuth } from './auth/useAuth'
 
@@ -26,8 +27,17 @@ const LazyAdmin = lazy(() => import('./components/Admin'))
 export default function App() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { profile, logout } = useAuth()
+  const { profile, logout, checkingAuth } = useAuth()
   const { lang, setLang, isSettingsOpen, setSettingsOpen } = useAppContext()
+
+  // Show login if not authenticated
+  if (checkingAuth) {
+    return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>Loading...</div>
+  }
+
+  if (!profile) {
+    return <Login lang={lang} setLang={setLang} />
+  }
 
   const [currentView, setCurrentView] = useState('dashboard')
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
