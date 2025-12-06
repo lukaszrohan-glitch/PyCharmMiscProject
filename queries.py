@@ -109,8 +109,8 @@ SELECT
   SUM(f.gross_margin) AS margin,
   COUNT(DISTINCT f.order_id) AS orders_count
 FROM v_order_finance f
-JOIN customers c ON c.customer_id = f.customer_id
 JOIN orders o ON o.order_id = f.order_id
+JOIN customers c ON c.customer_id = o.customer_id
 WHERE (%s IS NULL OR o.order_date >= %s)
   AND (%s IS NULL OR o.order_date <= %s)
 GROUP BY c.customer_id, c.name
@@ -121,13 +121,13 @@ LIMIT %s;
 SQL_TOP_ORDERS = """
 SELECT
   f.order_id,
-  f.customer_id,
+  o.customer_id,
   c.name AS customer_name,
   f.revenue,
   f.gross_margin AS margin
 FROM v_order_finance f
-LEFT JOIN customers c ON c.customer_id = f.customer_id
 JOIN orders o ON o.order_id = f.order_id
+LEFT JOIN customers c ON c.customer_id = o.customer_id
 WHERE (%s IS NULL OR o.order_date >= %s)
   AND (%s IS NULL OR o.order_date <= %s)
 ORDER BY f.revenue DESC
@@ -165,7 +165,7 @@ prev_period AS (
     SUM(f.gross_margin) AS margin,
     COUNT(DISTINCT f.order_id) AS orders_count
   FROM v_order_finance f
-  JOIN customers c ON c.customer_id = f.customer_id
+  JOIN customers c ON c.customer_id = o.customer_id
   JOIN orders o ON o.order_id = f.order_id,
        period p
   WHERE o.order_date BETWEEN p.date_from AND p.date_to

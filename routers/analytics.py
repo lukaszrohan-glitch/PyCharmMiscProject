@@ -93,9 +93,10 @@ def _sqlite_summary_fallback(date_from: Optional[str], date_to: Optional[str]):
 
     rows = fetch_all(
         """
-        SELECT f.order_id, f.customer_id, c.name AS customer_name, f.order_date, f.revenue, f.gross_margin
+        SELECT f.order_id, o.customer_id, c.name AS customer_name, f.order_date, f.revenue, f.gross_margin
         FROM v_order_finance f
-        LEFT JOIN customers c ON c.customer_id = f.customer_id
+        LEFT JOIN orders o ON o.order_id = f.order_id
+        LEFT JOIN customers c ON c.customer_id = o.customer_id
         """,
         (),
     ) or []
