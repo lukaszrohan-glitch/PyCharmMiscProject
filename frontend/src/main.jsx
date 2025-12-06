@@ -56,16 +56,17 @@ root.render(
   </StrictMode>
 );
 
-// Register service worker for PWA
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(() => {
-        // SW registered successfully
-      })
-      .catch((error) => {
-        console.warn('SW registration failed:', error);
-      });
-  });
-}
+// Service worker disabled - causing MIME type errors when served through SPA fallback
+// Re-enable when sw.js is properly served as application/javascript
+// if ('serviceWorker' in navigator && import.meta.env.PROD) {
+//   window.addEventListener('load', () => {
+//     navigator.serviceWorker.register('/sw.js')
+//       .then(() => {
+//         // SW registered successfully
+//       })
+//       .catch((error) => {
+//         console.warn('SW registration failed:', error);
+//       });
+//   });
+// }
 

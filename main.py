@@ -377,6 +377,30 @@ if FRONTEND_DIST.exists():
     # Avoid stale index.html after deploy; allow assets to be cached by hash
     NO_CACHE_INDEX_HEADERS = {"Cache-Control": "no-store, max-age=0, must-revalidate"}
 
+    # Serve manifest.json with proper MIME type
+    @app.get("/manifest.json")
+    async def manifest():
+        manifest_file = FRONTEND_DIST / "manifest.json"
+        if manifest_file.exists():
+            return FileResponse(
+                manifest_file,
+                media_type="application/manifest+json",
+                headers={"Cache-Control": "public, max-age=3600"}
+            )
+        raise HTTPException(status_code=404, detail="Manifest not found")
+
+    # Serve service worker with proper MIME type (if exists)
+    @app.get("/sw.js")
+    async def service_worker():
+        sw_file = FRONTEND_DIST / "sw.js"
+        if sw_file.exists():
+            return FileResponse(
+                sw_file,
+                media_type="application/javascript",
+                headers={"Cache-Control": "no-cache"}
+            )
+        raise HTTPException(status_code=404, detail="Service worker not found")
+
     @app.get("/")
     async def spa_root():
         index_file = FRONTEND_DIST / "index.html"
