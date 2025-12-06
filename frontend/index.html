@@ -5,7 +5,9 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0891b2" />
+    <!-- Dynamic theme-color for light/dark to avoid white status bar in dark mode -->
+    <meta name="theme-color" content="#f7fafc" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f1724" media="(prefers-color-scheme: dark)" />
     <meta name="application-name" content="Synterra" />
     <meta name="apple-mobile-web-app-title" content="Synterra" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -38,46 +40,50 @@
 
     <title>Synterra - System Zarządzania Produkcją</title>
 
+    <!-- Set initial theme ASAP to prevent flash of wrong theme on load -->
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('theme');
+          var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var initial = saved || (prefersDark ? 'dark' : 'light');
+          document.documentElement.setAttribute('data-theme', initial);
+        } catch (e) {
+          // no-op
+        }
+      })();
+    </script>
+
     <!-- Global visibility / contrast fix -->
     <style>
       :root {
         /* Spójne z Twoją paletą z COLOR_REFERENCE.css */
         --bg-light: #f7fafc;
         --text-dark: #2d3748;
+        --bg-dark: #0f1724;
+        --text-light: #f9fafb;
+        --brand-link: #0891b2;
       }
 
-      /* Globalne tło i kolor tekstu */
-      html,
-      body {
-        background-color: var(--bg-light) !important;
-        color: var(--text-dark) !important;
-        margin: 0;
-        padding: 0;
+      /* Reset margins */
+      html, body { margin: 0; padding: 0; }
+
+      /* Apply colors based on current data-theme, do NOT force light globally */
+      html[data-theme="light"], [data-theme="light"] body {
+        background-color: var(--bg-light);
+        color: var(--text-dark);
+      }
+      html[data-theme="dark"], [data-theme="dark"] body {
+        background-color: var(--bg-dark);
+        color: var(--text-light);
       }
 
-      /* Główna zawartość aplikacji + elementy w tabelach / kartach */
-      #root,
-      main,
-      table,
-      th,
-      td,
-      div,
-      span,
-      p,
-      label {
-        color: var(--text-dark) !important;
-      }
+      /* Make sure root container inherits color */
+      #root, main { color: inherit; }
 
-      /* Linki (np. numery zleceń) w tabelach */
-      a,
-      a:visited {
-        color: #0891b2 !important; /* Brand teal/cyan */
-        text-decoration: none;
-      }
-
-      a:hover {
-        text-decoration: underline;
-      }
+      /* Links */
+      a, a:visited { color: var(--brand-link); text-decoration: none; }
+      a:hover { text-decoration: underline; }
     </style>
   </head>
   <body>
