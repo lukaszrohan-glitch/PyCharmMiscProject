@@ -30,24 +30,17 @@ export default function App() {
   const { profile, logout, checkingAuth } = useAuth()
   const { lang, setLang, isSettingsOpen, setSettingsOpen } = useAppContext()
 
-  // Show login if not authenticated
-  if (checkingAuth) {
-    return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>Loading...</div>
-  }
-
-  if (!profile) {
-    return <Login lang={lang} setLang={setLang} />
-  }
-
+  // All hooks must be called before any conditional returns
   const [currentView, setCurrentView] = useState('dashboard')
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
 
   // Sync current view with URL path
   useEffect(() => {
+    if (!profile) return; // Skip if not logged in
     const path = location.pathname.replace(/^\//, '') || 'dashboard'
     const root = path.split('/')[0]
     setCurrentView(root)
-  }, [location.pathname])
+  }, [location.pathname, profile])
 
   const handleViewChange = useCallback((view) => {
     setCurrentView(view)
@@ -77,6 +70,16 @@ export default function App() {
       setCommandPaletteOpen(false)
     }
   }, [handleViewChange])
+
+  // Show loading while checking auth
+  if (checkingAuth) {
+    return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', fontFamily: 'Inter, sans-serif', color: '#6b7280' }}>Ładowanie...</div>
+  }
+
+  // Show login if not authenticated
+  if (!profile) {
+    return <Login lang={lang} setLang={setLang} />
+  }
 
   // Inline wrapper so we can read orderId from query string for Financials
   function FinancialsRoute() {
