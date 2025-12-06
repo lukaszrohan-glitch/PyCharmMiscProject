@@ -102,7 +102,7 @@ async def add_security_headers(request: Request, call_next):
             "frame-ancestors 'none'; "
             # Explicit element/attr directives to satisfy strict scanners while keeping policy tight
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; "
-            "script-src-elem 'self' blob:; "
+            "script-src-elem 'self' 'unsafe-inline' blob:; "
             "script-src-attr 'self' 'unsafe-inline'; "
             "style-src 'self' 'unsafe-inline' blob: data: https://fonts.googleapis.com; "
             "style-src-elem 'self' 'unsafe-inline' blob: data: https://fonts.googleapis.com; "

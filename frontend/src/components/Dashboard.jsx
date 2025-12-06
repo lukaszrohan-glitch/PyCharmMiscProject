@@ -121,7 +121,7 @@ export default function Dashboard({ lang, setCurrentView }) {
       key: 'margin',
       label: lang === 'pl' ? 'Marża brutto' : 'Gross margin',
       value: new Intl.NumberFormat(lang === 'pl' ? 'pl-PL' : 'en-US', { style: 'currency', currency: 'PLN' }).format(summary.total_margin || 0),
-      trend: summary.margin_pct != null ? `${summary.margin_pct.toFixed(1)}%` : (lang === 'pl' ? 'brak danych' : 'n/a')
+      trend: (summary.margin_pct != null && typeof summary.margin_pct === 'number') ? `${summary.margin_pct.toFixed(1)}%` : (lang === 'pl' ? 'brak danych' : 'n/a')
     },
     {
       key: 'topCustomer',
