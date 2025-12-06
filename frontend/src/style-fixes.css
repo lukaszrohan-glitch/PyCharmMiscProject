@@ -1,12 +1,25 @@
-/* Global color scheme & safe defaults */
+/* Global color scheme & safe defaults + design tokens */
 :root {
   color-scheme: light;
+  /* Design tokens */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 6px 16px rgba(0,0,0,0.12);
+  --gap-xs: 4px;
+  --gap-sm: 8px;
+  --gap-md: 12px;
+  --gap-lg: 16px;
+  --gap-xl: 24px;
+  --accent: #0891b2;
+  --accent-contrast: #ffffff;
+  --border-light: rgba(0,0,0,0.08);
+  --border-dark: rgba(255,255,255,0.16);
+  --bg-card: #ffffff;
+  --text: #1f2937;
 }
 
-html {
-  background: #ffffff;
-  color: #1f2937; /* dark-ish text */
-}
+html { background: #ffffff; color: var(--text); }
 
 html[data-theme="dark"],
 [data-theme="dark"] {
@@ -38,7 +51,7 @@ select {
   color: inherit;
 }
 
-/* Light areas – dark text */
+/* Surfaces */
 .container,
 .col,
 .table-container,
@@ -51,11 +64,14 @@ select {
 .box,
 .data-table,
 table {
-  background-color: #ffffff;
-  color: #1f2937;
+  background-color: var(--bg-card);
+  color: var(--text);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
 }
 
-/* Dark header / nav bars – white text */
+/* Header / nav text should remain readable */
 .app-header,
 .odoo-topbar,
 header.header-dark {
@@ -67,7 +83,8 @@ table th,
 table td,
 .data-table th,
 .data-table td {
-  color: #1f2937;
+  color: var(--text);
+  border-bottom: 1px solid var(--border-light);
 }
 
 /* Any explicitly dark background → force white text */
@@ -88,8 +105,10 @@ input[type="email"],
 input[type="password"],
 .odoo-search {
   color: inherit;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
 }
 
 html[data-theme="dark"] input[type="text"],
@@ -97,8 +116,8 @@ html[data-theme="dark"] input[type="search"],
 html[data-theme="dark"] input[type="email"],
 html[data-theme="dark"] input[type="password"],
 html[data-theme="dark"] .odoo-search {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-dark);
 }
 
 /* Pills, chips, lang buttons – kolor z aktualnego kontekstu */
@@ -106,15 +125,53 @@ html[data-theme="dark"] .odoo-search {
 .pill,
 .chip {
   color: inherit;
+  border-radius: 999px;
+  padding: 4px 10px;
 }
 
-/* same minimal fixes copied from dist */
-:root, html { color-scheme: light dark; }
-html { background: #FFFFFF; color: #000000; }
-html[data-theme="dark"], [data-theme="dark"] { background: #000000; color: #FFFFFF; }
-body { margin: 0; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
-h1,h2,h3,h4,p,div,span,button,label,input { color: inherit; }
-.app-header, .odoo-topbar, header { color: inherit; }
-.odoo-search, input[type="text"], input[type="search"] { color: inherit; background: rgba(128,128,128,0.1); border: 1px solid rgba(0,0,0,0.1); }
-html[data-theme="dark"] .odoo-search, html[data-theme="dark"] input[type="text"], html[data-theme="dark"] input[type="search"] { background: rgba(128,128,128,0.1); border: 1px solid rgba(255,255,255,0.1); }
-.lang-btn, .pill, .chip { color: inherit; }
+/* Buttons */
+button,
+.btn,
+input[type="button"],
+input[type="submit"] {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  line-height: 1.2;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+}
+
+button:hover,
+.btn:hover,
+input[type="button"]:hover,
+input[type="submit"]:hover {
+  filter: brightness(1.05);
+}
+
+button:disabled,
+.btn:disabled,
+input[type="button"]:disabled,
+input[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Dark theme borders for surfaces */
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .panel,
+html[data-theme="dark"] .box,
+html[data-theme="dark"] .data-table,
+html[data-theme="dark"] table {
+  border-color: var(--border-dark);
+  box-shadow: none;
+}
+
+/* Table hover rows */
+table tr:hover {
+  background: rgba(0,0,0,0.03);
+}
+html[data-theme="dark"] table tr:hover {
+  background: rgba(255,255,255,0.06);
+}

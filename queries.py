@@ -165,8 +165,8 @@ prev_period AS (
     SUM(f.gross_margin) AS margin,
     COUNT(DISTINCT f.order_id) AS orders_count
   FROM v_order_finance f
-  JOIN customers c ON c.customer_id = o.customer_id
-  JOIN orders o ON o.order_id = f.order_id,
+  JOIN orders o ON o.order_id = f.order_id
+  JOIN customers c ON c.customer_id = o.customer_id,
        period p
   WHERE o.order_date BETWEEN p.date_from AND p.date_to
   GROUP BY c.customer_id, c.name
