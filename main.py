@@ -100,8 +100,11 @@ async def add_security_headers(request: Request, call_next):
             "base-uri 'self'; "
             "object-src 'none'; "
             "frame-ancestors 'none'; "
+            # Explicit element directives to satisfy some scanners while keeping policy strict
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; "
+            "script-src-elem 'self' blob:; "
             "style-src 'self' 'unsafe-inline' blob: data:; "
+            "style-src-elem 'self' 'unsafe-inline' blob: data:; "
             "img-src 'self' data: https:; "
             "font-src 'self' data:; "
             "connect-src 'self' https: ws: wss:; "
