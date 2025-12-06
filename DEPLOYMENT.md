@@ -1,5 +1,7 @@
 # Deployment Guide for Synterra
 
+> Update 2025-12-06: CI/CD via GitHub Actions and automated CSP verification have been added. See the new section "CI/CD (GitHub Actions)" below for setup instructions.
+
 ## System Requirements
 
 ### Hardware Requirements
@@ -98,8 +100,46 @@
 
 4. Create admin user:
    ```bash
-   docker-compose exec backend python create_admin.py
-   ```
+    docker-compose exec backend python create_admin.py
+  ```
+
+## CI/CD (GitHub Actions)
+
+This repository includes an automated CI/CD pipeline with post-deploy CSP verification.
+
+Workflow file: `.github/workflows/ci-cd.yml`
+
+What it does:
+- On push and PR to `main`:
+  - Install backend dependencies and run tests (pytest if present)
+  - Install frontend deps and build the production bundle (Vite)
+  - Uploads the build artifact for debugging
+- On push to `main` (if configured):
+  - Deploy via Railway CLI
+  - Wait for `/healthz` to return 200 at the deployed URL
+  - Run `scripts/csp_check.py` to verify CSP presence and that CSS/JS assets load without violations
+
+Required GitHub secrets:
+- `RAILWAY_TOKEN` (optional but required for automatic deploy)
+  - Generate with `railway login` and `railway tokens` or from Railway dashboard
+  - Add to GitHub → Settings → Secrets and variables → Actions → New repository secret
+- `DEPLOY_URL` (required for post-deploy checks when deploy is enabled)
+  - Example: `https://your-app.up.railway.app` or `https://arkuszowniasmb.pl`
+
+Manual deploy alternative:
+- If not using Railway, you can disable the deploy job or keep `RAILWAY_TOKEN` unset. The CI will still build and test.
+- You may adapt the `deploy` job to your platform (Render, Fly.io, Docker registry, self-hosted).
+
+Local verification of CSP script:
+```
+python -m pip install requests beautifulsoup4
+set DEPLOY_URL=https://arkuszowniasmb.pl
+python scripts/csp_check.py
+```
+
+Notes:
+- The CSP is enforced via backend headers (FastAPI middleware), nginx headers, and a meta fallback for static hosting.
+- If you load any external resources (fonts, analytics), update the CSP allowlist accordingly or self-host them.
 
 ## Management Scripts
 

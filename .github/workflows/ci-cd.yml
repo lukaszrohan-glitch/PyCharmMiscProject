@@ -1,0 +1,114 @@
+name: CI/CD and CSP verification
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  ci:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt || true; fi
+
+      - name: Run backend tests
+        run: |
+          if [ -f pytest.ini ] || [ -d tests ]; then pytest -q || pytest -q -k ""; else echo "No tests"; fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm run build || (echo "Build failed" && exit 1)
+
+      - name: Upload frontend build artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+
+  deploy:
+    name: Deploy (Railway if configured)
+    needs: ci
+    runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' && secrets.RAILWAY_TOKEN != '' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Railway CLI
+        run: |
+          npm i -g @railway/cli
+
+      - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway up --yes
+
+  verify-csp:
+    name: Verify CSP and assets
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' && secrets.DEPLOY_URL != '' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install requests and beautifulsoup4
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4
+
+      - name: Wait for deployment health
+        env:
+          URL: ${{ secrets.DEPLOY_URL }}
+        run: |
+          echo "Waiting for $URL to become healthy..."
+          for i in {1..30}; do
+            code=$(curl -sk -o /dev/null -w "%{http_code}" "$URL/healthz" || true)
+            if [ "$code" = "200" ]; then echo "Healthy"; break; fi
+            sleep 5
+          done
+
+      - name: Run CSP check
+        env:
+          DEPLOY_URL: ${{ secrets.DEPLOY_URL }}
+        run: |
+          python scripts/csp_check.py
