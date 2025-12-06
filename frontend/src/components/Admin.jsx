@@ -137,10 +137,23 @@ export default function Admin({ lang }) {
       setIsAuthed(true);
       setSuccess('✅ ' + t('authenticate'));
     } catch (err) {
-      console.error(err);
-      setLastAdminErrorSafe(err?.message || String(err));
-      setIsAuthed(false);
-      setError('❌ ' + t('error_auth_failed'));
+      console.error('Admin authenticate error:', err);
+      const msg = err?.message || String(err);
+      setLastAdminErrorSafe(msg);
+
+      // Handle token expiration - auto logout
+      if (msg.includes('Invalid or expired token') || msg.includes('401') || err?.status === 401) {
+        const expMsg = lang === 'pl' ? 'Token wygasł. Musisz się zalogować ponownie.' : 'Token expired. Please login again.';
+        setError('❌ ' + expMsg);
+        setIsAuthed(false);
+        // Trigger logout after showing message
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 2000);
+      } else {
+        setIsAuthed(false);
+        setError('❌ ' + t('error_auth_failed'));
+      }
     } finally {
       setLoadingUsers(false);
     }
