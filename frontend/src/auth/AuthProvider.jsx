@@ -49,25 +49,36 @@ export function AuthProvider({ children }) {
       setChecking(false)
       return
     }
+
+    let mounted = true;
+
     (async () => {
       try {
         const me = await api.getProfile()
-        // If profile is null, token may be expired - but don't clear it yet
-        // User might have just refreshed the page during a brief outage
+        if (!mounted) return;
+
+        // If profile is null or undefined, token is invalid
         if (me) {
           setProfile(me)
         } else {
-          // Profile returned null - token might be invalid
-          // But don't auto-logout - let user try to use the app
-          console.warn('Could not fetch profile on startup - token may be expired')
+          // Clear invalid token
+          api.setToken(null)
+          setProfile(null)
         }
       } catch (e) {
-        // Keep token; backend may be unreachable temporarily
-        console.warn('Auth bootstrap: profile unavailable, keeping token', e)
+        if (!mounted) return;
+        // Clear token on error
+        console.warn('Auth bootstrap failed - clearing token', e)
+        api.setToken(null)
+        setProfile(null)
       } finally {
-        setChecking(false)
+        if (mounted) {
+          setChecking(false)
+        }
       }
     })()
+
+    return () => { mounted = false; }
   }, [])
 
   const loginWithCredentials = async (email, password, persistLocal=false) => {

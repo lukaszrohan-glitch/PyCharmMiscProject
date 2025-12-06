@@ -374,6 +374,15 @@ if FRONTEND_DIST.exists():
         name="assets",
     )
 
+    # Mount icons directory for PWA icons
+    icons_dir = FRONTEND_DIST / "icons"
+    if icons_dir.exists():
+        app.mount(
+            "/icons",
+            StaticFiles(directory=icons_dir, check_dir=True),
+            name="icons",
+        )
+
     # Avoid stale index.html after deploy; allow assets to be cached by hash
     NO_CACHE_INDEX_HEADERS = {"Cache-Control": "no-store, max-age=0, must-revalidate"}
 
