@@ -19,14 +19,14 @@ export function AppProvider({ children }) {
   const [isSettingsOpen, setSettingsOpen] = useState(false);
 
   const setLang = (newLang) => {
+    const next = newLang === 'en' || newLang === 'pl' ? newLang : 'pl';
     try {
       // Persist only supported languages; fallback to 'pl'
-      const next = newLang === 'en' || newLang === 'pl' ? newLang : 'pl';
       localStorage.setItem('lang', next);
     } catch (e) {
       console.warn('Failed to save language to localStorage', e);
     }
-    setLangState(newLang === 'en' || newLang === 'pl' ? newLang : 'pl');
+    setLangState(next);
   };
 
   const value = {
