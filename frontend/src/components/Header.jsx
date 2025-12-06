@@ -68,13 +68,7 @@ export default function Header({
 
   const navItems = laptopNav
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('lang', lang)
-    } catch (err) {
-      console.warn('Persisting lang failed', err)
-    }
-  }, [lang])
+  // Language persistence is centrally handled in AppContext
 
   // Close dropdowns on outside click with proper focus management
   useEffect(() => {

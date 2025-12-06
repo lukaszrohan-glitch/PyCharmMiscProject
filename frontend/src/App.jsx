@@ -1,176 +1,143 @@
-import { Suspense, lazy, useEffect, useState, useCallback } from 'react';
-import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { useAppContext } from './AppContext';
-import Header from './components/Header';
-import MobileNav from './components/MobileNav';
-import Login from './components/Login';
-import ErrorBoundary from './components/ErrorBoundary';
-import { useAuth } from './auth/useAuth';
-import { useTheme } from './hooks/useTheme';
-import styles from './App.module.css';
-import CommandPalette from './components/CommandPalette';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
+import styles from './App.module.css'
+import Header from './components/Header'
+import MobileNav from './components/MobileNav'
+import Settings from './components/Settings'
+import CommandPalette from './components/CommandPalette'
+import ErrorBoundary from './components/ErrorBoundary'
+import { useAppContext } from './AppContext'
+import { useAuth } from './auth/useAuth'
 
-const LazyDashboard = lazy(() => import('./components/Dashboard'));
-const LazyOrders = lazy(() => import('./components/Orders'));
-const LazyProducts = lazy(() => import('./components/Products'));
-const LazyProduction = lazy(() => import('./components/Production'));
-const LazyInventory = lazy(() => import('./components/Inventory'));
-const LazyClients = lazy(() => import('./components/Clients'));
-const LazyTimesheets = lazy(() => import('./components/Timesheets'));
-const LazyReports = lazy(() => import('./components/Reports'));
-const LazyDemandPlanner = lazy(() => import('./components/DemandPlanner'));
-const LazyFinancials = lazy(() => import('./components/Financials'));
-const LazyUserGuide = lazy(() => import('./components/UserGuide'));
-const LazyAdmin = lazy(() => import('./components/Admin'));
+// Lazy loaded views
+const LazyDashboard = lazy(() => import('./components/Dashboard'))
+const LazyOrders = lazy(() => import('./components/Orders'))
+const LazyProducts = lazy(() => import('./components/Products'))
+const LazyProduction = lazy(() => import('./components/Production'))
+const LazyInventory = lazy(() => import('./components/Inventory'))
+const LazyClients = lazy(() => import('./components/Clients'))
+const LazyTimesheets = lazy(() => import('./components/Timesheets'))
+const LazyReports = lazy(() => import('./components/Reports'))
+const LazyDemandPlanner = lazy(() => import('./components/DemandPlanner'))
+const LazyFinancials = lazy(() => import('./components/Financials'))
+const LazyUserGuide = lazy(() => import('./components/UserGuide'))
+const LazyAdmin = lazy(() => import('./components/Admin'))
 
 export default function App() {
-  const { lang, setLang, isSettingsOpen, setSettingsOpen } = useAppContext();
-  const { profile, checkingAuth, logout } = useAuth();
-  const { toggleTheme } = useTheme();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const currentView = location.pathname.substring(1) || 'dashboard';
-  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { profile, logout } = useAuth()
+  const { lang, setLang, isSettingsOpen, setSettingsOpen } = useAppContext()
 
-  // Keyboard shortcut for Command Palette (Cmd/Ctrl + K)
+  const [currentView, setCurrentView] = useState('dashboard')
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+
+  // Sync current view with URL path
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setCommandPaletteOpen(prev => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+    const path = location.pathname.replace(/^\//, '') || 'dashboard'
+    const root = path.split('/')[0]
+    setCurrentView(root)
+  }, [location.pathname])
 
-  // Handle Command Palette actions
+  const handleViewChange = useCallback((view) => {
+    setCurrentView(view)
+    const map = {
+      dashboard: '/dashboard',
+      orders: '/orders',
+      products: '/products',
+      production: '/production',
+      inventory: '/inventory',
+      clients: '/clients',
+      timesheets: '/timesheets',
+      reports: '/reports',
+      demand: '/demand',
+      financials: '/financials',
+      help: '/help',
+      admin: '/admin',
+    }
+    navigate(map[view] || '/dashboard')
+  }, [navigate])
+
+  const handleSettings = useCallback(() => setSettingsOpen(true), [setSettingsOpen])
+
   const handleCommandAction = useCallback((action) => {
-    switch (action) {
-      case 'toggleTheme':
-        toggleTheme();
-        break;
-      case 'langPL':
-        setLang('pl');
-        break;
-      case 'langEN':
-        setLang('en');
-        break;
-      case 'openSettings':
-        setSettingsOpen(true);
-        break;
-      case 'newOrder':
-        navigate('/orders');
-        // Could dispatch an event to open new order form
-        break;
-      case 'newProduct':
-        navigate('/products');
-        break;
-      case 'newClient':
-        navigate('/clients');
-        break;
-      default:
-        break;
+    if (!action) return
+    if (action.type === 'go' && action.target) {
+      handleViewChange(action.target)
+      setCommandPaletteOpen(false)
     }
-  }, [toggleTheme, setLang, setSettingsOpen, navigate]);
+  }, [handleViewChange])
 
-  useEffect(() => {
-    localStorage.setItem('lang', lang);
-  }, [lang]);
-
-  const handleLogout = () => {
-    logout?.();
-    navigate('/dashboard');
-  };
-
-  const handleSettings = () => setSettingsOpen(true);
-
-  const handleViewChange = (newView) => {
-    if (newView !== currentView) {
-      navigate(`/${newView}`);
-    }
-  };
-
-  useEffect(() => {
-    const titles = {
-      dashboard: lang === 'pl' ? 'Panel główny' : 'Dashboard',
-      orders: lang === 'pl' ? 'Zamówienia' : 'Orders',
-      products: lang === 'pl' ? 'Produkty' : 'Products',
-      production: lang === 'pl' ? 'Produkcja' : 'Production',
-      planning: lang === 'pl' ? 'Planowanie' : 'Planning',
-      inventory: lang === 'pl' ? 'Magazyn' : 'Inventory',
-      clients: lang === 'pl' ? 'Klienci' : 'Clients',
-      timesheets: lang === 'pl' ? 'Czas pracy' : 'Timesheets',
-      reports: lang === 'pl' ? 'Raporty' : 'Reports',
-      demand: lang === 'pl' ? 'Popyt' : 'Demand planner',
-      financials: lang === 'pl' ? 'Finanse' : 'Financials',
-      help: lang === 'pl' ? 'Pomoc' : 'Help',
-      admin: lang === 'pl' ? 'Administracja' : 'Admin',
-    }
-    const viewTitle = titles[currentView] || 'Synterra'
-    document.title = `${viewTitle} - Synterra`;
-  }, [currentView, lang]);
-
-  if (checkingAuth) {
-    return (
-      <div className={styles.app}>
-        <main id="main-content" className={styles.mainContent}>
-          <div className={styles.container}><p>Loading...</p></div>
-        </main>
-      </div>
-    );
+  // Inline wrapper so we can read orderId from query string for Financials
+  function FinancialsRoute() {
+    const qs = new URLSearchParams(location.search)
+    const orderId = qs.get('orderId')
+    return <LazyFinancials orderId={orderId} lang={lang} />
   }
 
-  if (!profile) {
-    return <Login />;
-  }
+  const isTransitioning = false
 
   return (
     <ErrorBoundary>
       <div className={styles.app}>
         <Header
+          lang={lang}
+          setLang={setLang}
           currentView={currentView}
           setCurrentView={handleViewChange}
           profile={profile}
           onSettings={handleSettings}
-          onLogout={handleLogout}
+          onLogout={logout}
+          onSearchSelect={(item) => {
+            if (item?.order_id) {
+              navigate(`/financials?orderId=${item.order_id}`)
+              setCurrentView('financials')
+            }
+          }}
         />
+
         <main id="main-content" className={styles.mainContent}>
-          <div className={styles.container}>
+          <div className={isTransitioning ? `${styles.container} ${styles.transitioning}` : styles.container}>
             <Suspense fallback={<p>Loading...</p>}>
               <Routes>
-                <Route path="/dashboard" element={<LazyDashboard setCurrentView={handleViewChange} />} />
-                <Route path="/orders" element={<LazyOrders jumpToFinance={(orderId) => navigate(`/financials?orderId=${orderId}`)} />} />
-                <Route path="/products" element={<LazyProducts />} />
-                <Route path="/production" element={<LazyProduction />} />
-                <Route path="/inventory" element={<LazyInventory />} />
-                <Route path="/clients" element={<LazyClients />} />
-                <Route path="/timesheets" element={<LazyTimesheets />} />
-                <Route path="/reports" element={<LazyReports />} />
-                <Route path="/demand" element={<LazyDemandPlanner />} />
-                <Route path="/financials" element={<LazyFinancials />} />
-                <Route path="/help" element={<LazyUserGuide />} />
-                <Route path="/admin" element={profile?.is_admin ? <LazyAdmin /> : <Navigate to="/dashboard" replace />} />
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard" element={<LazyDashboard lang={lang} setCurrentView={handleViewChange} />} />
+                <Route path="/orders" element={<LazyOrders lang={lang} jumpToFinance={(orderId) => navigate(`/financials?orderId=${orderId}`)} />} />
+                <Route path="/products" element={<LazyProducts lang={lang} />} />
+                <Route path="/production" element={<LazyProduction lang={lang} />} />
+                <Route path="/inventory" element={<LazyInventory lang={lang} />} />
+                <Route path="/clients" element={<LazyClients lang={lang} />} />
+                <Route path="/timesheets" element={<LazyTimesheets lang={lang} />} />
+                <Route path="/reports" element={<LazyReports lang={lang} />} />
+                <Route path="/demand" element={<LazyDemandPlanner lang={lang} />} />
+                <Route path="/financials" element={<FinancialsRoute />} />
+                <Route path="/help" element={<LazyUserGuide lang={lang} />} />
+                <Route path="/admin" element={profile?.is_admin ? <LazyAdmin lang={lang} /> : <Navigate to="/dashboard" replace />} />
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Routes>
             </Suspense>
           </div>
         </main>
+
         <MobileNav
+          lang={lang}
           currentView={currentView}
           onNavigate={handleViewChange}
           onSettings={handleSettings}
         />
+
         {isSettingsOpen && (
           <Settings
             profile={profile}
             onClose={() => setSettingsOpen(false)}
             onOpenAdmin={() => {
-              setSettingsOpen(false);
-              handleViewChange('admin');
+              setSettingsOpen(false)
+              handleViewChange('admin')
             }}
+            lang={lang}
           />
         )}
+
         <CommandPalette
           isOpen={commandPaletteOpen}
           onClose={() => setCommandPaletteOpen(false)}
@@ -179,5 +146,5 @@ export default function App() {
         />
       </div>
     </ErrorBoundary>
-  );
+  )
 }

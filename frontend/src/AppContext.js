@@ -10,7 +10,8 @@ export function AppProvider({ children }) {
   const [lang, setLangState] = useState(() => {
     try {
       const stored = localStorage.getItem('lang');
-      return stored === 'en' ? 'pl' : (stored || 'pl');
+      // Allow only supported languages; default to 'pl'
+      return stored === 'en' || stored === 'pl' ? stored : 'pl';
     } catch {
       return 'pl';
     }
@@ -19,12 +20,13 @@ export function AppProvider({ children }) {
 
   const setLang = (newLang) => {
     try {
-      // Wymuszamy tylko 'pl' jako dozwolony język
-      localStorage.setItem('lang', newLang === 'en' ? 'pl' : newLang);
+      // Persist only supported languages; fallback to 'pl'
+      const next = newLang === 'en' || newLang === 'pl' ? newLang : 'pl';
+      localStorage.setItem('lang', next);
     } catch (e) {
       console.warn('Failed to save language to localStorage', e);
     }
-    setLangState(newLang === 'en' ? 'pl' : newLang);
+    setLangState(newLang === 'en' || newLang === 'pl' ? newLang : 'pl');
   };
 
   const value = {
