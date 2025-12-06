@@ -12,7 +12,7 @@
   ======================================================================
 */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+/* External Google Fonts import removed to comply with CSP. If needed, self-host fonts and use @font-face. */
 
 :root {
   /* ========== TYPOGRAPHY ========== */
