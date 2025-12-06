@@ -93,12 +93,20 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
     # Add Content-Security-Policy for additional protection
     if not request.url.path.startswith("/api/docs"):
+        # CSP tailored for Vite/SPA + API. Allows same-origin assets, inline styles, and blob: for dev/runtime.
+        # Includes ws/wss for dev hot-reload or future realtime features.
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
-            "style-src 'self' 'unsafe-inline'; "
+            "base-uri 'self'; "
+            "object-src 'none'; "
+            "frame-ancestors 'none'; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; "
+            "style-src 'self' 'unsafe-inline' blob: data:; "
             "img-src 'self' data: https:; "
-            "font-src 'self' data:;"
+            "font-src 'self' data:; "
+            "connect-src 'self' https: ws: wss:; "
+            "worker-src 'self' blob:; "
+            "manifest-src 'self';"
         )
     return response
 
